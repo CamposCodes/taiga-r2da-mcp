@@ -711,6 +711,99 @@ function registerTools(server: McpServer, client: TaigaClient) {
         })),
       ),
   );
+
+  server.registerTool(
+    "taiga_items_get",
+    {
+      title: "Get an item",
+      description:
+        "One item by its number, whatever its kind, with the description and the list of its attachments (open one " +
+        "with taiga_attachments_get). A user story comes with its tasks. Ask for comments and history only when needed.",
+      inputSchema: z.object({
+        project,
+        ref: itemRef,
+        include: z.array(z.enum(["comments", "history"])).optional().describe("Extra sections to load"),
+      }),
+      outputSchema: line.extend({
+        description: z.string(),
+        createdBy: text,
+        attachments: z.array(
+          z.object({ id: z.number(), name: z.string(), size: count, description: z.string().optional(), deprecated: z.boolean().optional(), createdAt: text }),
+        ),
+        taskList: z.array(z.object({ ref: z.number(), subject: z.string(), status: text, closed: z.boolean(), assignees: z.array(z.string()) })).optional(),
+        commentList: z.array(z.object({ when: text, who: text, body: z.string() })).optional(),
+        history: z.array(z.object({ when: text, who: text, changed: z.array(z.string()), comment: z.string().optional() })).optional(),
+      }),
+      annotations: READ,
+    },
+    ({ project, ref, include = [] }) =>
+      run(async () => {
+        const p = await loadProject(client, project);
+        const { kind, id } = await resolve(client, p, ref);
+        const item = await client.get(`/${KINDS[kind].path}/${id}`);
+        const result: Record<string, unknown> = {
+          ...summary(p, kind, item),
+          description: item.description ?? "",
+          createdBy: item.owner_extra_info?.username ?? null,
+          attachments: (await attachmentsOf(client, p, kind, id)).map((file) => ({
+            id: file.id,
+            name: file.name,
+            size: file.size,
+            ...(file.description ? { description: file.description } : {}),
+            ...(file.is_deprecated ? { deprecated: true } : {}),
+            createdAt: file.created_date,
+          })),
+        };
+        if (kind === "us") {
+          result.taskList = await tasksOf(client, p, id);
+        }
+        if (include.length) {
+          // Unasked, Taiga gives only the 30 newest entries; 1000 is the most it gives at once.
+          const entries: any[] = await client.get(`/history/${KINDS[kind].history}/${id}`, { page_size: 1000 });
+          if (include.includes("comments")) {
+            result.commentList = entries
+              .filter((entry) => entry.comment && !entry.delete_comment_date)
+              .map((entry) => ({ when: entry.created_at, who: entry.user?.username ?? entry.user?.name ?? null, body: clip(entry.comment, 2000) }));
+          }
+          if (include.includes("history")) {
+            result.history = entries.map((entry) => ({
+              when: entry.created_at,
+              who: entry.user?.username ?? entry.user?.name ?? null,
+              changed: Object.keys(entry.values_diff ?? {}),
+              ...(entry.comment ? { comment: clip(entry.comment, 300) } : {}),
+            }));
+          }
+        }
+        return result;
+      }),
+  );
+
+  server.registerTool(
+    "taiga_search",
+    {
+      title: "Search a project",
+      description: "Finds user stories, tasks, issues and wiki pages of a project by words in their text.",
+      inputSchema: z.object({ project, text: z.string().min(1).describe("Words to find") }),
+      outputSchema: z.object({
+        count,
+        items: z.array(z.object({ type: z.enum(["us", "task", "issue"]), ref: z.number(), subject: z.string(), status: text })),
+        wikiPages: z.array(z.string()).describe("Slugs of the wiki pages found"),
+      }),
+      annotations: READ,
+    },
+    ({ project, text }) =>
+      run(async () => {
+        const p = await loadProject(client, project);
+        const found = await client.get("/search", { project: p.id, text });
+        const lines = (kind: Kind, items: any[] = []) =>
+          items.map((item) => ({ type: kind, ref: item.ref, subject: item.subject, status: nameOf(p[KINDS[kind].statuses], item.status) }));
+        return {
+          count: found.count,
+          items: [...lines("us", found.userstories), ...lines("task", found.tasks), ...lines("issue", found.issues)],
+          wikiPages: (found.wikipages ?? []).map((page: any) => page.slug),
+        };
+      }),
+  );
 }
 
 const modulesOf = (p: any) => ({
