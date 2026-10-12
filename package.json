@@ -33,6 +33,7 @@
     "dist",
     "docs/*.md",
     "docs/clients",
+    "docs/assets",
     "docs/diagrams/*.svg"
   ],
   "publishConfig": {

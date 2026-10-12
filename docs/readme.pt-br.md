@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/banner.svg" alt="As logos do Taiga e do Model Context Protocol" width="520">
+</p>
+
 # Servidor MCP do Taiga
 
 [![CI](https://github.com/CamposCodes/taiga-r2da-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/CamposCodes/taiga-r2da-mcp/actions/workflows/ci.yml)
@@ -566,5 +570,6 @@ Este projeto é distribuído sob a licença MIT: veja [LICENSE](../LICENSE).
 
 A organização (um cliente HTTP e tools com nome `taiga_<recurso>_<ação>`) segue a do
 [illodev/taiga-mcp](https://github.com/illodev/taiga-mcp), de licença MIT. O código daqui foi escrito do zero e
-não contém código do Taiga: usa só a API REST pública dele. "Taiga" é marca dos seus donos e aparece aqui apenas
-para dizer a que sistema o servidor se conecta.
+não contém código do Taiga: usa só a API REST pública dele. "Taiga" e a sua logo, e a logo do Model Context
+Protocol, pertencem aos seus donos. Elas aparecem aqui apenas para dizer a que sistema o servidor se conecta e que
+protocolo ele fala: este projeto não é afiliado a nenhum dos dois, nem endossado por eles.

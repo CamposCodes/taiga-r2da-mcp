@@ -98,6 +98,9 @@ What to look at when upgrading from 0.2.0:
   `docs/changelog.md`, `docs/contributing.md`, `docs/security.md` and the guides that were already there. Only
   `LICENSE` stays at the root. GitHub shows `docs/readme.md` on the page of the repository. `npm test` follows
   every link between the documents and fails on one that leads nowhere.
+- The READMEs open with a banner that shows the logo of Taiga and the logo of the Model Context Protocol, on a
+  light panel so that it reads the same on the light and on the dark theme. The pictures are in `docs/assets/`,
+  with a card for the social preview of the repository. Both logos belong to their owners, and the READMEs say so.
 - The READMEs follow the layout of established MCP servers: features, requirements, getting started with one
   block per client, configuration, the tools with their parameters, examples, security, development and licence.
   The list of tools is written from `tools/list` by `npm run docs:tools`, and `npm test` fails when it drifts.
