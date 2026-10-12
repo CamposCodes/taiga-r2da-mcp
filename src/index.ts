@@ -484,6 +484,9 @@ async function savingFolder(): Promise<string> {
   return folder;
 }
 
+/** A path that starts with two slashes, of either kind: a share of another machine, or of this one under another name. */
+const NETWORK = /^[\\/]{2}/;
+
 /** Inside the home of the user, the folder where programs keep their data: browser profiles, client configurations. */
 const PROFILE = ({ win32: "AppData", darwin: "Library" } as Record<string, string | undefined>)[process.platform];
 
@@ -493,16 +496,29 @@ const PROFILE = ({ win32: "AppData", darwin: "Library" } as Record<string, strin
  */
 // ponytail: a deny list, not a sandbox. It stops the usual targets of a hidden instruction, not a secret kept
 // under an ordinary name in an ordinary folder; limit the tool to one folder if that is ever needed.
+// The file must be a regular one of up to 25 MB.
 async function sendable(path: string): Promise<string> {
+  // A network path is refused before the disk is touched: reaching \\host\share offers the credentials of the user
+  // to that host, and \\localhost\C$ is another name for every folder that is checked below.
+  if (NETWORK.test(path)) {
+    throw new Error(`${path} is not sent: a network path is refused. Copy the file to a folder of this machine first.`);
+  }
+  const info = await stat(path);
+  if (!info.isFile() || info.size > MAX_FILE) {
+    throw new Error(`${path} is not a file of up to ${MAX_FILE} bytes.`);
+  }
+  // The real path, with links and mapped drives followed: a drive mapped to a share comes back as a network path.
   const real = await realpath(path);
   const under = async (folder: string) => `${real}${sep}`.toLowerCase().startsWith(`${await realpath(folder).catch(() => folder)}${sep}`.toLowerCase());
   const hidden = real.split(sep).some((part) => part.startsWith("."));
   const profile = PROFILE !== undefined && (await under(join(homedir(), PROFILE))) && !(await under(tmpdir()));
-  if (hidden || profile || /\.(pem|key|p12|pfx|ppk|kdbx)$/i.test(real)) {
+  // On Linux the kernel serves the environment of this very process, token included, as a file under /proc.
+  const system = /^\/(proc|sys|dev|run)(\/|$)/.test(real);
+  if (NETWORK.test(real) || system || hidden || profile || /\.(pem|key|p12|pfx|ppk|kdbx)$/i.test(real)) {
     throw new Error(
       `${path} is not sent: it looks like a credential or a configuration file (a name that starts with a dot, the ` +
-        "folder where programs keep the data of the user, or a key file). If it really is to be sent, the user can " +
-        "copy it to another place under another name.",
+        "folder where programs keep the data of the user, a key file, a file of the system or a network path). If it " +
+        "really is to be sent, the user can copy it to another place under another name.",
     );
   }
   return real;
@@ -1061,10 +1077,6 @@ function registerWriting(server: McpServer, client: TaigaClient, remove: boolean
       run(async () => {
         const p = await loadProject(client, project);
         const { kind, id } = await resolve(client, p, ref);
-        const info = await stat(path);
-        if (!info.isFile() || info.size > MAX_FILE) {
-          throw new Error(`${path} is not a file of up to ${MAX_FILE} bytes.`);
-        }
         const real = await sendable(path);
         const form = new FormData();
         form.set("project", String(p.id));

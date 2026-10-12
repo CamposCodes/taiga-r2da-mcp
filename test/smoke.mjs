@@ -517,6 +517,13 @@ await scenario('taiga_attachments_add refuses a file that looks like a credentia
     assert.match(await send(path), /is not sent: it looks like a credential or a configuration file/, path)
   }
   if (profile) rmSync(secrets.at(-1))
+  // A network path is refused before the disk is touched: \\localhost\C$ is another name for every folder above,
+  // and another host would be offered the credentials of the user.
+  for (const path of ['\\\\localhost\\C$\\Users\\ana\\AppData\\Roaming\\config.json', '//files.example.com/share/notes.txt']) {
+    assert.match(await send(path), /is not sent: a network path is refused/, path)
+  }
+  // On Linux the environment of the server itself, token included, is a file under /proc.
+  if (process.platform === 'linux') assert.match(await send('/proc/self/environ'), /is not sent: it looks like a credential/)
   // A link with an innocent name that leads to one of them is followed first. Windows asks for a privilege to make one.
   if (process.platform !== 'win32') {
     symlinkSync(secrets[0], join(smoke, 'foto.txt'))
