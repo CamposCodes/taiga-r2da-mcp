@@ -51,7 +51,8 @@
     "start": "node dist/index.js",
     "test": "node test/smoke.mjs dist/index.js",
     "coverage": "node test/coverage.mjs dist/index.js",
-    "test:live": "node test/live.mjs dist/index.js"
+    "test:live": "node test/live.mjs dist/index.js",
+    "pack:mcpb": "node scripts/pack-mcpb.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/server": "^2.3.1",

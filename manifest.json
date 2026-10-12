@@ -1,0 +1,80 @@
+{
+  "manifest_version": "0.3",
+  "name": "taiga-mcp",
+  "display_name": "Taiga",
+  "version": "0.3.0",
+  "description": "Read a Taiga 6 installation and, when allowed, create, edit, move and delete its items.",
+  "long_description": "Connects Claude to a Taiga 6 installation. It reads projects, sprints, user stories, tasks, issues and their attachments in the name of the person whose token it has. With writing allowed it also creates, edits and moves user stories, tasks and issues and attaches files to them. With deleting allowed too, it deletes them after showing what would go and asking.",
+  "author": {
+    "name": "CamposCodes",
+    "url": "https://github.com/CamposCodes"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/CamposCodes/taiga-r2da-mcp"
+  },
+  "homepage": "https://github.com/CamposCodes/taiga-r2da-mcp#readme",
+  "documentation": "https://github.com/CamposCodes/taiga-r2da-mcp/blob/main/docs/clients/claude-desktop.md",
+  "support": "https://github.com/CamposCodes/taiga-r2da-mcp/issues",
+  "license": "MIT",
+  "keywords": ["taiga", "project-management", "kanban", "scrum"],
+  "server": {
+    "type": "node",
+    "entry_point": "dist/index.js",
+    "mcp_config": {
+      "command": "node",
+      "args": ["${__dirname}/dist/index.js"],
+      "env": {
+        "TAIGA_URL": "${user_config.taiga_url}",
+        "TAIGA_TOKEN": "${user_config.taiga_token}",
+        "TAIGA_WRITE": "${user_config.allow_writing}",
+        "TAIGA_DELETE": "${user_config.allow_deleting}"
+      }
+    }
+  },
+  "user_config": {
+    "taiga_url": {
+      "type": "string",
+      "title": "Taiga address",
+      "description": "Address of your Taiga site. It must start with https://",
+      "required": true
+    },
+    "taiga_token": {
+      "type": "string",
+      "title": "Taiga token",
+      "description": "The value of \"token\" in the Local Storage of the browser, after you log in to Taiga",
+      "sensitive": true,
+      "required": true
+    },
+    "allow_writing": {
+      "type": "boolean",
+      "title": "Allow writing",
+      "description": "Lets Claude create, edit and move user stories, tasks and issues and attach files, in your name",
+      "default": false
+    },
+    "allow_deleting": {
+      "type": "boolean",
+      "title": "Allow deleting",
+      "description": "Lets Claude delete user stories, tasks and issues. Taiga keeps no trash. It needs Allow writing",
+      "default": false
+    }
+  },
+  "tools": [
+    { "name": "taiga_me", "description": "The Taiga user this server reads as" },
+    { "name": "taiga_projects_list", "description": "Projects the current user is a member of" },
+    { "name": "taiga_projects_get", "description": "One project: statuses, members, sprints and what the user may do in it" },
+    { "name": "taiga_sprints_list", "description": "Sprints of a project with dates, user stories and points" },
+    { "name": "taiga_userstories_list", "description": "User stories of a project, with filters" },
+    { "name": "taiga_tasks_list", "description": "Tasks of a project, with filters" },
+    { "name": "taiga_issues_list", "description": "Issues of a project, with filters" },
+    { "name": "taiga_items_get", "description": "One user story, task or issue by its number, with its attachments" },
+    { "name": "taiga_search", "description": "Search a project by words" },
+    { "name": "taiga_attachments_get", "description": "The content of a file attached to an item" }
+  ],
+  "tools_generated": true,
+  "compatibility": {
+    "runtimes": {
+      "node": ">=20.0.0"
+    }
+  }
+}

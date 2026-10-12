@@ -786,6 +786,17 @@ await scenario('package.json and server.json name the same server, the same vers
   // The version the server says it is, in both openings of the protocol.
   assert.equal(opened.serverInfo.version, pkg.version)
 })
+await scenario('manifest.json of the Claude Desktop extension names this version, the four variables and the read tools', async () => {
+  const read = (name) => JSON.parse(readFileSync(name, 'utf8'))
+  const [pkg, manifest] = [read('package.json'), read('manifest.json')]
+  assert.equal(manifest.version, pkg.version)
+  // Each variable of the server is filled from a field of the form the client shows, and the token field is kept as a secret.
+  assert.deepEqual(manifest.server.mcp_config.env, { TAIGA_URL: '${user_config.taiga_url}', TAIGA_TOKEN: '${user_config.taiga_token}', TAIGA_WRITE: '${user_config.allow_writing}', TAIGA_DELETE: '${user_config.allow_deleting}' })
+  assert.deepEqual(Object.keys(manifest.user_config), ['taiga_url', 'taiga_token', 'allow_writing', 'allow_deleting'])
+  assert.deepEqual([manifest.user_config.taiga_token.sensitive, manifest.user_config.allow_writing.default, manifest.user_config.allow_deleting.default], [true, false, false])
+  // It lists the tools that are always there, and says that more can appear.
+  assert.deepEqual([manifest.tools.map((t) => t.name), manifest.tools_generated], [tools.map((t) => t.name), true])
+})
 await scenario('docs/TESTING.md lists exactly these scenarios, in this order', async () => {
   const listed = [...readFileSync('docs/TESTING.md', 'utf8').matchAll(/^\| S(\d+) \| (.+?) \|/gm)].map((row) => row[2])
   assert.deepEqual(listed, [...done, 'docs/TESTING.md lists exactly these scenarios, in this order'])
