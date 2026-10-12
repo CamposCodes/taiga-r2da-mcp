@@ -931,7 +931,8 @@ Deletes a user story, a task or an issue with its comments and attachments, for 
 Deleting a user story deletes its tasks with it. It takes two calls. The first, without confirm, deletes nothing:
 it shows what would go and gives a code. Show that to the user, ask whether it is really to be deleted, and only
 after a yes call again with the code in confirm. A code is good once, for ten minutes, and only for the last item
-shown, as it was shown.
+shown, as it was shown. A client that can ask the user is made to ask on that second call, and nothing is deleted
+without the yes given there.
 
 | Parameter | Type | Required | Description |
 | --- | --- | --- | --- |

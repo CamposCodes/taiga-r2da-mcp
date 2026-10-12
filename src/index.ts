@@ -4,7 +4,7 @@ import { mkdtemp, readFile, realpath, stat, writeFile } from "node:fs/promises";
 import { homedir, tmpdir } from "node:os";
 import { basename, join, sep } from "node:path";
 import { z } from "zod";
-import { McpServer, type CallToolResult } from "@modelcontextprotocol/server";
+import { CLIENT_CAPABILITIES_META_KEY, McpServer, inputRequired, inputResponse, type CallToolResult, type InputRequiredResult } from "@modelcontextprotocol/server";
 import { serveStdio } from "@modelcontextprotocol/server/stdio";
 
 /* eslint-disable @typescript-eslint/no-explicit-any -- API payloads are plain JSON */
@@ -21,9 +21,8 @@ import { serveStdio } from "@modelcontextprotocol/server/stdio";
 // ponytail: the token lasts about a day and is pasted again when it expires; use Taiga's refresh token if that
 // becomes a chore (refreshing rotates it, which ends the browser session it was copied from).
 // ponytail: a write is confirmed by the permission prompt of the MCP client, which the annotations below feed.
-// Deleting adds a step of its own: the server knows that the item was shown, not that a person said yes. The
-// second call is still made by the model: ask the user through the client (inputRequired.elicit of the SDK) if a
-// client that never asks is used.
+// Deleting adds steps of its own: the item is shown first and, where the client can put a question to the person,
+// the server asks for the yes itself. In a client that cannot, the second call is still made by the model.
 
 const instructions = (write: boolean, remove: boolean) => `Access to a Taiga project management server. A project has user stories (worked on a kanban or
 planned in sprints), tasks that belong to a user story or to a sprint, and issues (bugs, questions, improvements).
@@ -73,7 +72,7 @@ let calls = 0;
  * Runs a tool and returns what it shows. A failure (unknown status name, API refusal, too many calls, ...) becomes
  * a tool error with a readable message, so the model can correct itself.
  */
-async function show(body: () => Promise<CallToolResult>): Promise<CallToolResult> {
+async function show(body: () => Promise<CallToolResult | InputRequiredResult>): Promise<CallToolResult | InputRequiredResult> {
   try {
     const now = Date.now();
     if (now - windowStart >= 60_000) {
@@ -92,12 +91,14 @@ async function show(body: () => Promise<CallToolResult>): Promise<CallToolResult
   }
 }
 
-/** The usual case: the result as data, and the same data as JSON text for the clients that read only text. */
-const run = (body: () => Promise<object>) =>
-  show(async () => {
-    const text = JSON.stringify(await body(), null, 2);
-    return { content: [{ type: "text", text }], structuredContent: JSON.parse(text) };
-  });
+/** A result as data, and the same data as JSON text for the clients that read only text. */
+function data(value: object): CallToolResult {
+  const text = JSON.stringify(value, null, 2);
+  return { content: [{ type: "text", text }], structuredContent: JSON.parse(text) };
+}
+
+/** The usual case: a tool that answers data. */
+const run = (body: () => Promise<object>) => show(async () => data(await body()));
 
 type Kind = "us" | "task" | "issue";
 
@@ -1159,7 +1160,8 @@ function registerWriting(server: McpServer, client: TaigaClient, remove: boolean
         "Deleting a user story deletes its tasks with it. It takes two calls. The first, without confirm, deletes " +
         "nothing: it shows what would go and gives a code. Show that to the user, ask whether it is really to be " +
         "deleted, and only after a yes call again with the code in confirm. A code is good once, for ten minutes, " +
-        "and only for the last item shown, as it was shown.",
+        "and only for the last item shown, as it was shown. A client that can ask the user is made to ask on that " +
+        "second call, and nothing is deleted without the yes given there.",
       inputSchema: z.object({
         project,
         ref: itemRef,
@@ -1174,8 +1176,8 @@ function registerWriting(server: McpServer, client: TaigaClient, remove: boolean
       }),
       annotations: { ...WRITE, destructiveHint: true },
     },
-    ({ project, ref, confirm }) =>
-      run(async () => {
+    ({ project, ref, confirm }, ctx) =>
+      show(async () => {
         const p = await loadProject(client, project);
         const { kind, id } = await resolve(client, p, ref);
         allow(p, "delete", kind);
@@ -1188,11 +1190,10 @@ function registerWriting(server: McpServer, client: TaigaClient, remove: boolean
         // What a code stands for: this item of this project, in the version that was shown, with those tasks.
         const state = `${p.id}/${kind}/${id}/v${item.version}/${tasks.map((task) => task.ref).join(",")}`;
         const valid = confirm !== undefined && confirm === waiting?.code && state === waiting.state && Date.now() < waiting.expires;
-        // A code is of one use, whether it deletes or not, and a guess never finds one waiting for it.
-        waiting = undefined;
         if (!valid) {
+          // A code is of one use: a wrong one spends the one that was waiting, and a guess never finds it.
           waiting = { code: randomUUID(), state, expires: Date.now() + DELETE_WINDOW };
-          return {
+          return data({
             deleted: false,
             ...shown,
             confirm: waiting.code,
@@ -1203,10 +1204,35 @@ function registerWriting(server: McpServer, client: TaigaClient, remove: boolean
                   "already, is more than ten minutes old, or the item changed since it was shown. ") +
               "Nothing was deleted. Show this to the user and ask whether it is really to be deleted. Only after a " +
               "yes, call again with this code in confirm.",
-          };
+          });
         }
+        // The code proves that the item was shown, and both calls came from the model. Where the client can put a
+        // question to the person, the yes has to come from there: the model cannot answer in the person's place.
+        // What the client can do comes with each request on the 2026-07-28 revision, and with the handshake before it.
+        const can = (ctx.mcpReq.envelope as Record<string, any> | undefined)?.[CLIENT_CAPABILITIES_META_KEY] ?? server.server.getClientCapabilities();
+        if (can?.elicitation) {
+          const answer = inputResponse(ctx.mcpReq.inputResponses, "approve");
+          if (answer.kind !== "elicit") {
+            const what = `${KINDS[kind].a.replace(/^an? /, "")} #${ref} "${clip(String(item.subject), 200)}" of ${p.slug}`;
+            const withIt = tasks.length ? `, with its tasks ${tasks.map((task) => `#${task.ref}`).join(", ")}` : "";
+            return inputRequired({
+              inputRequests: {
+                approve: inputRequired.elicit({
+                  message: `Delete the ${what}${withIt}? Taiga keeps no trash: this cannot be undone.`,
+                  requestedSchema: z.object({ delete: z.boolean().describe("Yes, delete it for good") }),
+                }),
+              },
+            });
+          }
+          if (answer.action !== "accept" || answer.content?.delete !== true) {
+            waiting = undefined;
+            trail(`deletion of ${kind} #${ref} in ${p.slug} not approved by the user (${answer.action})`);
+            return data({ deleted: false, ...shown, next: "The user did not approve the deletion: nothing was deleted. Do not ask again unless the user brings it up." });
+          }
+        }
+        waiting = undefined;
         await client.send("DELETE", `/${KINDS[kind].path}/${id}`);
-        return { deleted: true, ...shown };
+        return data({ deleted: true, ...shown });
       }),
   );
 }

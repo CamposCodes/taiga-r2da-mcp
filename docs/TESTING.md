@@ -113,9 +113,11 @@ Node 20 or newer. `npm run coverage` runs the scenarios itself, so in a hurry it
 | S59 | A code the server did not give for that item, as it is now, deletes nothing | Deleting |
 | S60 | With the code of the first call the item is deleted, whatever its kind, and the code works once | Deleting |
 | S61 | A role that may not delete is told so on the first call, with what it may do instead | Deleting |
-| S62 | A burst of calls is cut at the limit, and the refusal says how long to wait | Limits and documents |
-| S63 | Every answer that is data said the same as text and as structured content | Limits and documents |
-| S64 | docs/TESTING.md lists exactly these scenarios, in this order | Limits and documents |
+| S62 | A client that can ask its user is made to ask, and nothing is deleted without the yes given there | Deleting |
+| S63 | On the 2026-07-28 revision the question goes out in the answer and the yes comes in with the call made again | Deleting |
+| S64 | A burst of calls is cut at the limit, and the refusal says how long to wait | Limits and documents |
+| S65 | Every answer that is data said the same as text and as structured content | Limits and documents |
+| S66 | docs/TESTING.md lists exactly these scenarios, in this order | Limits and documents |
 
 What the scenarios use, in the simulated Taiga:
 

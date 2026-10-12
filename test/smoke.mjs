@@ -124,7 +124,10 @@ const base = `http://127.0.0.1:${fake.address().port}`
 const sent = (from = 0) => seen.slice(from).filter((r) => r.method !== 'GET')
 
 let structured = 0
-function start(token, extra = {}) {
+// "can" is what the client says it can do, and "answers" what its user will say to each question of the server.
+function start(token, extra = {}, can = {}) {
+  const asked = []
+  const answers = []
   const env = { ...process.env, TAIGA_WRITE: null, TAIGA_DELETE: null, TAIGA_URL: base, TAIGA_TOKEN: token, ...extra }
   for (const [name, value] of Object.entries(env)) if (value == null) delete env[name]
   const child = spawn(process.execPath, [process.argv[2]], { env, stdio: ['pipe', 'pipe', 'pipe'] })
@@ -139,7 +142,13 @@ function start(token, extra = {}) {
     let i
     while ((i = buffer.indexOf('\n')) >= 0) {
       const line = buffer.slice(0, i); buffer = buffer.slice(i + 1)
-      if (line.trim()) { const m = JSON.parse(line); waiting.get(m.id)?.(m) }
+      if (!line.trim()) continue
+      const m = JSON.parse(line)
+      // A message with a method is a request of the server to the client: the question it puts to the user.
+      if (m.method === 'elicitation/create') {
+        asked.push(m.params)
+        child.stdin.write(JSON.stringify({ jsonrpc: '2.0', id: m.id, result: answers.shift() ?? { action: 'cancel' } }) + '\n')
+      } else if (!m.method) waiting.get(m.id)?.(m)
     }
   })
   let id = 0
@@ -156,14 +165,14 @@ function start(token, extra = {}) {
   }
   // The opening every client before 2026-07-28 makes.
   const open = async () => {
-    const opened = (await rpc('initialize', { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'smoke', version: '0' } })).result
+    const opened = (await rpc('initialize', { protocolVersion: '2025-06-18', capabilities: can, clientInfo: { name: 'smoke', version: '0' } })).result
     child.stdin.write(JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initialized' }) + '\n')
     return { ...opened, tools: (await rpc('tools/list', {})).result.tools }
   }
   const exited = new Promise((r) => child.on('exit', r))
   // A client stops the server by closing its input: the server leaves by itself.
   const stop = async () => { child.stdin.end(); assert.equal(await exited, 0) }
-  return { rpc, raw, call, open, stop, exited, stderr: () => err, wrote: () => out + err }
+  return { rpc, raw, call, open, stop, exited, asked, answers, stderr: () => err, wrote: () => out + err }
 }
 
 const done = []
@@ -690,6 +699,58 @@ await scenario('A role that may not delete is told so on the first call, with wh
   assert.match((await d.call('taiga_items_delete', { project: 'locked-project', ref: 13, confirm: 'task-13-v7' })).error, /delete_task.*instead: \(1\) leave a comment on it asking for the deletion \(taiga_tasks_update with only comment\); \(2\) ask/)
   assert.deepEqual(sent(before), [])
   await d.stop()
+})
+await scenario('A client that can ask its user is made to ask, and nothing is deleted without the yes given there', async () => {
+  const e = start('good', { TAIGA_WRITE: '1', TAIGA_DELETE: '1' }, { elicitation: {} })
+  await e.open()
+  const erase = (extra = {}) => e.call('taiga_items_delete', { project: 'my-project', ref: 12, ...extra })
+  const before = seen.length
+  // The first call asks nobody: it only shows.
+  await erase()
+  assert.equal(e.asked.length, 0)
+  // Any answer that is not a plain yes deletes nothing and spends the code.
+  for (const answer of [{ action: 'decline' }, { action: 'cancel' }, { action: 'accept', content: { delete: false } }, { action: 'accept', content: {} }]) {
+    const { confirm } = await erase()
+    e.answers.push(answer)
+    const result = await erase({ confirm })
+    assert.deepEqual([result.deleted, result.next], [false, 'The user did not approve the deletion: nothing was deleted. Do not ask again unless the user brings it up.'])
+    assert.match((await erase({ confirm })).next, /^That code does not stand for this item as it is now/)
+  }
+  assert.deepEqual(sent(before), [])
+  // The question names the item and what would go with it, and takes a yes or a no.
+  assert.equal(e.asked.length, 4)
+  assert.equal(e.asked[0].message, 'Delete the user story #12 "História" of my-project, with its tasks #13? Taiga keeps no trash: this cannot be undone.')
+  assert.equal(e.asked[0].requestedSchema.properties.delete.type, 'boolean')
+  assert.match(e.stderr(), /Z deletion of us #12 in my-project not approved by the user \(decline\)$/m)
+  // A wrong code is never put to the user.
+  assert.equal((await erase({ confirm: 'yes' })).deleted, false)
+  assert.equal(e.asked.length, 4)
+  // With the yes of the user, it is deleted.
+  const { confirm } = await erase()
+  e.answers.push({ action: 'accept', content: { delete: true } })
+  assert.equal((await erase({ confirm })).deleted, true)
+  assert.deepEqual([seen.at(-1).method, seen.at(-1).path, e.asked.length], ['DELETE', '/api/v1/userstories/100', 5])
+  await e.stop()
+})
+await scenario('On the 2026-07-28 revision the question goes out in the answer and the yes comes in with the call made again', async () => {
+  const m = start('good', { TAIGA_WRITE: '1', TAIGA_DELETE: '1' })
+  const _meta = { 'io.modelcontextprotocol/protocolVersion': '2026-07-28', 'io.modelcontextprotocol/clientInfo': { name: 'smoke', version: '0' }, 'io.modelcontextprotocol/clientCapabilities': { elicitation: {} } }
+  const erase = async (args = {}, more = {}) => (await m.rpc('tools/call', { name: 'taiga_items_delete', arguments: { project: 'my-project', ref: 14, ...args }, ...more, _meta })).result
+  const { confirm } = (await erase()).structuredContent
+  const before = seen.length
+  const asks = await erase({ confirm })
+  assert.equal(asks.resultType, 'input_required')
+  assert.equal(asks.inputRequests.approve.params.message, 'Delete the issue #14 "Erro" of my-project? Taiga keeps no trash: this cannot be undone.')
+  assert.deepEqual(sent(before), [])
+  // A no in the retried call deletes nothing; a yes, after a new look, deletes.
+  assert.equal((await erase({ confirm }, { inputResponses: { approve: { action: 'decline' } } })).structuredContent.deleted, false)
+  assert.deepEqual(sent(before), [])
+  const again = (await erase()).structuredContent.confirm
+  await erase({ confirm: again })
+  const gone = await erase({ confirm: again }, { inputResponses: { approve: { action: 'accept', content: { delete: true } } } })
+  assert.equal(gone.structuredContent.deleted, true)
+  assert.deepEqual([seen.at(-1).method, seen.at(-1).path], ['DELETE', '/api/v1/issues/300'])
+  await m.stop()
 })
 rmSync(smoke, { recursive: true })
 

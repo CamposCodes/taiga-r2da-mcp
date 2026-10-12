@@ -31,9 +31,19 @@ child.stdout.on('data', (d) => {
   let i
   while ((i = buffer.indexOf('\n')) >= 0) {
     const line = buffer.slice(0, i); buffer = buffer.slice(i + 1)
-    if (line.trim()) { const m = JSON.parse(line); waiting.get(m.id)?.(m) }
+    if (!line.trim()) continue
+    const m = JSON.parse(line)
+    // The server asks the user before it deletes. This test stands in for the user, and says yes only when the
+    // question names an item it marked itself: anything else is cancelled.
+    if (m.method === 'elicitation/create') {
+      asked.push(m.params.message)
+      const answer = m.params.message.includes(label) ? answers.shift() : undefined
+      child.stdin.write(JSON.stringify({ jsonrpc: '2.0', id: m.id, result: answer ?? { action: 'cancel' } }) + '\n')
+    } else if (!m.method) waiting.get(m.id)?.(m)
   }
 })
+const asked = []
+const answers = []
 const exited = new Promise((r) => child.on('exit', r))
 let id = 0
 const rpc = (method, params) => Promise.race([
@@ -43,6 +53,8 @@ const rpc = (method, params) => Promise.race([
 
 // The two rules of this test, enforced on every call: one project, and no change to an item it did not create.
 const mine = new Map()
+// The description each item of the test should have, where it is not the note it was created with.
+const described = new Map()
 async function call(name, args = {}) {
   if ('project' in args) assert.equal(args.project, slug)
   if (/_(update|delete)$|attachments_add$/.test(name)) assert.ok(mine.has(args.ref), `#${args.ref} was not created by this test`)
@@ -77,7 +89,7 @@ const report = { when: new Date().toISOString(), node: process.version, project:
 const folder = mkdtempSync(join(tmpdir(), 'taiga-mcp-live-'))
 try {
   await step('The server starts with the token of .env and lists 18 tools', async () => {
-    const opened = (await rpc('initialize', { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'live', version: '0' } })).result
+    const opened = (await rpc('initialize', { protocolVersion: '2025-06-18', capabilities: { elicitation: {} }, clientInfo: { name: 'live', version: '0' } })).result
     child.stdin.write(JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initialized' }) + '\n')
     report.server = opened.serverInfo
     assert.equal((await rpc('tools/list', {})).result.tools.length, 18)
@@ -150,6 +162,19 @@ try {
     const cleared = await call('taiga_tasks_update', { project: slug, ref: task.ref, assignee: 'none', dueDate: 'none' })
     assert.deepEqual([cleared.assignees, cleared.dueDate], [[], null])
   })
+  await step('An edit of a description needs the version that was read, and one made on an old version is refused', async () => {
+    if (!task) return 'skipped: no task was created'
+    const read = await call('taiga_items_get', { project: slug, ref: task.ref })
+    assert.ok(Number.isInteger(read.version))
+    const text = `${note} (edited)`
+    const edited = await write('modify_task', 'taiga_tasks_update', { project: slug, ref: task.ref, description: text, version: read.version })
+    if (!edited) return REFUSED
+    described.set(task.ref, text)
+    assert.match((await call('taiga_tasks_update', { project: slug, ref: task.ref, description: 'x' })).error, /give its version/)
+    // The task is one version ahead now: an edit made on what was read before is not sent.
+    assert.match((await call('taiga_tasks_update', { project: slug, ref: task.ref, description: 'x', version: read.version })).error, /changed since version/)
+    assert.equal((await call('taiga_items_get', { project: slug, ref: task.ref })).description, text)
+  })
   await step('taiga_issues_create and taiga_issues_update create an issue and move it', async () => {
     if (!project.modules.issues) return 'skipped: the project has no issues module'
     issue = await write('add_issue', 'taiga_issues_create', { project: slug, subject: `${label} Issue`, description: note })
@@ -184,7 +209,7 @@ try {
     if (!mine.size) return 'skipped: no item was created'
     for (const [ref, kind] of mine) {
       const item = await call('taiga_items_get', { project: slug, ref, include: ['comments', 'history'] })
-      assert.deepEqual([item.type, item.description], [kind, note])
+      assert.deepEqual([item.type, item.description], [kind, described.get(ref) ?? note])
       assert.ok(Array.isArray(item.history) && Array.isArray(item.commentList))
     }
     if (story && task) assert.deepEqual((await call('taiga_items_get', { project: slug, ref: story.ref })).taskList.map((t) => t.ref), [task.ref])
@@ -198,7 +223,7 @@ try {
     assert.match((await call(tool, { project: slug, ref, status: 'no such status 0000' })).error, /Unknown .* status "no such status 0000"\. Valid: /)
     assert.match((await call(tool, { project: slug, ref })).error, /Nothing to change/)
   })
-  await step('taiga_items_delete shows first and deletes only with the code: every item of the test is removed', async () => {
+  await step('taiga_items_delete shows first, asks the user, and deletes only with the code and the yes: every item of the test is removed', async () => {
     if (!mine.size) return 'skipped: no item was created'
     let refusals = 0
     // The story goes last, and is first shown with the task that would go with it.
@@ -217,8 +242,15 @@ try {
       assert.ok(again.deleted === false && again.confirm !== shown.confirm)
       assert.equal((await call('taiga_items_delete', { project: slug, ref, confirm: shown.confirm })).deleted, false)
       assert.equal((await call('taiga_items_get', { project: slug, ref })).ref, ref)
+      // With the right code the server asks the user. A no deletes nothing and spends the code; a yes deletes.
+      const refused = await call('taiga_items_delete', { project: slug, ref })
+      answers.push({ action: 'decline' })
+      assert.equal((await call('taiga_items_delete', { project: slug, ref, confirm: refused.confirm })).deleted, false)
+      assert.equal((await call('taiga_items_get', { project: slug, ref })).ref, ref)
       const last = await call('taiga_items_delete', { project: slug, ref })
+      answers.push({ action: 'accept', content: { delete: true } })
       assert.equal((await call('taiga_items_delete', { project: slug, ref, confirm: last.confirm })).deleted, true)
+      assert.ok(asked.length >= 2 && asked.at(-1).includes(`#${ref} `) && asked.at(-1).includes(label))
       mine.delete(ref)
       // The task of a deleted story went with it, even when the role may not delete tasks.
       if (kind === 'us' && task) mine.delete(task.ref)
