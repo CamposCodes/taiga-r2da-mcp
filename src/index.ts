@@ -1040,6 +1040,44 @@ function registerWriting(server: McpServer, client: TaigaClient, remove: boolean
     update("issue"),
   );
 
+  server.registerTool(
+    "taiga_attachments_add",
+    {
+      title: "Attach a file",
+      description:
+        "Sends a file of this machine to a user story, a task or an issue, as an attachment. The answer has the " +
+        "address of the file in Taiga: an image is shown inside a description or a comment by writing " +
+        "![name](that address) there. A file that looks like a credential is refused.",
+      inputSchema: z.object({
+        project,
+        ref: itemRef,
+        path: z.string().describe("Full path of the file on this machine"),
+        description: z.string().optional().describe("Short note shown next to the file"),
+      }),
+      outputSchema: z.object({ id: z.number(), name: z.string(), size: count, url: z.string().describe("Address of the file in Taiga") }),
+      annotations: WRITE,
+    },
+    ({ project, ref, path, description }) =>
+      run(async () => {
+        const p = await loadProject(client, project);
+        const { kind, id } = await resolve(client, p, ref);
+        const info = await stat(path);
+        if (!info.isFile() || info.size > MAX_FILE) {
+          throw new Error(`${path} is not a file of up to ${MAX_FILE} bytes.`);
+        }
+        const real = await sendable(path);
+        const form = new FormData();
+        form.set("project", String(p.id));
+        form.set("object_id", String(id));
+        if (description) {
+          form.set("description", description);
+        }
+        form.set("attached_file", new Blob([await readFile(real)]), basename(path));
+        const file = await client.send("POST", `/${KINDS[kind].path}/attachments`, form);
+        return { id: file.id, name: file.name, size: file.size, url: file.url };
+      }),
+  );
+
   if (!remove) {
     return;
   }
