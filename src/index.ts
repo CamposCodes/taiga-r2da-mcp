@@ -605,6 +605,112 @@ function registerTools(server: McpServer, client: TaigaClient) {
         };
       }),
   );
+
+  server.registerTool(
+    "taiga_sprints_list",
+    {
+      title: "List sprints",
+      description: "Sprints of a project with dates, open and closed user stories and points. Newest first.",
+      inputSchema: z.object({ project, closed: z.boolean().optional().describe("true: only closed sprints; false: only open") }),
+      outputSchema: z.object({
+        sprints: z.array(
+          z.object({
+            name: z.string(),
+            start: text,
+            finish: text,
+            closed: z.boolean(),
+            userStoriesOpen: z.number(),
+            userStoriesClosed: z.number(),
+            pointsTotal: count,
+            pointsClosed: count,
+          }),
+        ),
+      }),
+      annotations: READ,
+    },
+    ({ project, closed }) =>
+      run(async () => {
+        const p = await loadProject(client, project);
+        const sprints: any[] = await client.get("/milestones", { project: p.id, closed, page_size: 200 });
+        return {
+          sprints: sprints.map((m) => {
+            const stories: any[] = m.user_stories ?? [];
+            return {
+              name: m.name,
+              start: m.estimated_start,
+              finish: m.estimated_finish,
+              closed: Boolean(m.closed),
+              userStoriesOpen: stories.filter((us) => !us.is_closed).length,
+              userStoriesClosed: stories.filter((us) => us.is_closed).length,
+              pointsTotal: m.total_points,
+              pointsClosed: m.closed_points,
+            };
+          }),
+        };
+      }),
+  );
+
+  server.registerTool(
+    "taiga_userstories_list",
+    {
+      title: "List user stories",
+      description:
+        "User stories of a project, one summary line each (no description). Combine filters to answer questions such " +
+        "as what is open in a sprint or unassigned. The answer has the total, so ask for the next page when total is " +
+        "larger than page * size.",
+      inputSchema: z.object(listFilters),
+      outputSchema: page,
+      annotations: READ,
+    },
+    (args) => run(() => list(client, "us", args)),
+  );
+
+  server.registerTool(
+    "taiga_tasks_list",
+    {
+      title: "List tasks",
+      description:
+        "Tasks of a project, each with the user story it belongs to. A task without a story belongs to a sprint. One " +
+        "summary line each (no description). The answer has the total, so ask for the next page when total is larger " +
+        "than page * size.",
+      inputSchema: z.object({
+        ...listFilters,
+        userStory: z.number().int().positive().optional().describe("Only the tasks of this user story (its number)"),
+      }),
+      outputSchema: page,
+      annotations: READ,
+    },
+    (args) =>
+      run(() =>
+        list(client, "task", args, async (p) => (args.userStory === undefined ? {} : { user_story: await idOf(client, p, args.userStory, "us") })),
+      ),
+  );
+
+  server.registerTool(
+    "taiga_issues_list",
+    {
+      title: "List issues",
+      description:
+        "Issues (bugs, questions, improvements) of a project, one summary line each (no description). The answer has " +
+        "the total, so ask for the next page when total is larger than page * size.",
+      inputSchema: z.object({
+        ...listFilters,
+        issueType: z.string().optional().describe('Issue type name, e.g. "Bug" (see taiga_projects_get)'),
+        severity: z.string().optional().describe('Severity name, e.g. "Normal" (see taiga_projects_get)'),
+        priority: z.string().optional().describe('Priority name, e.g. "High" (see taiga_projects_get)'),
+      }),
+      outputSchema: page,
+      annotations: READ,
+    },
+    (args) =>
+      run(() =>
+        list(client, "issue", args, (p) => ({
+          type: args.issueType ? byName(p.issue_types, args.issueType, "issue type") : undefined,
+          severity: args.severity ? byName(p.severities, args.severity, "severity") : undefined,
+          priority: args.priority ? byName(p.priorities, args.priority, "priority") : undefined,
+        })),
+      ),
+  );
 }
 
 const modulesOf = (p: any) => ({
