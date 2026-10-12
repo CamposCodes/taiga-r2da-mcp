@@ -1,0 +1,7 @@
+# The actions of the CI are pinned by commit, so something has to say when a newer one exists.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
