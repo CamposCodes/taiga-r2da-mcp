@@ -296,7 +296,7 @@ Example request: "Delete user story #12 of my-project." The first call:
     "finishedAt": null
   },
   "tasksDeletedWithIt": ["#13 Tarefa"],
-  "confirm": "us-12-v4",
+  "confirm": "0d9c6f3a-52b7-4e1c-9a4f-7b1e2c8d5a60",
   "next": "Nothing was deleted. Show this to the user and ask whether it is really to be deleted. Only after a yes, call again with this code in confirm."
 }
 ```
@@ -305,13 +305,14 @@ The model then asks you something like: "User story #12 'História' and its task
 for good. Delete them?" After your yes, the second call:
 
 ```json
-{ "project": "my-project", "ref": 12, "confirm": "us-12-v4" }
+{ "project": "my-project", "ref": 12, "confirm": "0d9c6f3a-52b7-4e1c-9a4f-7b1e2c8d5a60" }
 ```
 
 It answers with `"deleted": true`, the same `item` and the same `tasksDeletedWithIt`.
 
-- The code names the item and the version that was shown. If someone changed the item in the meantime, the code
-  no longer matches: nothing is deleted, the item is shown again as it is now, and the model asks you again.
+- The code is random, and the one above is only an example. It is good once, for ten minutes, and only for the
+  last item shown, as it was shown. If someone changed the item in the meantime, or added a task to the user
+  story, nothing is deleted: the item is shown again as it is now, with a new code, and the model asks you again.
 - Two different parts can ask you. The model asks in the conversation, between the two calls. Your client may
   ask for permission before each call: the tool is marked as destructive. The second call is made by the model,
   not by you, so what keeps a person in the loop is the permission prompt of the client. Read

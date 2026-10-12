@@ -134,11 +134,15 @@ The token **is your session in Taiga**: whoever has it reads everything you read
 - With `TAIGA_WRITE=1`, what the model creates or edits goes out in your name. The server does not ask for
   confirmation by itself: the client does. Read what the model proposes before allowing it.
 - With `TAIGA_DELETE=1`, what is deleted is gone: Taiga keeps no trash, and deleting a user story deletes its
-  tasks. The first call of `taiga_items_delete` only shows what would go, but the second is still made by the
-  model: what keeps you in the loop is the permission prompt of your client.
+  tasks. The first call of `taiga_items_delete` only shows what would go and gives a random code that is good
+  once, for that item as it was shown. The second call is still made by the model: what keeps you in the loop is
+  the permission prompt of your client.
 - `taiga_attachments_add` refuses a file that looks like a credential: a name that starts with a dot anywhere in
-  the path, the folder where programs keep the data of the user, or a key file. It is a deny list, not a sandbox:
-  any other file your user can read can be sent. Check the path before allowing it.
+  the path, the folder where programs keep the data of the user, a key file, a file of the system or a network
+  path. It is a deny list, not a sandbox: any other file your user can read can be sent. Check the path before
+  allowing it.
+- Every change sent to Taiga and every tool error leaves a line on stderr, which your client keeps in its log of
+  the server: the trail of what the model did and tried.
 
 The threat model, what the server can touch and how to report a vulnerability: [SECURITY.md](SECURITY.md).
 

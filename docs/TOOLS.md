@@ -18,6 +18,12 @@ The 10 read tools are always registered. The 7 write tools are registered only w
   tasks and issues.
 - **Status, sprint, person, issue type, severity, priority**: given by name, case-insensitive. The server reads the
   project and turns the name into the id Taiga expects.
+- **Person**: an id, a username or a full name, tried in that order. A full name that two members share is
+  refused: `"<name>" is the full name of <N> members of this project: give the username of one (<usernames>).`
+- **Trail**: every change sent to Taiga leaves a line on stderr with the method, the path and the status Taiga
+  answered, and every tool error leaves one with its message, for example
+  `taiga-mcp: 2026-10-12T15:03:02.776Z DELETE /tasks/200 204`. The client keeps stderr in its log of the server.
+  A read leaves no line.
 - **Answers**: data, given twice: as `structuredContent`, in the shape the `outputSchema` of the tool declares,
   and as the same JSON in a single `text` content block, for the clients that read only text. The examples below
   show that JSON. `taiga_attachments_get` is the exception: it answers with content (an image, a text or the path
@@ -878,7 +884,8 @@ Errors:
 
 - `<path> is not a file of up to 26214400 bytes.`
 - `ENOENT: no such file or directory, stat '<path>'`
-- `<path> is not sent: it looks like a credential or a configuration file (a name that starts with a dot, the folder where programs keep the data of the user, or a key file). If it really is to be sent, the user can copy it to another place under another name.`
+- `<path> is not sent: it looks like a credential or a configuration file (a name that starts with a dot, the folder where programs keep the data of the user, a key file, a file of the system or a network path). If it really is to be sent, the user can copy it to another place under another name.`
+- `<path> is not sent: a network path is refused. Copy the file to a folder of this machine first.`
 
 What is refused, after links are followed to the real file:
 
@@ -887,6 +894,8 @@ What is refused, after links are followed to the real file:
 | A folder or a file whose name starts with a dot, anywhere in the path | `.ssh`, `.aws`, `.env`, `.git`, `.claude.json`, `.codex` |
 | The folder where programs keep the data of the user, except the temp folder inside it | `AppData` on Windows, `Library` on macOS: browser profiles and the configuration of MCP clients live there |
 | A key file, by its extension | `.pem`, `.key`, `.p12`, `.pfx`, `.ppk`, `.kdbx` |
+| A network path: one that starts with two slashes, or a drive that leads to a share | `\\host\share\file`, `//host/share/file`. Refused before the disk is touched: reaching another host would offer it the credentials of the user, and `\\localhost\C$` is another name for every folder above |
+| A file the system makes up, on Linux | Anything under `/proc`, `/sys`, `/dev` or `/run`: `/proc/self/environ` is the environment of the server itself, token included |
 
 It is a deny list, not a sandbox: a secret kept under an ordinary name in an ordinary folder is not recognised.
 Any other file the user of the machine can read can be sent to Taiga. Read [SECURITY.md](../SECURITY.md) before
@@ -901,7 +910,8 @@ Registered only with `TAIGA_DELETE=1` on top of `TAIGA_WRITE=1`. Taiga keeps no 
 Deletes a user story, a task or an issue with its comments and attachments, for good: Taiga keeps no trash.
 Deleting a user story deletes its tasks with it. It takes two calls. The first, without confirm, deletes nothing:
 it shows what would go and gives a code. Show that to the user, ask whether it is really to be deleted, and only
-after a yes call again with the code in confirm.
+after a yes call again with the code in confirm. A code is good once, for ten minutes, and only for the last item
+shown, as it was shown.
 
 | Parameter | Type | Required | Description |
 | --- | --- | --- | --- |
@@ -936,7 +946,7 @@ First call:
     "finishedAt": null
   },
   "tasksDeletedWithIt": ["#13 Tarefa"],
-  "confirm": "us-12-v4",
+  "confirm": "0d9c6f3a-52b7-4e1c-9a4f-7b1e2c8d5a60",
   "next": "Nothing was deleted. Show this to the user and ask whether it is really to be deleted. Only after a yes, call again with this code in confirm."
 }
 ```
@@ -944,15 +954,19 @@ First call:
 Second call, after the user said yes:
 
 ```json
-{ "project": "my-project", "ref": 12, "confirm": "us-12-v4" }
+{ "project": "my-project", "ref": 12, "confirm": "0d9c6f3a-52b7-4e1c-9a4f-7b1e2c8d5a60" }
 ```
 
 The server sends `DELETE /userstories/100` and answers with `"deleted": true`, the same `item` and the same
 `tasksDeletedWithIt`, without `confirm` and `next`.
 
-- The code is the kind of the item, its number and the version Taiga had of it when it was shown. An item that
-  changed since then has another code: the call deletes nothing and shows the item again, and `next` starts with
-  `That code is not the one of this item as it is now.`
+- The code is random: the one in the example is only an example. The server keeps the last code it gave, with
+  what it stands for: the project, the item, the version Taiga had of it and, for a user story, its tasks. So a
+  code cannot be had without the first call, and it deletes only the item that was shown, as it was shown.
+- A code is good once and for ten minutes, and showing another item replaces it. A call with a code that is not
+  the last one given, was used already, is too old, or stands for an item that changed since, deletes nothing: it
+  shows the item again with a new code, and `next` starts with
+  `That code does not stand for this item as it is now`.
 - `tasksDeletedWithIt` comes only with a user story.
 - The second call is still made by the model. What keeps a person in the loop is the permission prompt of the MCP
   client, which the annotation `destructiveHint: true` feeds. See [SECURITY.md](../SECURITY.md).

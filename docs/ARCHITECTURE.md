@@ -119,6 +119,8 @@ flowchart TD
   server, and calls it when the opening message of the client shows which revision of the protocol it speaks. The
   set of tools is the same for the whole run, because the two variables were read at start. The drawing shows the
   registration as a step of the start.
+- After that, every change sent to Taiga and every tool error leaves one line on stderr, with the time: the
+  trail of what the server did and refused. See [What 0.3.0 added to the design](#what-030-added-to-the-design).
 - The server writes one status line to stderr when it is ready, for example
   `taiga-mcp: https://taiga.example.com as ana (read-only)`. With writing on the line ends with
   `(writes user stories, tasks, issues and attachments)`, and with deleting on with
@@ -261,17 +263,18 @@ sequenceDiagram
     C->>S: tools/call over stdio
     S->>T: GET the project, the user story and its tasks
     T-->>S: user story 12 at version 4, with task 13
-    S-->>C: deleted false, the item, its tasks and the code us-12-v4
+    Note over S: keeps the code with what it stands for
+    S-->>C: deleted false, the item, its tasks and a random code
     C-->>M: tool result
     M->>U: shows what would go and asks whether to delete it
     U-->>M: yes
-    M->>C: taiga_items_delete with ref 12 and confirm us-12-v4
+    M->>C: taiga_items_delete with ref 12 and that code in confirm
     C->>U: permission prompt, the tool is marked as destructive
     U-->>C: allow
     C->>S: tools/call over stdio
     S->>T: GET the project, the user story and its tasks again
     T-->>S: user story 12, still at version 4
-    Note over S: the code built now is the code received
+    Note over S: the code is the one kept, for this item as it is now
     S->>T: DELETE /userstories/100
     T-->>S: 204
     S-->>C: deleted true, the item and its tasks
@@ -282,16 +285,27 @@ sequenceDiagram
 - The first call, without `confirm`, deletes nothing. It answers with `deleted: false`, the item, for a user story
   the tasks that go with it (`tasksDeletedWithIt`), a code in `confirm` and, in `next`, what the model must do
   before calling again: show this to the user and ask.
-- The code is the kind of the item, its number and the version Taiga had of it when it was shown, for example
-  `us-12-v4`. The server keeps nothing between the two calls: on the second one it reads the item again, builds the
-  code again and compares. An item that changed since then has another code, so nothing is deleted and the item is
-  shown again.
-- The second call is made by the model. The code shows that the item was looked at, not that a person said yes.
+- The code is random. The server keeps the last one it gave, in memory, with what it stands for: the project, the
+  item, the version Taiga had of it and, for a user story, its tasks. On the second call it reads the item again
+  and deletes only when the code is the one kept, is at most ten minutes old, and still stands for the item as it
+  is now. Either way the code is spent. So a deletion cannot be done in one call, a code of one project does not
+  work in another, and an item that changed since it was shown is shown again.
+- It is the only state the server keeps between two calls, with the count of calls in the minute and the folder
+  of saved files. It is one code, not a list: showing another item replaces it.
+- The second call is made by the model. The code proves that the item was shown, not that a person said yes.
   The person in the loop is the permission prompt of the client, which the annotation `destructiveHint: true`
   feeds. Whether and when a client asks is a property of the client. The diagram shows the prompt before the call
   that deletes; the first call is a call of the same tool, so a client may ask before it as well.
 - The permission to delete is checked on both calls, before the item is shown.
 - Taiga keeps no trash. A user story goes with its tasks, and every item with its comments and attachments.
+
+### The trail on stderr
+
+Every change the server sends to Taiga leaves a line on stderr with the time, the method, the path and the status
+Taiga answered, for example `taiga-mcp: 2026-10-12T15:03:02.776Z DELETE /tasks/200 204`. Every tool error leaves
+one with its message, cut at 300 characters: a refusal for lack of permission, a file that is not sent, a call
+above the limit. A read leaves no line. The token is never in a line, and neither is the content of an item. The
+client keeps stderr in its log of the server, so the trail lasts as long as that log.
 
 ### Structured answers
 

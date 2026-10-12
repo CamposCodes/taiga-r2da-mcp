@@ -39,7 +39,7 @@ What to look at when upgrading from 0.2.0:
 - `taiga_attachments_add` sends a file to a user story, a task or an issue. It took only tasks.
 - Deleting, only with `TAIGA_DELETE=1` on top of `TAIGA_WRITE=1`: `taiga_items_delete` deletes a user story, a
   task or an issue, in two calls. The first, without `confirm`, deletes nothing: it shows the item (and, for a
-  user story, the tasks that go with it) and gives a code such as `us-12-v4`. Only a second call with that code
+  user story, the tasks that go with it) and gives a random code. Only a second call with that code
   deletes, and the code of an item that changed since is refused. `TAIGA_DELETE=1` without `TAIGA_WRITE=1` stops
   the server at start.
 - A check of permissions: before it creates, changes or deletes an item, the server looks for the permission in
@@ -63,8 +63,8 @@ What to look at when upgrading from 0.2.0:
   `npm run coverage`.
 - Tests: exit when the input closes, wrong argument types, the cut notice, the call limit, and a check that
   `docs/TOOLS.md` lists the tools and parameters of `tools/list`.
-- `npm test` runs 60 scenarios against a simulated Taiga, and fails when `docs/TESTING.md` does not list exactly
-  those scenarios. `npm run coverage` measures how much of the built server they run: 992 of 995 lines in full
+- `npm test` runs 63 scenarios against a simulated Taiga, and fails when `docs/TESTING.md` does not list exactly
+  those scenarios. `npm run coverage` measures how much of the built server they run: 1042 of 1045 lines in full
   (99.7%), on Windows with Node 24. `npm run test:live` runs against a real Taiga, in one project: by hand, never
   in CI.
 
@@ -106,6 +106,17 @@ What to look at when upgrading from 0.2.0:
 - The second call of `taiga_items_delete` is still made by the model: what keeps a person in the loop is the
   permission prompt of the MCP client, fed by `destructiveHint: true`. Taiga keeps no trash, and deleting a user
   story deletes its tasks.
+- The code that confirms a deletion is random, kept by the server with the item it stands for, good once and for
+  ten minutes. A guess, a code of another item or of another project, or the code of an item that changed since it
+  was shown deletes nothing.
+- `taiga_attachments_add` also refuses a network path (`\\host\share`), before the disk is touched, and, on
+  Linux, the files under `/proc`, `/sys`, `/dev` and `/run`: `/proc/self/environ` holds the token.
+- A token with a space or a line break in it stops the server at start, without being shown. Node used to name
+  the whole token in its error.
+- A person is looked up by id, then by username, then by full name, and a full name two members share is refused.
+  Before, a member who chose the username of a colleague as full name could be taken for that colleague.
+- A trail on stderr: one line for every change sent to Taiga, with the status it answered, and one for every tool
+  error.
 - The two actions of the CI are pinned by commit SHA, and `.github/dependabot.yml` proposes their updates.
 - `.gitignore` covers `.mcp.json` and `.codex/`, where a client configuration with a real token can end up.
 - The client guides say that a token typed in a registration command stays in the history of the shell.

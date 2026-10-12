@@ -140,12 +140,15 @@ O token **é a sua sessão no Taiga**: quem tem o token lê tudo o que você lê
 - Com `TAIGA_WRITE=1`, o que o modelo cria ou edita sai no seu nome. O servidor não pede confirmação por conta
   própria: quem pede é o cliente. Leia o que o modelo propõe antes de permitir.
 - Com `TAIGA_DELETE=1`, o que é excluído não volta: o Taiga não tem lixeira, e excluir uma história exclui as
-  tarefas dela. A primeira chamada de `taiga_items_delete` só mostra o que seria excluído, mas a segunda ainda é
-  feita pelo modelo: o que mantém você no controle é o pedido de permissão do seu cliente.
+  tarefas dela. A primeira chamada de `taiga_items_delete` só mostra o que seria excluído e devolve um código
+  aleatório, que vale uma vez e só para aquele item, como foi mostrado. A segunda chamada ainda é feita pelo
+  modelo: o que mantém você no controle é o pedido de permissão do seu cliente.
 - `taiga_attachments_add` recusa um arquivo que parece credencial: um nome que começa com ponto em qualquer parte
-  do caminho, a pasta onde os programas guardam os dados do usuário, ou um arquivo de chave. É uma lista de
-  bloqueio, não um sandbox: qualquer outro arquivo que o seu usuário lê pode ser enviado. Confira o caminho antes
-  de permitir.
+  do caminho, a pasta onde os programas guardam os dados do usuário, um arquivo de chave, um arquivo do sistema ou
+  um caminho de rede. É uma lista de bloqueio, não um sandbox: qualquer outro arquivo que o seu usuário lê pode ser
+  enviado. Confira o caminho antes de permitir.
+- Toda alteração enviada ao Taiga e todo erro de tool deixam uma linha no stderr, que o seu cliente guarda no log
+  do servidor: a trilha do que o modelo fez e tentou.
 
 O modelo de ameaças, o que o servidor alcança e como reportar uma falha: [SECURITY.md](SECURITY.md).
 

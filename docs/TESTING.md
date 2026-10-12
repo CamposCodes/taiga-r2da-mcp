@@ -132,15 +132,15 @@ Run on 2026-10-12, on Windows 11 with Node 24.15.0, version 0.3.0 of the server.
 | --- | --- |
 | `npm run check` | exit 0 |
 | `npm run build` | exit 0 |
-| `npm test` | exit 0: `ok: 60 scenarios, 10 tools read-only, 7 more with TAIGA_WRITE=1, 1 more with TAIGA_DELETE=1` |
+| `npm test` | exit 0: `ok: 63 scenarios, 10 tools read-only, 7 more with TAIGA_WRITE=1, 1 more with TAIGA_DELETE=1` |
 | `npm run coverage` | exit 0 |
 
 ```text
-coverage: 992 of 995 lines of dist/index.js run in full (99.7%), over 13 server processes
+coverage: 1042 of 1045 lines of dist/index.js run in full (99.7%), over 16 server processes
 not run in full:
-  69: return { isError: true, content: [{ type: "text", text: error instanceof Error ? error.message : String(error) }] };
-  440: const under = async (folder) => `${real}${sep}`.toLowerCase().startsWith(`${await realpath(folder).catch(() => folder)}${sep}`.toLowerCase());
-  993: console.error("taiga-mcp:", error instanceof Error ? error.message : error);
+  78: const text = error instanceof Error ? error.message : String(error);
+  473: const under = async (folder) => `${real}${sep}`.toLowerCase().startsWith(`${await realpath(folder).catch(() => folder)}${sep}`.toLowerCase());
+  1043: console.error("taiga-mcp:", error instanceof Error ? error.message : error);
 ```
 
 A line counts as run only when every character of it was run, so a branch that is never taken shows up as a line.
