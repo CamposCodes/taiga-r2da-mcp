@@ -777,6 +777,15 @@ await scenario('A burst of calls is cut at the limit, and the refusal says how l
 await scenario('Every answer that is data said the same as text and as structured content', async () => {
   assert.ok(structured > 150, String(structured))
 })
+await scenario('package.json and server.json name the same server, the same version and the same variables', async () => {
+  const read = (name) => JSON.parse(readFileSync(name, 'utf8'))
+  const [pkg, registry] = [read('package.json'), read('server.json')]
+  assert.equal(registry.name, pkg.mcpName)
+  assert.deepEqual([registry.version, registry.packages[0].version, registry.packages[0].identifier], [pkg.version, pkg.version, pkg.name])
+  assert.deepEqual(registry.packages[0].environmentVariables.map((v) => [v.name, v.isRequired, v.isSecret]), [['TAIGA_URL', true, false], ['TAIGA_TOKEN', true, true], ['TAIGA_WRITE', false, false], ['TAIGA_DELETE', false, false]])
+  // The version the server says it is, in both openings of the protocol.
+  assert.equal(opened.serverInfo.version, pkg.version)
+})
 await scenario('docs/TESTING.md lists exactly these scenarios, in this order', async () => {
   const listed = [...readFileSync('docs/TESTING.md', 'utf8').matchAll(/^\| S(\d+) \| (.+?) \|/gm)].map((row) => row[2])
   assert.deepEqual(listed, [...done, 'docs/TESTING.md lists exactly these scenarios, in this order'])

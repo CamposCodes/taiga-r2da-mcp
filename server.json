@@ -1,0 +1,50 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.CamposCodes/taiga-r2da-mcp",
+  "description": "Read a Taiga 6 installation and, when allowed, create, edit, move and delete its items.",
+  "repository": {
+    "url": "https://github.com/CamposCodes/taiga-r2da-mcp",
+    "source": "github"
+  },
+  "version": "0.3.0",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "@camposcodes/taiga-r2da-mcp",
+      "version": "0.3.0",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "description": "Address of the Taiga site, starting with https://",
+          "isRequired": true,
+          "format": "string",
+          "isSecret": false,
+          "name": "TAIGA_URL"
+        },
+        {
+          "description": "Session token of Taiga 6, copied from the browser after login",
+          "isRequired": true,
+          "format": "string",
+          "isSecret": true,
+          "name": "TAIGA_TOKEN"
+        },
+        {
+          "description": "1 registers the tools that create and edit user stories, tasks and issues",
+          "isRequired": false,
+          "format": "string",
+          "isSecret": false,
+          "name": "TAIGA_WRITE"
+        },
+        {
+          "description": "1 registers the tool that deletes; it needs TAIGA_WRITE=1",
+          "isRequired": false,
+          "format": "string",
+          "isSecret": false,
+          "name": "TAIGA_DELETE"
+        }
+      ]
+    }
+  ]
+}

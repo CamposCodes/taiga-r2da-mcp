@@ -118,7 +118,8 @@ Node 20 or newer. `npm run coverage` runs the scenarios itself, so in a hurry it
 | S64 | On the 2026-07-28 revision the question goes out in the answer and the yes comes in with the call made again | Deleting |
 | S65 | A burst of calls is cut at the limit, and the refusal says how long to wait | Limits and documents |
 | S66 | Every answer that is data said the same as text and as structured content | Limits and documents |
-| S67 | docs/TESTING.md lists exactly these scenarios, in this order | Limits and documents |
+| S67 | package.json and server.json name the same server, the same version and the same variables | Limits and documents |
+| S68 | docs/TESTING.md lists exactly these scenarios, in this order | Limits and documents |
 
 What the scenarios use, in the simulated Taiga:
 
