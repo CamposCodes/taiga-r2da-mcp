@@ -120,7 +120,8 @@ Node 20 or newer. `npm run coverage` runs the scenarios itself, so in a hurry it
 | S66 | Every answer that is data said the same as text and as structured content | Limits and documents |
 | S67 | package.json and server.json name the same server, the same version and the same variables | Limits and documents |
 | S68 | manifest.json of the Claude Desktop extension names this version, the four variables and the read tools | Limits and documents |
-| S69 | docs/TESTING.md lists exactly these scenarios, in this order | Limits and documents |
+| S69 | README.md and README.pt-BR.md list every tool with its parameters, as tools/list gives them | Limits and documents |
+| S70 | docs/TESTING.md lists exactly these scenarios, in this order | Limits and documents |
 
 What the scenarios use, in the simulated Taiga:
 

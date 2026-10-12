@@ -61,8 +61,8 @@ S7, S8, S9 and S11 were also read through a summary that returns short quotation
 | C02 | Log to stderr: "The server **MAY** write UTF-8 strings to `stderr` for any logging purposes". The protocol's own Logging feature is deprecated: "log to `stderr` (stdio) or use OpenTelemetry instead of Logging" | S2, S3 | Compliant | `src/index.ts:1294`; no logging capability is declared (`src/index.ts:1285`) | – |
 | C03 | "Messages are delimited by newlines, and **MUST NOT** contain embedded newlines." | S2 | Compliant | `src/index.ts:1284`: messages are written by the stdio transport of the SDK; the pretty-printed JSON of `src/index.ts:96` is a string inside the message | – |
 | C04 | "Servers **SHOULD** exit promptly when their standard input is closed or reads return end-of-file." | S2 | Compliant | No code needed: the process ends when stdin closes. `test/smoke.mjs:440` checks exit code 0, and so does the end of every other server the scenarios start | A7 (test) |
-| C05 | "Servers **MUST** implement `server/discover`", and every request carries its protocol version in `_meta` (revision 2026-07-28) | S3, S4 | Compliant (was Non-compliant) | `package.json:58`: version 2 of the SDK; `src/index.ts:1284` serves that revision and the older ones on the same connection (the type declarations of the installed SDK say of `serveStdio`: "the opening exchange selects the era, ONE instance from the factory is pinned for the connection lifetime"). `test/smoke.mjs:254` | A12 |
-| C06 | Stay on a supported SDK line: `main` is v2, and v1.x "continues to receive bug fixes and security updates for at least six months after the v2 release (2026-07-27)" | S8 | Compliant (was Partial) | `package.json:58` | A12 |
+| C05 | "Servers **MUST** implement `server/discover`", and every request carries its protocol version in `_meta` (revision 2026-07-28) | S3, S4 | Compliant (was Non-compliant) | `package.json:59`: version 2 of the SDK; `src/index.ts:1284` serves that revision and the older ones on the same connection (the type declarations of the installed SDK say of `serveStdio`: "the opening exchange selects the era, ONE instance from the factory is pinned for the connection lifetime"). `test/smoke.mjs:254` | A12 |
+| C06 | Stay on a supported SDK line: `main` is v2, and v1.x "continues to receive bug fixes and security updates for at least six months after the v2 release (2026-07-27)" | S8 | Compliant (was Partial) | `package.json:59` | A12 |
 | C07 | An unknown tool is a protocol error: "They are returned as standard JSON-RPC errors" with code `-32602` | S1 | Compliant (was Partial) | `test/smoke.mjs:251` | A12 |
 | C08 | "Servers that support tools **MUST** declare the `tools` capability" | S1 | Compliant | `src/index.ts:1285`: the SDK declares it. `test/smoke.mjs:254` reads the tool list through both openings | – |
 | C09 | The tool list "**MUST NOT** vary per-connection or as a side effect of other requests", and "Servers **SHOULD** return tools in a deterministic order" | S1 | Compliant | `src/index.ts:1277` and `src/index.ts:1278`: the set is decided once, at start, and listed in registration order; `test/smoke.mjs:448` and `test/smoke.mjs:641` check the order | – |
@@ -95,7 +95,7 @@ S7, S8, S9 and S11 were also read through a summary that returns short quotation
 | C26 | "If you choose to truncate responses, be sure to steer agents with helpful instructions." | S7 | Compliant (was Partial) | `src/index.ts:218`: a cut text ends with how much was cut; `test/smoke.mjs:367` | A4 |
 | C27 | Keep answers inside what clients accept: Claude Code "displays a warning when MCP tool output exceeds 10,000 tokens and limits output to 25,000 tokens by default" | S9 | Partial | Default answers are small. Two calls can pass the limit: `size: 200` on a list (`src/index.ts:372`) and `include` on an item with a long history (`src/index.ts:805`, up to 1,000 entries) | P4, and documented in [USAGE.md](USAGE.md) |
 | C28 | "We recommend building a few thoughtful tools targeting specific high-impact workflows"; "Make sure each tool you build has a clear, distinct purpose." | S7 | Compliant | 18 tools; one tool reads any kind of item (`src/index.ts:757`) and one deletes any kind (`src/index.ts:1155`) | – |
-| C29 | "Building an evaluation allows you to systematically measure the performance of your tools." | S7 | Non-compliant | The 69 scenarios of `test/smoke.mjs:193` onwards call the tools directly: no model takes part. A list of requests for a model and what a good run does is written in [TESTING.md](TESTING.md#requests-to-try-with-a-model), and was not run | P5 |
+| C29 | "Building an evaluation allows you to systematically measure the performance of your tools." | S7 | Non-compliant | The 70 scenarios of `test/smoke.mjs:193` onwards call the tools directly: no model takes part. A list of requests for a model and what a good run does is written in [TESTING.md](TESTING.md#requests-to-try-with-a-model), and was not run | P5 |
 
 ### Security
 
@@ -114,7 +114,7 @@ S7, S8, S9 and S11 were also read through a summary that returns short quotation
 | C40 | "Grant the narrowest root that works." (file access) | S5 | Partial | Reading attachments writes only inside one folder of the temp folder of the system, made by `mkdtemp` for the run (`src/index.ts:505`; `test/smoke.mjs:402`). `taiga_attachments_add` refuses what looks like a credential (`src/index.ts:525`; `test/smoke.mjs:564`) and still reads any other path the user can read: the owner chose a deny list over one allowed folder | A15, and documented in [SECURITY.md](../SECURITY.md) |
 | C41 | "Know where a server should be talking." | S5 | Compliant | Two destinations: `TAIGA_URL` (`src/index.ts:120`), which must be `https://` unless it is this machine (`src/index.ts:1249`), and the attachment addresses its API lists (`src/index.ts:149`) | A6 (listed in [SECURITY.md](../SECURITY.md)), A16 |
 | C42 | SSRF: "MCP clients deployed to a server **MUST** consider SSRF risks ... when fetching OAuth-related URLs" | S6 | N/A | The server fetches no OAuth URL. The nearest case, the attachment address returned by the Taiga API (`src/index.ts:149`), is in the threat model | – |
-| C43 | "Pin the version." and "Check Provenance Before You Install" | S5 | Partial | `package.json:2`: the package has its name and what the registry asks for, and is not published yet, so there is no release to pin. The server is built from source, with dependencies pinned by `package-lock.json` (`package.json:58`) | P8 |
+| C43 | "Pin the version." and "Check Provenance Before You Install" | S5 | Partial | `package.json:2`: the package has its name and what the registry asks for, and is not published yet, so there is no release to pin. The server is built from source, with dependencies pinned by `package-lock.json` (`package.json:59`) | P8 |
 | C44 | Implementors **SHOULD** "Provide clear documentation of security implications" | S14 | Compliant | `SECURITY.md:1`: what the server can touch, trust boundaries, threats and what is left to the user | A6 |
 
 ### Distribution and documentation
@@ -156,7 +156,7 @@ From the decisions of the owner on 2026-10-12, each a proposal of this audit:
 
 | Id | Change | Where |
 | --- | --- | --- |
-| A12 | P1: version 2 of the TypeScript SDK (`@modelcontextprotocol/server`), started with `serveStdio`. Node 20 or newer, which that SDK requires. The installed tree went from 98 packages to 6: the SDK and its core, `zod`, TypeScript, and the Node types with the one package they need | `package.json:58`, `package.json:46`, `src/index.ts:1284` |
+| A12 | P1: version 2 of the TypeScript SDK (`@modelcontextprotocol/server`), started with `serveStdio`. Node 20 or newer, which that SDK requires. The installed tree went from 98 packages to 6: the SDK and its core, `zod`, TypeScript, and the Node types with the one package they need | `package.json:59`, `package.json:46`, `src/index.ts:1284` |
 | A13 | P2: `taiga_attachments_get` is declared `readOnlyHint: false`, `destructiveHint: false`, `idempotentHint: true` | `src/index.ts:45` |
 | A14 | P3: every tool that answers data declares an `outputSchema` and answers with `structuredContent` and the same JSON as text. `taiga_projects_list` and `taiga_sprints_list`, which answered a bare array, now answer `{ "projects": [...] }` and `{ "sprints": [...] }`. A value Taiga may leave out is optional in the schema, so that an answer is never refused for it | `src/index.ts:101`, `src/index.ts:380` |
 | A15 | P7, in another form. The owner did not want users to move a file into an allowed folder before attaching it. `taiga_attachments_add` refuses, after following links, a path with a name that starts with a dot, the folder where programs keep the data of the user (except the temp folder inside it) and key files. A deny list, not a sandbox | `src/index.ts:525` |
@@ -172,7 +172,7 @@ Asked for by the owner on 2026-10-12, beyond the audit:
 | Id | Change | Where |
 | --- | --- | --- |
 | A21 | New tools: `taiga_userstories_update`, `taiga_issues_create`, `taiga_issues_update`, and `taiga_items_delete` behind a second variable, `TAIGA_DELETE=1`, in two calls. `taiga_attachments_add` takes any kind of item. Before it creates, changes or deletes an item, the server checks the permissions Taiga lists for the project and, when one is missing, sends nothing and says what the role may do instead, telling the model to offer the alternatives and wait. An attachment is sent without that check: Taiga decides. The permission names and what a deletion takes with it come from S21: `update_perms = CommentAndOrUpdatePerm('modify_us', 'comment_us')`, and the `user_story` field of a task has `on_delete=models.CASCADE` | `src/index.ts:963`, `src/index.ts:341`, `src/index.ts:313`, `src/index.ts:1155` |
-| A22 | Tests: 69 scenarios against a simulated Taiga, a coverage measure with no dependency, a live test for a real Taiga, and their report | `test/smoke.mjs`, `test/coverage.mjs`, `test/live.mjs`, [TESTING.md](TESTING.md) |
+| A22 | Tests: 70 scenarios against a simulated Taiga, a coverage measure with no dependency, a live test for a real Taiga, and their report | `test/smoke.mjs`, `test/coverage.mjs`, `test/live.mjs`, [TESTING.md](TESTING.md) |
 
 ## Review against five risk categories
 
@@ -254,7 +254,7 @@ These were not read on the audit dates and are not stated as fact anywhere in th
 - Whether the MCP Registry accepts capital letters in the user name of `mcpName`.
 
 Measured by the CI, on 2026-10-12 (<https://github.com/CamposCodes/taiga-r2da-mcp/actions/runs/38279171114>): the
-69 scenarios passed on Linux, macOS and Windows, each with Node 20 and Node 24. That run is where the mode
+70 scenarios passed on Linux, macOS and Windows, each with Node 20 and Node 24. That run is where the mode
 of the folder `mkdtemp` makes (S18), the refusal of a link to a secret and, on Linux, the refusal of `/proc` were
 checked: the machine the server was written on is Windows.
 

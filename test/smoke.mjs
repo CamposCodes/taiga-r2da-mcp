@@ -797,6 +797,14 @@ await scenario('manifest.json of the Claude Desktop extension names this version
   // It lists the tools that are always there, and says that more can appear.
   assert.deepEqual([manifest.tools.map((t) => t.name), manifest.tools_generated], [tools.map((t) => t.name), true])
 })
+await scenario('README.md and README.pt-BR.md list every tool with its parameters, as tools/list gives them', async () => {
+  const expected = deleter.tools.map((t) => [t.name, Object.keys(t.inputSchema.properties ?? {})])
+  for (const file of ['README.md', 'README.pt-BR.md']) {
+    const list = readFileSync(file, 'utf8').split('<!-- tools:end -->')[0].split(/^- \*\*(?=taiga_)/m).slice(1)
+    const listed = list.map((part) => [part.slice(0, part.indexOf('**')), [...part.matchAll(/^ {4}- `(\w+)` \(/gm)].map((row) => row[1])])
+    assert.deepEqual(listed, expected, `${file}: run "npm run docs:tools"`)
+  }
+})
 await scenario('docs/TESTING.md lists exactly these scenarios, in this order', async () => {
   const listed = [...readFileSync('docs/TESTING.md', 'utf8').matchAll(/^\| S(\d+) \| (.+?) \|/gm)].map((row) => row[2])
   assert.deepEqual(listed, [...done, 'docs/TESTING.md lists exactly these scenarios, in this order'])
