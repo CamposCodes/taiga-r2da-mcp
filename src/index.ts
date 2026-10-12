@@ -398,7 +398,10 @@ const line = z.object({
   finishedAt: text,
 });
 const page = z.object({ total: z.number(), page: z.number(), size: z.number(), items: z.array(line) });
-const changed = line.extend({ url: z.string().describe("Where a person sees the item") });
+const changed = line.extend({
+  version: count.describe("Version of the item after this write: give it back in the next edit of its description or tags"),
+  url: z.string().describe("Where a person sees the item"),
+});
 
 /** The filters every kind of item shares, as the query Taiga expects. */
 function commonQuery(p: any, kind: Kind, args: any) {
@@ -487,6 +490,7 @@ async function fieldsOf(client: TaigaClient, p: any, kind: Kind, args: any) {
 /** An item as a write left it, with the address where a person sees it. */
 const written = (client: TaigaClient, p: any, kind: Kind, item: any) => ({
   ...summary(p, kind, item),
+  version: item.version,
   url: `${client.site}/project/${p.slug}/${kind}/${item.ref}`,
 });
 
@@ -761,6 +765,7 @@ function registerTools(server: McpServer, client: TaigaClient) {
         include: z.array(z.enum(["comments", "history"])).optional().describe("Extra sections to load"),
       }),
       outputSchema: line.extend({
+        version: count.describe("Version of the item: give it back when editing its description or its tags"),
         description: z.string(),
         createdBy: text,
         attachments: z.array(
@@ -779,6 +784,7 @@ function registerTools(server: McpServer, client: TaigaClient) {
         const item = await client.get(`/${KINDS[kind].path}/${id}`);
         const result: Record<string, unknown> = {
           ...summary(p, kind, item),
+          version: item.version,
           description: item.description ?? "",
           createdBy: item.owner_extra_info?.username ?? null,
           attachments: (await attachmentsOf(client, p, kind, id)).map((file) => ({
@@ -935,6 +941,12 @@ const issueChanges = {
 const edits = (kind: Kind) => ({
   blocked: z.string().optional().describe(`Why ${KINDS[kind].a.replace(/^an? /, "the ")} is blocked, which blocks it; "none" unblocks it`),
   comment: z.string().optional().describe(`Comment to leave on ${KINDS[kind].a.replace(/^an? /, "the ")}, Markdown`),
+  version: z
+    .number()
+    .int()
+    .positive()
+    .optional()
+    .describe("Version of the item as taiga_items_get gave it. Required with description or tags, which replace what is there"),
 });
 
 /**
@@ -971,8 +983,23 @@ function registerWriting(server: McpServer, client: TaigaClient, remove: boolean
       if (!(given.length === 1 && given[0] === "comment" && can(p, `comment_${kind}`))) {
         allow(p, "modify", kind);
       }
-      // Taiga refuses a change that does not say which version of the item it was made on.
+      // A description and the tags replace what is there, so the caller says which version it read: without that
+      // the edit of somebody else, made in the meantime, would be lost without a word.
+      if (args.version === undefined && (fields.description !== undefined || fields.tags !== undefined)) {
+        throw new Error(
+          `A description or the tags replace what #${args.ref} has now: read it with taiga_items_get and give its ` +
+            "version, so that a change somebody made in the meantime is not lost.",
+        );
+      }
+      // Taiga refuses a change that does not say which version of the item it was made on. A move or a comment
+      // loses nothing, so it goes on the version of now.
       const { version } = await client.get(`/${KINDS[kind].path}/${id}`);
+      if (args.version !== undefined && args.version !== version) {
+        throw new Error(
+          `#${args.ref} changed since version ${args.version}: it is at version ${version} now. Read it again with ` +
+            "taiga_items_get, look at what changed and send the edit with the new version.",
+        );
+      }
       return written(client, p, kind, await client.send("PATCH", `/${KINDS[kind].path}/${id}`, { version, ...fields }));
     });
 
@@ -996,7 +1023,8 @@ function registerWriting(server: McpServer, client: TaigaClient, remove: boolean
     {
       title: "Edit or move a user story",
       description:
-        "Changes a user story: only the fields given, and a description or the tags are replaced whole. Moving it on " +
+        "Changes a user story: only the fields given. A description or the tags are replaced whole, and need the " +
+        "version taiga_items_get gave. Moving it on " +
         'the kanban is giving the new status; moving it to another sprint, or out of every sprint with "backlog", is ' +
         "giving the sprint. A comment can go alone or with the changes.",
       inputSchema: z.object({
@@ -1031,7 +1059,8 @@ function registerWriting(server: McpServer, client: TaigaClient, remove: boolean
     {
       title: "Edit or move a task",
       description:
-        "Changes a task: only the fields given, and a description or the tags are replaced whole. Moving it on the " +
+        "Changes a task: only the fields given. A description or the tags are replaced whole, and need the version " +
+        "taiga_items_get gave. Moving it on the " +
         "board is giving the new status; moving it to another user story or sprint is giving that story or sprint. " +
         "A comment can go alone or with the changes.",
       inputSchema: z.object({
@@ -1066,7 +1095,8 @@ function registerWriting(server: McpServer, client: TaigaClient, remove: boolean
     {
       title: "Edit or move an issue",
       description:
-        "Changes an issue: only the fields given, and a description or the tags are replaced whole. Moving it is " +
+        "Changes an issue: only the fields given. A description or the tags are replaced whole, and need the version " +
+        "taiga_items_get gave. Moving it is " +
         'giving the new status, or the sprint it goes to ("backlog" for none). A comment can go alone or with the ' +
         "changes.",
       inputSchema: z.object({

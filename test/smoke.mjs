@@ -81,9 +81,9 @@ const routes = {
   'GET /search': (q) => (q.get('project') === '33' ? { count: 0 } : { count: 2, userstories: [{ ref: 12, subject: 'História', status: 1 }], tasks: [{ ref: 13, subject: 'Tarefa', status: 12 }], issues: [], wikipages: [{ slug: 'home' }] }),
   // A write is answered with the item as it was left, as Taiga does.
   'POST /userstories': (sent) => ({ ...us, id: 101, ref: 16, subject: sent.subject }),
-  'PATCH /userstories/100': () => us,
+  'PATCH /userstories/100': () => ({ ...us, version: version.us + 1 }),
   'POST /tasks': (sent) => (sent.subject === 'boom' ? answer(400, { subject: ['This field is wrong.'] }) : { ...task, id: 201, ref: 15, subject: sent.subject }),
-  'PATCH /tasks/200': () => task,
+  'PATCH /tasks/200': () => ({ ...task, version: version.task + 1 }),
   'POST /issues': (sent) => ({ ...issue, id: 301, ref: 17, subject: sent.subject }),
   'PATCH /issues/300': () => issue,
   'POST /userstories/attachments': () => ({ id: 506, name: 'envio.txt', size: 9, url: `${base}/media/envio.txt?token=k` }),
@@ -475,10 +475,24 @@ await scenario('taiga_userstories_create takes the statuses of user stories, and
   assert.match((await w.call('taiga_userstories_create', { project: 'my-project', subject: 'x', status: 'Em andamento' })).error, /Unknown us status "Em andamento"\. Valid: A fazer, Concluído/)
 })
 await scenario('taiga_userstories_update moves a user story on the kanban and between sprints', async () => {
-  const story = await w.call('taiga_userstories_update', { project: 'my-project', ref: 12, status: 'Concluído', sprint: 'backlog', tags: ['pronto'], comment: 'entregue' })
+  const story = await w.call('taiga_userstories_update', { project: 'my-project', ref: 12, status: 'Concluído', sprint: 'backlog', tags: ['pronto'], comment: 'entregue', version: 4 })
   assert.equal(`${seen.at(-1).method} ${seen.at(-1).path}`, 'PATCH /api/v1/userstories/100')
   assert.deepEqual(seen.at(-1).body, { version: 4, status: 2, milestone: null, tags: ['pronto'], comment: 'entregue' })
-  assert.equal(story.url, `${base}/project/my-project/us/12`)
+  assert.deepEqual([story.url, story.version], [`${base}/project/my-project/us/12`, 5])
+})
+await scenario('An edit that replaces a description or the tags needs the version that was read, and is refused if the item changed', async () => {
+  const before = seen.length
+  assert.equal((await w.call('taiga_items_get', { project: 'my-project', ref: 13 })).version, 7)
+  for (const change of [{ description: 'novo texto' }, { tags: ['novo'] }]) {
+    assert.match((await w.call('taiga_tasks_update', { project: 'my-project', ref: 13, ...change })).error, /^A description or the tags replace what #13 has now: read it with taiga_items_get and give its version/)
+  }
+  // Somebody edited the task after it was read: the edit made on the old version is not sent.
+  assert.match((await w.call('taiga_tasks_update', { project: 'my-project', ref: 13, description: 'novo texto', version: 6 })).error, /^#13 changed since version 6: it is at version 7 now\. Read it again with taiga_items_get/)
+  assert.deepEqual(sent(before), [])
+  const edited = await w.call('taiga_tasks_update', { project: 'my-project', ref: 13, description: 'novo texto', tags: ['novo'], version: 7 })
+  assert.deepEqual(seen.at(-1).body, { version: 7, description: 'novo texto', tags: ['novo'] })
+  // The answer has the version the write left, for the next edit.
+  assert.equal(edited.version, 8)
 })
 await scenario('taiga_issues_create and taiga_issues_update take type, severity and priority by name', async () => {
   const bug = await w.call('taiga_issues_create', { project: 'my-project', subject: 'Falha', description: 'não abre', issueType: 'Bug', severity: 'normal', priority: 'Alta', assignee: 'ana' })

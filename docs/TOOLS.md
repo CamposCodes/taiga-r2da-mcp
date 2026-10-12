@@ -426,6 +426,7 @@ taiga_attachments_get). A user story comes with its tasks. Ask for comments and 
   "createdAt": "2026-10-01T12:00:00Z",
   "modifiedAt": "2026-10-09T15:30:00Z",
   "finishedAt": null,
+  "version": 4,
   "description": "texto",
   "createdBy": "ana",
   "attachments": [],
@@ -616,8 +617,8 @@ Errors:
 
 ### `taiga_userstories_update`
 
-Changes a user story: only the fields given, and a description or the tags are replaced whole. Moving it on the
-kanban is giving the new status; moving it to another sprint, or out of every sprint with "backlog", is giving the
+Changes a user story: only the fields given. A description or the tags are replaced whole, and need the version
+taiga_items_get gave. Moving it on the kanban is giving the new status; moving it to another sprint, or out of every sprint with "backlog", is giving the
 sprint. A comment can go alone or with the changes.
 
 | Parameter | Type | Required | Description |
@@ -633,9 +634,10 @@ sprint. A comment can go alone or with the changes.
 | `sprint` | string | no | Sprint name, or "backlog" for no sprint |
 | `blocked` | string | no | Why the user story is blocked, which blocks it; "none" unblocks it |
 | `comment` | string | no | Comment to leave on the user story, Markdown |
+| `version` | integer, 1 or more | no | Version of the item as taiga_items_get gave it. Required with description or tags, which replace what is there |
 
 ```json
-{ "project": "my-project", "ref": 12, "status": "Concluído", "sprint": "backlog", "tags": ["pronto"], "comment": "entregue" }
+{ "project": "my-project", "ref": 12, "status": "Concluído", "sprint": "backlog", "tags": ["pronto"], "comment": "entregue", "version": 4 }
 ```
 
 For this call the server sends `PATCH /userstories/100` with exactly this body:
@@ -644,7 +646,9 @@ For this call the server sends `PATCH /userstories/100` with exactly this body:
 { "version": 4, "status": 2, "milestone": null, "tags": ["pronto"], "comment": "entregue" }
 ```
 
-The answer has the same shape as the answer of `taiga_userstories_create`: the user story as Taiga left it, with
+The call replaces the tags, so it gives the `version` that `taiga_items_get` gave for the user story. The answer
+has the same shape as the answer of `taiga_userstories_create`, plus `"version": 5`, the version this write left:
+the user story as Taiga left it, with
 its `url` (`https://taiga.example.com/project/my-project/us/12`).
 
 Errors:
@@ -713,8 +717,8 @@ A task with no user story goes to the row of its sprint that holds the tasks wit
 
 ### `taiga_tasks_update`
 
-Changes a task: only the fields given, and a description or the tags are replaced whole. Moving it on the board
-is giving the new status; moving it to another user story or sprint is giving that story or sprint. A comment can
+Changes a task: only the fields given. A description or the tags are replaced whole, and need the version
+taiga_items_get gave. Moving it on the board is giving the new status; moving it to another user story or sprint is giving that story or sprint. A comment can
 go alone or with the changes.
 
 | Parameter | Type | Required | Description |
@@ -731,6 +735,7 @@ go alone or with the changes.
 | `sprint` | string | no | Sprint name, for a task without a user story. A task with a story is always in the sprint of its story |
 | `blocked` | string | no | Why the task is blocked, which blocks it; "none" unblocks it |
 | `comment` | string | no | Comment to leave on the task, Markdown |
+| `version` | integer, 1 or more | no | Version of the item as taiga_items_get gave it. Required with description or tags, which replace what is there |
 
 ```json
 { "project": "my-project", "ref": 13, "status": "a fazer", "assignee": "none", "dueDate": "none", "blocked": "none", "comment": "feito" }
@@ -756,8 +761,22 @@ Errors:
 - A version conflict reported by Taiga, when someone changed the task between the read and the write. Calling
   again is enough: the server reads the task again on every edit.
 
-To add to a description or to the tags, read the task first with `taiga_items_get` and send the complete new
-text or list.
+A description and the tags are replaced whole, so an edit of either must say which version of the item it was
+made on. Read the task first with `taiga_items_get`, which gives `version`, and send the complete new text or list
+with that version:
+
+```json
+{ "project": "my-project", "ref": 13, "description": "novo texto", "tags": ["novo"], "version": 7 }
+```
+
+The server sends `{ "version": 7, "description": "novo texto", "tags": ["novo"] }`, and the answer has
+`"version": 8`. When somebody changed the task after it was read, nothing is sent:
+
+- `A description or the tags replace what #13 has now: read it with taiga_items_get and give its version, so that a change somebody made in the meantime is not lost.`
+- `#13 changed since version 6: it is at version 7 now. Read it again with taiga_items_get, look at what changed and send the edit with the new version.`
+
+A move, a new assignee, a due date or a comment loses nothing, so it needs no `version`. The same holds for
+`taiga_userstories_update` and `taiga_issues_update`.
 
 ### `taiga_issues_create`
 
@@ -812,8 +831,8 @@ Errors:
 
 ### `taiga_issues_update`
 
-Changes an issue: only the fields given, and a description or the tags are replaced whole. Moving it is giving the
-new status, or the sprint it goes to ("backlog" for none). A comment can go alone or with the changes.
+Changes an issue: only the fields given. A description or the tags are replaced whole, and need the version
+taiga_items_get gave. Moving it is giving the new status, or the sprint it goes to ("backlog" for none). A comment can go alone or with the changes.
 
 | Parameter | Type | Required | Description |
 | --- | --- | --- | --- |
@@ -831,6 +850,7 @@ new status, or the sprint it goes to ("backlog" for none). A comment can go alon
 | `priority` | string | no | Priority name, e.g. "High" (see taiga_projects_get) |
 | `blocked` | string | no | Why the issue is blocked, which blocks it; "none" unblocks it |
 | `comment` | string | no | Comment to leave on the issue, Markdown |
+| `version` | integer, 1 or more | no | Version of the item as taiga_items_get gave it. Required with description or tags, which replace what is there |
 
 ```json
 { "project": "my-project", "ref": 14, "status": "fechado", "sprint": "Sprint 12", "blocked": "none" }
