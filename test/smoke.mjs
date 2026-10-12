@@ -582,6 +582,20 @@ await scenario('A refusal that comes from Taiga itself asks the same of the mode
   assert.match(error, /^Taiga refused POST \/userstories: the current user does not have the permission for it\. Nothing was changed\. taiga_projects_get shows what the user may do in a project \(myPermissions\)\. Do not work around this on your own/)
   assert.match((await w.call('taiga_attachments_add', { project: 'bare-project', ref: 13, path: sending })).error, /^Taiga refused POST \/tasks\/attachments/)
 })
+await scenario('Every change that reached Taiga and every tool error leaves a line on stderr', async () => {
+  const lines = w.stderr().split('\n')
+  const has = (pattern) => assert.ok(lines.some((line) => pattern.test(line)), String(pattern))
+  has(/^taiga-mcp: \d{4}-\d\d-\d\dT[\d:.]+Z POST \/tasks 200$/)
+  has(/Z PATCH \/userstories\/100 200$/)
+  has(/Z POST \/issues\/attachments 200$/)
+  // What Taiga refused is there with its status, and what the server refused with its reason.
+  has(/Z POST \/tasks 400$/)
+  has(/Z POST \/userstories 403$/)
+  has(/Z tool error: You do not have permission to create a user story in locked-project: your role lacks the Taiga permission add_us\./)
+  has(/Z tool error: .*is not sent: a network path is refused/)
+  // A read leaves no line.
+  assert.ok(!lines.some((line) => / GET /.test(line)))
+})
 await scenario('The token is in nothing the writing server says', async () => {
   assert.ok(!w.wrote().includes('good'))
   await w.stop()
@@ -655,6 +669,8 @@ await scenario('With the code of the first call the item is deleted, whatever it
   }
 })
 await scenario('A role that may not delete is told so on the first call, with what it may do instead', async () => {
+  // Each deletion left its line on stderr: the last record of an item Taiga no longer has.
+  assert.equal(d.stderr().split('\n').filter((line) => /Z DELETE \/(tasks\/200|userstories\/100|issues\/300) 204$/.test(line)).length, 3)
   const before = seen.length
   assert.match((await d.call('taiga_items_delete', { project: 'locked-project', ref: 14 })).error, /permission to delete an issue.*delete_issue.*instead: \(1\) close it instead, by moving it to a closed status \(taiga_issues_update\); \(2\) ask a project admin/)
   assert.match((await d.call('taiga_items_delete', { project: 'locked-project', ref: 13, confirm: 'task-13-v7' })).error, /delete_task.*instead: \(1\) leave a comment on it asking for the deletion \(taiga_tasks_update with only comment\); \(2\) ask/)

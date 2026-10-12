@@ -60,6 +60,12 @@ const MAX_CALLS_PER_MINUTE = 120;
 /** How long the code of a deletion that was shown is good for. */
 const DELETE_WINDOW = 10 * 60_000;
 
+/**
+ * The trail of what the server changed and of what it refused, for whoever reads the log of the client: one line
+ * each on stderr, since stdout carries the protocol. Never the token, and never the content of an item.
+ */
+const trail = (what: string) => console.error(`taiga-mcp: ${new Date().toISOString()} ${what}`);
+
 let windowStart = 0;
 let calls = 0;
 
@@ -80,7 +86,9 @@ async function show(body: () => Promise<CallToolResult>): Promise<CallToolResult
     }
     return await body();
   } catch (error) {
-    return { isError: true, content: [{ type: "text", text: error instanceof Error ? error.message : String(error) }] };
+    const text = error instanceof Error ? error.message : String(error);
+    trail(`tool error: ${clip(text, 300)}`);
+    return { isError: true, content: [{ type: "text", text }] };
   }
 }
 
@@ -125,7 +133,9 @@ class TaigaClient {
 
   /** The only way anything is written to Taiga. The payload goes as JSON, or as a form when it carries a file. */
   async send(method: "POST" | "PATCH" | "DELETE", path: string, payload?: unknown): Promise<any> {
-    return this.body(await this.request(method, path, {}, payload), `${method} ${path}`);
+    const response = await this.request(method, path, {}, payload);
+    trail(`${method} ${path} ${response.status}`);
+    return this.body(response, `${method} ${path}`);
   }
 
   /**
