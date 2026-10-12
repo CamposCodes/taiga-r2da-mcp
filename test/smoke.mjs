@@ -45,6 +45,9 @@ const media = {
 const attached = (id, name, file, extra = {}) => ({ id, name, size: media[file]?.length ?? 1, url: `${base}${file}?token=k#_taiga-refresh=task:${id}`, description: '', is_deprecated: false, created_date: '2026-10-01T12:00:00Z', ...extra })
 const answer = (status, body, headers = {}) => ({ answer: true, status, body, headers })
 const refs = { 12: { us: 100 }, 13: { task: 200 }, 14: { issue: 300 } }
+// What changes between two looks at an item: its version, and the tasks of the user story.
+const version = { us: 4, task: 7, issue: 2 }
+let oneMoreTask = false
 
 const routes = {
   // Another valid token, of an account for which Taiga gives less.
@@ -55,12 +58,12 @@ const routes = {
   'GET /milestones': (q) => (q.get('project') === '34' ? answer(502, 'Bad Gateway') : q.get('project') === '33' ? [{ name: 'Sprint vazio', closed: true }] : [{ name: 'Sprint 12', estimated_start: '2026-10-09', estimated_finish: '2026-10-16', closed: false, total_points: 8, closed_points: 3, user_stories: [{ is_closed: true }, { is_closed: false }] }]),
   // The bare project answers with no total: the server counts what came.
   'GET /userstories': (q) => (q.get('project') === '34' ? answer(200, sparse, { 'x-pagination-count': undefined }) : [us]),
-  'GET /tasks': (q) => (q.get('project') === '34' ? [{ id: 402, ref: 22, subject: 'Sem história', status: 11 }] : [task]),
+  'GET /tasks': (q) => (q.get('project') === '34' ? [{ id: 402, ref: 22, subject: 'Sem história', status: 11 }] : oneMoreTask ? [task, { ...task, id: 202, ref: 18, subject: 'Outra tarefa' }] : [task]),
   'GET /issues': () => [issue],
   'GET /resolver': (q) => ({ project: 32, ...refs[q.get('ref')] }),
-  'GET /userstories/100': () => ({ ...us, description: 'texto', version: 4, owner_extra_info: { username: 'ana' } }),
-  'GET /tasks/200': () => ({ ...task, description: 'faça', version: 7, owner_extra_info: { username: 'ana' } }),
-  'GET /issues/300': () => ({ ...issue, description: null, version: 2 }),
+  'GET /userstories/100': () => ({ ...us, description: 'texto', version: version.us, owner_extra_info: { username: 'ana' } }),
+  'GET /tasks/200': () => ({ ...task, description: 'faça', version: version.task, owner_extra_info: { username: 'ana' } }),
+  'GET /issues/300': () => ({ ...issue, description: null, version: version.issue }),
   'GET /userstories/attachments': () => [],
   'GET /tasks/attachments': () => [attached(501, 'tela.png', '/media/tela.png', { description: 'print' }), attached(502, 'notas.txt', '/media/notas.txt'), attached(503, 'antigo.csv', '/media/antigo.csv'), attached(504, 'laudo final.pdf', '/media/laudo.pdf', { is_deprecated: true })],
   // The attachments that go wrong, or that are too much to show.
@@ -597,29 +600,58 @@ await scenario('docs/TOOLS.md describes exactly the tools and the parameters tha
   const documented = readFileSync('docs/TOOLS.md', 'utf8').split(/^### `/m).slice(1).map((part) => [part.slice(0, part.indexOf('`')), [...part.matchAll(/^\| `(\w+)` \|/gm)].map((row) => row[1])])
   assert.deepEqual(documented, deleter.tools.map((t) => [t.name, Object.keys(t.inputSchema.properties ?? {})]))
 })
-await scenario('The first call of taiga_items_delete deletes nothing: it shows the item and gives a code', async () => {
+const CODE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
+const show = (ref, extra = {}) => d.call('taiga_items_delete', { project: 'my-project', ref, ...extra })
+await scenario('The first call of taiga_items_delete deletes nothing: it shows the item and gives a random code', async () => {
   const before = seen.length
-  const shown = await d.call('taiga_items_delete', { project: 'my-project', ref: 13 })
-  assert.deepEqual([shown.deleted, shown.item.subject, shown.confirm, shown.tasksDeletedWithIt], [false, 'Tarefa', 'task-13-v7', undefined])
+  const shown = await show(13)
+  assert.deepEqual([shown.deleted, shown.item.subject, shown.tasksDeletedWithIt], [false, 'Tarefa', undefined])
+  assert.match(shown.confirm, CODE)
   assert.match(shown.next, /^Nothing was deleted\. Show this to the user and ask whether it is really to be deleted\. Only after a yes, call again with this code in confirm\.$/)
   // A user story takes its tasks with it, and the first call says which.
-  const story = await d.call('taiga_items_delete', { project: 'my-project', ref: 12 })
-  assert.deepEqual([story.deleted, story.confirm, story.tasksDeletedWithIt], [false, 'us-12-v4', ['#13 Tarefa']])
+  const story = await show(12)
+  assert.deepEqual([story.deleted, story.tasksDeletedWithIt], [false, ['#13 Tarefa']])
+  assert.match(story.confirm, CODE)
+  assert.notEqual(story.confirm, shown.confirm)
   assert.deepEqual(sent(before), [])
 })
-await scenario('A code that is not the one of the item as it is now deletes nothing', async () => {
+await scenario('A code the server did not give for that item, as it is now, deletes nothing', async () => {
   const before = seen.length
-  const stale = await d.call('taiga_items_delete', { project: 'my-project', ref: 13, confirm: 'task-13-v6' })
-  assert.deepEqual([stale.deleted, stale.confirm], [false, 'task-13-v7'])
-  assert.match(stale.next, /^That code is not the one of this item as it is now\. Nothing was deleted\./)
-  assert.equal((await d.call('taiga_items_delete', { project: 'my-project', ref: 14, confirm: 'yes' })).deleted, false)
+  // A guess on a first call, in the shape the codes once had or in the shape they have.
+  for (const confirm of ['task-13-v7', 'yes', '00000000-0000-4000-8000-000000000000']) {
+    const guess = await show(13, { confirm })
+    assert.equal(guess.deleted, false)
+    assert.match(guess.next, /^That code does not stand for this item as it is now: .* Nothing was deleted\./)
+  }
+  // The code of another item, and the code of the item with the same number in another project.
+  assert.equal((await show(14, { confirm: (await show(13)).confirm })).deleted, false)
+  assert.equal((await d.call('taiga_items_delete', { project: 'bare-project', ref: 13, confirm: (await show(13)).confirm })).deleted, false)
+  // A code that is not the last one given: showing another item replaced it.
+  const first = await show(13)
+  await show(14)
+  assert.equal((await show(13, { confirm: first.confirm })).deleted, false)
+  // An item that changed since it was shown.
+  const old = await show(13)
+  version.task = 8
+  assert.equal((await show(13, { confirm: old.confirm })).deleted, false)
+  // A user story that got one more task since it was shown.
+  const story = await show(12)
+  oneMoreTask = true
+  const grown = await show(12, { confirm: story.confirm })
+  assert.deepEqual([grown.deleted, grown.tasksDeletedWithIt], [false, ['#13 Tarefa', '#18 Outra tarefa']])
+  oneMoreTask = false
   assert.deepEqual(sent(before), [])
 })
-await scenario('With the code of the first call the item is deleted, whatever its kind', async () => {
-  for (const [ref, code, path] of [[13, 'task-13-v7', 'tasks/200'], [12, 'us-12-v4', 'userstories/100'], [14, 'issue-14-v2', 'issues/300']]) {
-    const gone = await d.call('taiga_items_delete', { project: 'my-project', ref, confirm: code })
+await scenario('With the code of the first call the item is deleted, whatever its kind, and the code works once', async () => {
+  for (const [ref, path] of [[13, 'tasks/200'], [12, 'userstories/100'], [14, 'issues/300']]) {
+    const shown = await show(ref)
+    const gone = await show(ref, { confirm: shown.confirm })
     assert.deepEqual([gone.deleted, gone.item.ref, gone.confirm, gone.next], [true, ref, undefined, undefined])
     assert.deepEqual([seen.at(-1).method, seen.at(-1).path, seen.at(-1).body], ['DELETE', `/api/v1/${path}`, undefined])
+    // The simulated Taiga still has the item: the code that deleted it does not delete it a second time.
+    const before = seen.length
+    assert.equal((await show(ref, { confirm: shown.confirm })).deleted, false)
+    assert.deepEqual(sent(before), [])
   }
 })
 await scenario('A role that may not delete is told so on the first call, with what it may do instead', async () => {

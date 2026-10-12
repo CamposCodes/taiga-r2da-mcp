@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { randomUUID } from "node:crypto";
 import { mkdtemp, readFile, realpath, stat, writeFile } from "node:fs/promises";
 import { homedir, tmpdir } from "node:os";
 import { basename, join, sep } from "node:path";
@@ -20,8 +21,9 @@ import { serveStdio } from "@modelcontextprotocol/server/stdio";
 // ponytail: the token lasts about a day and is pasted again when it expires; use Taiga's refresh token if that
 // becomes a chore (refreshing rotates it, which ends the browser session it was copied from).
 // ponytail: a write is confirmed by the permission prompt of the MCP client, which the annotations below feed.
-// Deleting adds a step of its own, but the second call is still made by the model: ask the user through the
-// client (inputRequired.elicit of the SDK) if a client that never asks is used.
+// Deleting adds a step of its own: the server knows that the item was shown, not that a person said yes. The
+// second call is still made by the model: ask the user through the client (inputRequired.elicit of the SDK) if a
+// client that never asks is used.
 
 const instructions = (write: boolean, remove: boolean) => `Access to a Taiga project management server. A project has user stories (worked on a kanban or
 planned in sprints), tasks that belong to a user story or to a sprint, and issues (bugs, questions, improvements).
@@ -55,6 +57,8 @@ const TIMEOUT = 120_000;
 // A model caught in a loop must not flood Taiga, least of all with writes.
 // ponytail: one window for every tool; give each tool its own limit if a real workload ever reaches this one.
 const MAX_CALLS_PER_MINUTE = 120;
+/** How long the code of a deletion that was shown is good for. */
+const DELETE_WINDOW = 10 * 60_000;
 
 let windowStart = 0;
 let calls = 0;
@@ -924,6 +928,12 @@ const edits = (kind: Kind) => ({
 });
 
 /**
+ * The one deletion that was shown and waits for its second call. The code is random, so it cannot be had without
+ * the first call, and showing another item replaces it.
+ */
+let waiting: { code: string; state: string; expires: number } | undefined;
+
+/**
  * The tools that change Taiga. They exist only when the server is started with TAIGA_WRITE=1, and the one that
  * deletes only with TAIGA_DELETE=1 on top of it.
  */
@@ -1108,7 +1118,8 @@ function registerWriting(server: McpServer, client: TaigaClient, remove: boolean
         "Deletes a user story, a task or an issue with its comments and attachments, for good: Taiga keeps no trash. " +
         "Deleting a user story deletes its tasks with it. It takes two calls. The first, without confirm, deletes " +
         "nothing: it shows what would go and gives a code. Show that to the user, ask whether it is really to be " +
-        "deleted, and only after a yes call again with the code in confirm.",
+        "deleted, and only after a yes call again with the code in confirm. A code is good once, for ten minutes, " +
+        "and only for the last item shown, as it was shown.",
       inputSchema: z.object({
         project,
         ref: itemRef,
@@ -1129,19 +1140,27 @@ function registerWriting(server: McpServer, client: TaigaClient, remove: boolean
         const { kind, id } = await resolve(client, p, ref);
         allow(p, "delete", kind);
         const item = await client.get(`/${KINDS[kind].path}/${id}`);
+        const tasks = kind === "us" ? await tasksOf(client, p, id) : [];
         const shown = {
           item: summary(p, kind, item),
-          ...(kind === "us" ? { tasksDeletedWithIt: (await tasksOf(client, p, id)).map((task) => `#${task.ref} ${task.subject}`) } : {}),
+          ...(kind === "us" ? { tasksDeletedWithIt: tasks.map((task) => `#${task.ref} ${task.subject}`) } : {}),
         };
-        // The code names the item and the version that was shown: one that changed since asks for a new look.
-        const code = `${kind}-${ref}-v${item.version}`;
-        if (confirm !== code) {
+        // What a code stands for: this item of this project, in the version that was shown, with those tasks.
+        const state = `${p.id}/${kind}/${id}/v${item.version}/${tasks.map((task) => task.ref).join(",")}`;
+        const valid = confirm !== undefined && confirm === waiting?.code && state === waiting.state && Date.now() < waiting.expires;
+        // A code is of one use, whether it deletes or not, and a guess never finds one waiting for it.
+        waiting = undefined;
+        if (!valid) {
+          waiting = { code: randomUUID(), state, expires: Date.now() + DELETE_WINDOW };
           return {
             deleted: false,
             ...shown,
-            confirm: code,
+            confirm: waiting.code,
             next:
-              (confirm === undefined ? "" : "That code is not the one of this item as it is now. ") +
+              (confirm === undefined
+                ? ""
+                : "That code does not stand for this item as it is now: it is not the last one given, was used " +
+                  "already, is more than ten minutes old, or the item changed since it was shown. ") +
               "Nothing was deleted. Show this to the user and ask whether it is really to be deleted. Only after a " +
               "yes, call again with this code in confirm.",
           };

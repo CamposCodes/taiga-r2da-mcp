@@ -107,9 +107,9 @@ Node 20 or newer. `npm run coverage` runs the scenarios itself, so in a hurry it
 | S53 | The token is in nothing the writing server says | Permissions |
 | S54 | TAIGA_DELETE=1 adds the one tool that deletes, marked as destructive | Deleting |
 | S55 | docs/TOOLS.md describes exactly the tools and the parameters that tools/list gives, in the same order | Deleting |
-| S56 | The first call of taiga_items_delete deletes nothing: it shows the item and gives a code | Deleting |
-| S57 | A code that is not the one of the item as it is now deletes nothing | Deleting |
-| S58 | With the code of the first call the item is deleted, whatever its kind | Deleting |
+| S56 | The first call of taiga_items_delete deletes nothing: it shows the item and gives a random code | Deleting |
+| S57 | A code the server did not give for that item, as it is now, deletes nothing | Deleting |
+| S58 | With the code of the first call the item is deleted, whatever its kind, and the code works once | Deleting |
 | S59 | A role that may not delete is told so on the first call, with what it may do instead | Deleting |
 | S60 | A burst of calls is cut at the limit, and the refusal says how long to wait | Limits and documents |
 | S61 | Every answer that is data said the same as text and as structured content | Limits and documents |

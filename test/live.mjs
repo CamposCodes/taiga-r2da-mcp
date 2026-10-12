@@ -212,9 +212,13 @@ try {
       if (!shown) { refusals++; continue }
       // Last check before the only irreversible call of this test: it is one of ours.
       assert.ok(shown.deleted === false && shown.item.subject.startsWith(label), 'refusing to delete an item this test did not mark')
-      assert.equal((await call('taiga_items_delete', { project: slug, ref, confirm: 'no' })).deleted, false)
+      // A wrong code deletes nothing, uses up the code that was waiting and shows the item again with a new one.
+      const again = await call('taiga_items_delete', { project: slug, ref, confirm: 'no' })
+      assert.ok(again.deleted === false && again.confirm !== shown.confirm)
+      assert.equal((await call('taiga_items_delete', { project: slug, ref, confirm: shown.confirm })).deleted, false)
       assert.equal((await call('taiga_items_get', { project: slug, ref })).ref, ref)
-      assert.equal((await call('taiga_items_delete', { project: slug, ref, confirm: shown.confirm })).deleted, true)
+      const last = await call('taiga_items_delete', { project: slug, ref })
+      assert.equal((await call('taiga_items_delete', { project: slug, ref, confirm: last.confirm })).deleted, true)
       mine.delete(ref)
       // The task of a deleted story went with it, even when the role may not delete tasks.
       if (kind === 'us' && task) mine.delete(task.ref)
