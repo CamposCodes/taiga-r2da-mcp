@@ -260,7 +260,7 @@ await scenario('The 2026-07-28 opening (server/discover, no handshake) is served
   assert.equal((await m.rpc('tools/list', { _meta })).result.tools.length, 10)
   const me = (await m.rpc('tools/call', { name: 'taiga_me', arguments: {}, _meta })).result
   assert.deepEqual(me.structuredContent, { id: 9, username: 'ana', fullName: 'Ana Rocha' })
-  assert.deepEqual(me._meta['io.modelcontextprotocol/serverInfo'], { name: 'taiga-mcp', version: '0.3.0' })
+  assert.deepEqual(me._meta['io.modelcontextprotocol/serverInfo'], { name: 'taiga-mcp', version: JSON.parse(readFileSync('package.json', 'utf8')).version })
   await m.stop()
 })
 
