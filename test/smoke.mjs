@@ -195,6 +195,15 @@ await scenario('An address that would expose the token is refused before any req
   assert.match(withPassword.stderr(), /must not carry a user or a password/)
   assert.ok(!withPassword.stderr().includes('secret'))
 })
+await scenario('A token with a line break or a space in it is refused at start, and is not shown', async () => {
+  for (const token of ['made-up\ntoken', 'made-up token', '""']) {
+    const before = seen.length
+    const broken = start(token)
+    assert.equal(await broken.exited, 1)
+    assert.match(broken.stderr(), /TAIGA_TOKEN has a space, a line break or another character no token has/)
+    assert.ok(!broken.stderr().includes('made-up') && seen.length === before)
+  }
+})
 await scenario('A Taiga that does not answer stops the server at start', async () => {
   assert.equal(await refused({ TAIGA_URL: 'http://127.0.0.1:1' }, /Taiga API unreachable at http:\/\/127\.0\.0\.1:1\/api\/v1/), 0)
 })

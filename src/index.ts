@@ -1174,7 +1174,12 @@ function siteOf(url: string): string {
 async function main() {
   const url = siteOf(required("TAIGA_URL"));
   // The browser keeps the token as a JSON string, quotes included.
-  const client = new TaigaClient(url, required("TAIGA_TOKEN").trim().replace(/^"|"$/g, ""));
+  const token = required("TAIGA_TOKEN").trim().replace(/^"|"$/g, "");
+  // Node refuses a header with a space or a line break in it, and says so with the whole header in the message.
+  if (!/^[\x21-\x7e]+$/.test(token)) {
+    throw new Error("TAIGA_TOKEN has a space, a line break or another character no token has: copy it again, in one piece.");
+  }
+  const client = new TaigaClient(url, token);
   const write = process.env.TAIGA_WRITE === "1";
   const remove = process.env.TAIGA_DELETE === "1";
   if (remove && !write) {
