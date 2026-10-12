@@ -1,14 +1,20 @@
 <p align="center">
-  <img src="assets/banner.svg" alt="The logos of Taiga and of the Model Context Protocol" width="520">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/banner-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="assets/banner-light.svg">
+    <img src="assets/banner-light.svg" alt="The logos of Taiga and of the Model Context Protocol" width="325">
+  </picture>
 </p>
 
-# Taiga MCP Server
+<h1 align="center">Taiga MCP Server</h1>
 
-[![CI](https://github.com/CamposCodes/taiga-r2da-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/CamposCodes/taiga-r2da-mcp/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](../LICENSE)
-[![Node 20+](https://img.shields.io/badge/node-%3E%3D20-brightgreen.svg)](../package.json)
+<p align="center">
+  <a href="https://github.com/CamposCodes/taiga-r2da-mcp/actions/workflows/ci.yml"><img src="https://github.com/CamposCodes/taiga-r2da-mcp/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="../LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT"></a>
+  <a href="../package.json"><img src="https://img.shields.io/badge/node-%3E%3D20-brightgreen.svg" alt="Node 20+"></a>
+</p>
 
-[Português (Brasil)](readme.pt-br.md)
+<p align="center"><a href="readme.pt-br.md">Português (Brasil)</a></p>
 
 A [Model Context Protocol](https://modelcontextprotocol.io) server that connects AI tools to a
 [Taiga](https://taiga.io) 6 installation. With it, Claude Code, Claude Desktop, Codex or any MCP client reads
