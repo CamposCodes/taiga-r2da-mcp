@@ -1,4 +1,4 @@
-// Writes the list of tools of README.md and README.pt-BR.md, between the "tools:start" and "tools:end" comments,
+// Writes the list of tools of docs/readme.md and docs/readme.pt-br.md, between the "tools:start" and "tools:end" comments,
 // from what the built server itself answers to tools/list, so the list cannot say something the server does not.
 // Usage, after "npm run build": npm run docs:tools
 import { spawn } from 'node:child_process'
@@ -47,12 +47,12 @@ function translated(text) {
 }
 
 const LANGUAGES = {
-  'README.md': {
+  'docs/readme.md': {
     groups: ['Read tools: 10, always registered', 'Write tools: 7, only with TAIGA_WRITE on', 'Delete tool: 1, only with TAIGA_WRITE and TAIGA_DELETE on'],
     title: 'Title', description: 'Description', parameters: 'Parameters', none: 'None', optional: 'optional', readOnly: 'Read-only', destructive: 'Destructive',
     list: 'list of', or: 'or', say: (text) => text,
   },
-  'README.pt-BR.md': {
+  'docs/readme.pt-br.md': {
     groups: ['Tools de leitura: 10, sempre registradas', 'Tools de escrita: 7, só com TAIGA_WRITE ligada', 'Tool de exclusão: 1, só com TAIGA_WRITE e TAIGA_DELETE ligadas'],
     title: 'Título', description: 'Descrição', parameters: 'Parâmetros', none: 'nenhum', optional: 'opcional', readOnly: 'Somente leitura', destructive: 'Destrutiva',
     list: 'lista de', or: 'ou', say: translated,

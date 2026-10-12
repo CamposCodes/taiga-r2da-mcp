@@ -32,7 +32,7 @@ This is what this one does with that access:
 The diagram shows where the token travels, where text written by other people enters, and where local files
 cross.
 
-![Trust boundaries: the token goes from the client config to the server and the REST API only; third-party text reaches the model inside tool results; local files cross only through attachments](docs/diagrams/08-trust-boundaries.svg)
+![Trust boundaries: the token goes from the client config to the server and the REST API only; third-party text reaches the model inside tool results; local files cross only through attachments](diagrams/08-trust-boundaries.svg)
 
 <details>
 <summary>The same diagram in Mermaid, with every label</summary>
@@ -82,7 +82,7 @@ Three things cross a boundary:
 
 | Threat | What the server does | What is left to you |
 | --- | --- | --- |
-| Someone reads the token from the client configuration | Nothing: the file belongs to the client. The Claude Desktop extension asks for the token in a form, and how it is stored is up to Claude Desktop: see [Install as an extension](docs/clients/claude-desktop.md#install-as-an-extension) | Keep the configuration out of repositories and shared folders. A token typed in a `claude mcp add` or `codex mcp add` command also stays in the history of the shell. Treat a copied token as valid until it expires, even after logging out in the browser |
+| Someone reads the token from the client configuration | Nothing: the file belongs to the client. The Claude Desktop extension asks for the token in a form, and how it is stored is up to Claude Desktop: see [Install as an extension](clients/claude-desktop.md#install-as-an-extension) | Keep the configuration out of repositories and shared folders. A token typed in a `claude mcp add` or `codex mcp add` command also stays in the history of the shell. Treat a copied token as valid until it expires, even after logging out in the browser |
 | The token is the whole session, not a narrow permission | Sends it only to `TAIGA_URL`. Registers no write tool without `TAIGA_WRITE=1`, and no delete tool without `TAIGA_DELETE=1` on top of it | Use an account with the role the work needs. Ask who runs your Taiga before connecting an AI client to it |
 | A comment or a file tells the model to do something (prompt injection) | Declares which tools write, and which of them replace or delete what was there, so the client can ask before each one. Never follows text by itself: it has no model inside | With writing on, read what the model proposes before allowing it. Do not set the write tools or the delete tool to "always allow" |
 | A task tells the model to attach one of your files | `taiga_attachments_add` exists only with `TAIGA_WRITE=1` and sends only a regular file of up to 25 MB, to a user story, a task or an issue. After following links, it refuses a path that looks like a credential: a folder or a file whose name starts with a dot anywhere in the path (`.ssh`, `.env`, `.aws`, `.git`), the folder where programs keep the data of the user (`AppData` on Windows, `Library` on macOS) except the temp folder inside it, a key file (`.pem`, `.key`, `.p12`, `.pfx`, `.ppk`, `.kdbx`), a network path (`\\host\share`, refused before the disk is touched, because `\\localhost\C$` is another name for those same folders and another host would be offered your credentials) and, on Linux, the files the system makes up under `/proc`, `/sys`, `/dev` and `/run` (`/proc/self/environ` is the environment of the server, token included) | Check the path in the permission prompt. The refusal is a deny list, not a sandbox: a secret kept under an ordinary name in an ordinary folder, or copied to one, is not recognised. Any other file your user can read can still be sent |
@@ -109,7 +109,7 @@ not limit `taiga_attachments_add` to one folder and does not renew or revoke the
 
 The diagram shows the life of a token, from the copy in the browser to its expiry.
 
-![States of the token: copied, configured, checked, active, refused, expired](docs/diagrams/09-token-lifecycle.svg)
+![States of the token: copied, configured, checked, active, refused, expired](diagrams/09-token-lifecycle.svg)
 
 <details>
 <summary>The same diagram in Mermaid, with every label</summary>
@@ -165,7 +165,7 @@ These come from the MCP guide for local servers, read on 2026-10-11:
   identify, and pin the exact version." Build from a commit you chose.
 - **Pass secrets per server.** "Use the per-server environment configuration in your client's config file rather
   than exporting secrets in your shell profile, so each server sees only its own credentials." The three client
-  guides in [`docs/clients/`](docs/clients/) do it this way.
+  guides in [`docs/clients/`](clients/) do it this way.
 - **Know where it talks.** "A server that wraps one API has a short, predictable set of destinations." For this
   server: the host of `TAIGA_URL`, and the host of your attachment files if it is a different one.
 - **Isolate it if you want a hard boundary.** "run third-party servers inside a container (for example with

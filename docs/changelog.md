@@ -9,7 +9,7 @@ and the versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 User stories and issues can be edited and moved, items can be deleted behind a second variable, the server checks
 the permissions of Taiga before a change, and it moves to version 2 of the MCP TypeScript SDK. The release also
-has the changes made after 0.2.0 by the audit recorded in [docs/COMPLIANCE.md](docs/COMPLIANCE.md). No tool or
+has the changes made after 0.2.0 by the audit recorded in [docs/compliance.md](compliance.md). No tool or
 parameter was renamed or removed.
 
 ### Breaking
@@ -85,19 +85,23 @@ What to look at when upgrading from 0.2.0:
 - CI on Linux, macOS and Windows, with Node 20 and Node 24. It runs `npm ci`, `npm run check`, `npm run build` and
   `npm run coverage`.
 - Tests: exit when the input closes, wrong argument types, the cut notice, the call limit, a check that
-  `docs/TOOLS.md` lists the tools and parameters of `tools/list`, and a check that `package.json`, `server.json`
+  `docs/tools.md` lists the tools and parameters of `tools/list`, and a check that `package.json`, `server.json`
   and `manifest.json` name the same version and the same variables.
-- `npm test` runs 70 scenarios against a simulated Taiga, and fails when `docs/TESTING.md` does not list exactly
+- `npm test` runs 71 scenarios against a simulated Taiga, and fails when `docs/testing.md` does not list exactly
   those scenarios. `npm run coverage` measures how much of the built server they run: the figure of the last run
-  is in [docs/TESTING.md](docs/TESTING.md). `npm run test:live` runs against a real Taiga, in one project: by
+  is in [docs/testing.md](testing.md). `npm run test:live` runs against a real Taiga, in one project: by
   hand, never in CI.
 
 ### Changed
 
+- Every Markdown file lives in `docs/` under a lower-case name: `docs/readme.md`, `docs/readme.pt-br.md`,
+  `docs/changelog.md`, `docs/contributing.md`, `docs/security.md` and the guides that were already there. Only
+  `LICENSE` stays at the root. GitHub shows `docs/readme.md` on the page of the repository. `npm test` follows
+  every link between the documents and fails on one that leads nowhere.
 - The READMEs follow the layout of established MCP servers: features, requirements, getting started with one
   block per client, configuration, the tools with their parameters, examples, security, development and licence.
   The list of tools is written from `tools/list` by `npm run docs:tools`, and `npm test` fails when it drifts.
-  `README.pt-BR.md` is in Portuguese throughout, the list of tools and the diagrams included.
+  `docs/readme.pt-br.md` is in Portuguese throughout, the list of tools and the diagrams included.
 
 - The server is built on version 2 of the MCP TypeScript SDK: `@modelcontextprotocol/server` 2.x replaces
   `@modelcontextprotocol/sdk` 1.x, and the server is started with `serveStdio`.

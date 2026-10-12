@@ -4,7 +4,7 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Node 20+](https://img.shields.io/badge/node-%3E%3D20-brightgreen.svg)](package.json)
 
-[Português (Brasil)](README.pt-BR.md)
+[Português (Brasil)](readme.pt-br.md)
 
 A [Model Context Protocol](https://modelcontextprotocol.io) server that connects AI tools to a
 [Taiga](https://taiga.io) 6 installation. With it, Claude Code, Claude Desktop, Codex or any MCP client reads
@@ -79,7 +79,7 @@ it is:
 claude mcp add --env TAIGA_URL=https://taiga.example.com --env "TAIGA_TOKEN=<YOUR_TOKEN>" --transport stdio --scope local taiga -- node /absolute/path/to/taiga-mcp/dist/index.js
 ```
 
-Scopes, how to change an expired token and how to turn writing on: [docs/clients/claude-code.md](docs/clients/claude-code.md).
+Scopes, how to change an expired token and how to turn writing on: [docs/clients/claude-code.md](clients/claude-code.md).
 
 </details>
 
@@ -87,11 +87,11 @@ Scopes, how to change an expired token and how to turn writing on: [docs/clients
 <summary><b>Claude Desktop</b></summary>
 
 Put the configuration above in `claude_desktop_config.json` and start Claude Desktop again. Where the file is and
-how to check that the server came up: [docs/clients/claude-desktop.md](docs/clients/claude-desktop.md).
+how to check that the server came up: [docs/clients/claude-desktop.md](clients/claude-desktop.md).
 
 Claude Desktop can also take the server as an extension, a `.mcpb` file that you build from this repository with
 `npm run pack:mcpb`. It was not installed in a real Claude Desktop yet: see
-[Install as an extension](docs/clients/claude-desktop.md#install-as-an-extension).
+[Install as an extension](clients/claude-desktop.md#install-as-an-extension).
 
 </details>
 
@@ -111,7 +111,7 @@ args = ["/absolute/path/to/taiga-mcp/dist/index.js"]
 env = { TAIGA_URL = "https://taiga.example.com", TAIGA_TOKEN = "<YOUR_TOKEN>" }
 ```
 
-Approval modes and time limits that matter for this server: [docs/clients/codex.md](docs/clients/codex.md).
+Approval modes and time limits that matter for this server: [docs/clients/codex.md](clients/codex.md).
 
 </details>
 
@@ -150,7 +150,7 @@ itself `taiga-mcp`.
 | `TAIGA_WRITE` | no | `1` or `true` registers the seven write tools. Any other value (`yes`, `on`, `TRUE`, `0`), or none, keeps the server read-only |
 | `TAIGA_DELETE` | no | `1` or `true` registers `taiga_items_delete`, the tool that deletes. It needs `TAIGA_WRITE` on as well: without it the server stops at start |
 
-The server reads these from its environment and from nowhere else. [`.env.example`](.env.example) lists them.
+The server reads these from its environment and from nowhere else. [`.env.example`](../.env.example) lists them.
 
 The diagram shows which tools exist for each setting of the two switches.
 
@@ -182,7 +182,7 @@ The token expires after a time set by your Taiga. When it does, tools answer
 
 The list below is written by `npm run docs:tools` from what the server answers to `tools/list`, and `npm test`
 fails when the two differ. Example calls, example answers and errors of each tool are in
-[docs/TOOLS.md](docs/TOOLS.md).
+[docs/tools.md](tools.md).
 
 <!-- tools:start: written by "npm run docs:tools", do not edit by hand -->
 
@@ -445,18 +445,18 @@ You ask in plain language, and the model picks the tools.
 | "Move #13 to In progress and tell the team I started." | One `taiga_tasks_update` with `status` and `comment` |
 | "Delete task #13." | With `TAIGA_DELETE` on, `taiga_items_delete` twice: the first call shows the task and you are asked; only after your yes the second call deletes |
 
-More workflows, with the calls and the answers: [docs/USAGE.md](docs/USAGE.md).
+More workflows, with the calls and the answers: [docs/usage.md](usage.md).
 
 ## How it works
 
 The figure shows the pieces of a session: the client and the server run on your machine, and the server talks to
 your Taiga.
 
-![Architecture of taiga-mcp: client and server on the user's machine, Taiga API and attachment files on the Taiga installation](docs/diagrams/01-architecture.svg)
+![Architecture of taiga-mcp: client and server on the user's machine, Taiga API and attachment files on the Taiga installation](diagrams/01-architecture.svg)
 
 Your MCP client starts `node dist/index.js` with the address of your Taiga and your token. The server checks the
 token, registers its tools and waits. Each tool call becomes one or more requests to the Taiga REST API, and the
-answer goes back to the model as short JSON. More in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+answer goes back to the model as short JSON. More in [docs/architecture.md](architecture.md).
 
 The diagram follows one question from start to finish: the model picks a tool, the server turns the call into
 requests to Taiga, and the answer comes back short.
@@ -502,20 +502,20 @@ The token **is your session in Taiga**: whoever has it reads everything you read
 - Every change sent to Taiga and every tool error leaves a line on stderr, which your client keeps in its log of
   the server: the trail of what the model did and tried.
 
-The threat model, what the server can touch and how to report a vulnerability: [SECURITY.md](SECURITY.md).
+The threat model, what the server can touch and how to report a vulnerability: [docs/security.md](security.md).
 
 ## Documentation
 
 | Page | What is in it |
 | --- | --- |
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Components, start sequence, a read call and a write call, with diagrams |
-| [docs/USAGE.md](docs/USAGE.md) | Workflows, example requests, limits and troubleshooting |
-| [docs/TOOLS.md](docs/TOOLS.md) | Every tool: parameters, example call, example answer, errors |
-| [docs/clients/](docs/clients/) | Installation in Claude Code, Claude Desktop and Codex, and how to build the Claude Desktop extension |
-| [SECURITY.md](SECURITY.md) | Threat model and how to report a vulnerability |
-| [docs/COMPLIANCE.md](docs/COMPLIANCE.md) | Audit against the MCP specification and Anthropic's guidance, with sources, and what was done about each finding |
-| [docs/TESTING.md](docs/TESTING.md) | How the server is tested, the list of every scenario and the report of the last run |
-| [CHANGELOG.md](CHANGELOG.md) | What changed in each version |
+| [docs/architecture.md](architecture.md) | Components, start sequence, a read call and a write call, with diagrams |
+| [docs/usage.md](usage.md) | Workflows, example requests, limits and troubleshooting |
+| [docs/tools.md](tools.md) | Every tool: parameters, example call, example answer, errors |
+| [docs/clients/](clients/) | Installation in Claude Code, Claude Desktop and Codex, and how to build the Claude Desktop extension |
+| [docs/security.md](security.md) | Threat model and how to report a vulnerability |
+| [docs/compliance.md](compliance.md) | Audit against the MCP specification and Anthropic's guidance, with sources, and what was done about each finding |
+| [docs/testing.md](testing.md) | How the server is tested, the list of every scenario and the report of the last run |
+| [docs/changelog.md](changelog.md) | What changed in each version |
 
 ## Status and limits
 
@@ -545,16 +545,16 @@ npm run pack:mcpb    # builds the Claude Desktop extension
 ```
 
 The first four never talk to a real Taiga. `npm run test:live` does, in one project: it is run by hand and never
-in CI. See [docs/TESTING.md](docs/TESTING.md).
+in CI. See [docs/testing.md](testing.md).
 
 ## Contributing
 
-How to build, test and change the server, and what a release takes: [CONTRIBUTING.md](CONTRIBUTING.md). To report a
-vulnerability, follow [SECURITY.md](SECURITY.md) and do not open a public issue.
+How to build, test and change the server, and what a release takes: [docs/contributing.md](contributing.md). To report a
+vulnerability, follow [docs/security.md](security.md) and do not open a public issue.
 
 ## License
 
-This project is released under the MIT licence: see [LICENSE](LICENSE).
+This project is released under the MIT licence: see [LICENSE](../LICENSE).
 
 The organization (one HTTP client and tools named `taiga_<resource>_<action>`) follows that of
 [illodev/taiga-mcp](https://github.com/illodev/taiga-mcp), which is MIT licensed. The code here was written from

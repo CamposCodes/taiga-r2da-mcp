@@ -18,7 +18,7 @@ npm run build
 ```
 
 The server is `dist/index.js`. Note its absolute path. The package is not published to npm yet: what changes
-when it is, is in [From npm, once it is published](../../README.md#from-npm-once-it-is-published).
+when it is, is in [From npm, once it is published](../readme.md#from-npm-once-it-is-published).
 
 ## 2. Get a token
 
@@ -135,13 +135,13 @@ It adds one tool, `taiga_items_delete`, which deletes a user story, a task or an
 the first deletes nothing, shows the item and gives a code, and only a second call with that code can delete. On
 that second call, a client that has declared that it can put a question from a server to its user is made to ask
 you, and nothing is deleted without your yes there. Taiga keeps no trash, and a user story takes its tasks with
-it, so keep this tool off any allow list. See [TOOLS.md](../TOOLS.md) and [SECURITY.md](../../SECURITY.md).
+it, so keep this tool off any allow list. See [docs/tools.md](../tools.md) and [docs/security.md](../security.md).
 
 ## Things the documentation says that matter here
 
 - **Trust.** "Verify you trust each server before connecting it. Servers that fetch external content can expose
   you to prompt injection risk". This server returns text written by other people in Taiga: see
-  [SECURITY.md](../../SECURITY.md).
+  [docs/security.md](../security.md).
 - **Large answers.** "Claude Code displays a warning when MCP tool output exceeds 10,000 tokens and limits output
   to 25,000 tokens by default. To change the token limit, set the `MAX_MCP_OUTPUT_TOKENS` environment variable".
   The default answers of this server are far smaller; a list with `size: 200` or an item with a long history can

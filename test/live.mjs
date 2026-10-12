@@ -1,7 +1,7 @@
 // Runs dist/index.js against a real Taiga, in the ONE project named in .env. It reads what is there and changes
 // only the items it creates itself, which it marks as test items and deletes at the end when the role allows.
 // Nothing that comes from Taiga is printed: the details go to docs/internal/live-test.json, which git ignores.
-// Usage, after "npm run build" and with a filled .env (see docs/TESTING.md): npm run test:live
+// Usage, after "npm run build" and with a filled .env (see docs/testing.md): npm run test:live
 import assert from 'node:assert/strict'
 import { spawn } from 'node:child_process'
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'

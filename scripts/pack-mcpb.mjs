@@ -20,9 +20,11 @@ const stage = join('build', 'mcpb')
 rmSync(stage, { recursive: true, force: true })
 mkdirSync(join(stage, 'dist'), { recursive: true })
 // package.json goes along because it is what tells Node that dist/index.js is an ES module.
-for (const file of ['manifest.json', 'package.json', 'LICENSE', 'README.md', join('dist', 'index.js')]) {
+for (const file of ['manifest.json', 'package.json', 'LICENSE', join('dist', 'index.js')]) {
   cpSync(file, join(stage, file))
 }
+// The README lives in docs/: in the extension it sits at the top, under the name such a file usually has.
+cpSync(join('docs', 'readme.md'), join(stage, 'README.md'))
 // Only what the server needs to run: the packages npm lists when the development ones are left out.
 const needed = execSync('npm ls --omit=dev --all --parseable', { encoding: 'utf8' }).trim().split(/\r?\n/).slice(1)
 for (const folder of needed) {

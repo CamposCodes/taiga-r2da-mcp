@@ -22,7 +22,7 @@ npm run build
 ```
 
 The server is `dist/index.js`. Note its absolute path. The package is not published to npm yet: what changes
-when it is, is in [From npm, once it is published](../../README.md#from-npm-once-it-is-published).
+when it is, is in [From npm, once it is published](../readme.md#from-npm-once-it-is-published).
 
 ## 2. Get a token
 
@@ -103,7 +103,7 @@ default_tools_approval_mode = "writes"
 
 One caveat about `writes`: it asks before `taiga_attachments_get` too, although that tool changes nothing in
 Taiga. The tool is not marked read-only because it can save a file, to one folder per run of the server inside
-the temp folder of the machine. See [TOOLS.md](../TOOLS.md).
+the temp folder of the machine. See [docs/tools.md](../tools.md).
 
 ## Change an expired token
 
@@ -115,7 +115,7 @@ version has.
 
 Add `TAIGA_WRITE = "1"` to `env`, as in the suggestion above, or register with one more `--env TAIGA_WRITE=1`.
 With it the model can create and edit user stories, tasks and issues and attach files to them, in your name. Read
-[SECURITY.md](../../SECURITY.md) first.
+[docs/security.md](../security.md) first.
 
 ## Turn deleting on
 
@@ -134,4 +134,4 @@ It adds one tool, `taiga_items_delete`, which deletes a user story, a task or an
 the first deletes nothing, shows the item and gives a code, and only a second call with that code can delete. On
 that second call, a client that has declared that it can put a question from a server to its user is made to ask
 you, and nothing is deleted without your yes there. Taiga keeps no trash, and a user story takes its tasks with
-it. See [TOOLS.md](../TOOLS.md) and [SECURITY.md](../../SECURITY.md).
+it. See [docs/tools.md](../tools.md) and [docs/security.md](../security.md).

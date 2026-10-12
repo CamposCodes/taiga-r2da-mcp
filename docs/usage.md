@@ -55,7 +55,7 @@ flowchart LR
 | Writing | `taiga_userstories_create`, `taiga_userstories_update`, `taiga_tasks_create`, `taiga_tasks_update`, `taiga_issues_create`, `taiga_issues_update`, `taiga_attachments_add` | Create, edit and move a user story, a task or an issue, and attach a file to one |
 | Deleting | `taiga_items_delete` | Delete a user story, a task or an issue, in two calls |
 
-Parameters, example answers and errors of each tool are in [TOOLS.md](TOOLS.md).
+Parameters, example answers and errors of each tool are in [docs/tools.md](tools.md).
 
 ## Workflows
 
@@ -176,7 +176,7 @@ flowchart TD
 - `taiga_attachments_add` refuses a file that looks like a credential: a folder or a file whose name starts with
   a dot anywhere in the path (`.ssh`, `.env`), the folder where programs keep the data of the user (`AppData` on
   Windows, `Library` on macOS) except the temp folder inside it, and key files such as `.pem` and `.key`. The
-  full list is in [TOOLS.md](TOOLS.md). It is a deny list, not a sandbox: any other file you can read can be sent.
+  full list is in [docs/tools.md](tools.md). It is a deny list, not a sandbox: any other file you can read can be sent.
 - `taiga_attachments_get` is the one read tool that is not marked read-only, because it can save a file. A client
   that asks before every tool not marked read-only asks before opening an attachment.
 
@@ -363,7 +363,7 @@ The user did not approve the deletion: nothing was deleted. Do not ask again unl
   on the second call, when the client has declared that it can put a question from a server to its user. The
   model cannot answer that last question: it is the client that carries it to you.
 - In a client that did not declare it, the second call is made by the model, not by you, so what keeps a person
-  in the loop is the permission prompt of the client. Read [SECURITY.md](../SECURITY.md) before allowing this
+  in the loop is the permission prompt of the client. Read [docs/security.md](security.md) before allowing this
   tool without a prompt.
 - When your role may not delete the item, the first call already says so, with what the role may do instead, for
   example close the item by moving it to a closed status or leave a comment asking for the deletion.
@@ -404,7 +404,7 @@ can be a task with no user story, in the row of a sprint: `taiga_tasks_create` w
 `userStory`, as in `{ "project": "my-project", "subject": "Sem história", "sprint": "Sprint 12" }`.
 
 - Only what the role may do is offered. In this example an issue is not, because the role lacks `add_issue`.
-- The alternatives for each refusal are in the [Permissions](TOOLS.md#permissions) section of TOOLS.md.
+- The alternatives for each refusal are in the [Permissions](tools.md#permissions) section of docs/tools.md.
 - An edit that is only a comment needs only the permission to comment. In the same project,
   `{ "project": "locked-project", "ref": 13, "comment": "alguém pode mover?" }` goes through
   `taiga_tasks_update`, although the role may not edit tasks.

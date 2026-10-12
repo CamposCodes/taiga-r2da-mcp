@@ -6,8 +6,8 @@ before it is merged.
 ## Before you start
 
 - Open an issue first for anything larger than a fix, so the direction is agreed before the work.
-- A vulnerability is not reported in an issue: see [SECURITY.md](SECURITY.md).
-- The project is under the MIT licence, in [LICENSE](LICENSE). A contribution is accepted under that licence.
+- A vulnerability is not reported in an issue: see [docs/security.md](security.md).
+- The project is under the MIT licence, in [LICENSE](../LICENSE). A contribution is accepted under that licence.
 
 ## Build and test
 
@@ -24,13 +24,13 @@ npm run coverage   # the same scenarios, and how much of dist/index.js they run
 `npm test` starts the built server over stdio against a simulated Taiga that listens on `127.0.0.1`, calls every
 tool through the protocol and checks what is sent and what comes back. It needs no token and no network.
 `npm run coverage` runs the same scenarios itself and then says how many lines of the built server they ran. The
-list of the scenarios and the report of the last run are in [`docs/TESTING.md`](docs/TESTING.md).
+list of the scenarios and the report of the last run are in [`docs/testing.md`](testing.md).
 
 **Never point `npm test`, or a development session, at a real Taiga with a real token.** If a behaviour of the
 real API is missing from the simulated one, add it to `test/smoke.mjs` with the field names the real API uses.
 Only `npm run test:live` is made for a real Taiga: it is run by hand, works in the one project named in
 `TAIGA_TEST_PROJECT` and changes only the items it creates. Its rules are in
-[`docs/TESTING.md`](docs/TESTING.md).
+[`docs/testing.md`](testing.md).
 
 CI runs `npm ci`, `npm run check`, `npm run build` and `npm run coverage` on Linux, macOS and Windows, each with
 Node 20 and Node 24. It never runs `npm run test:live`.
@@ -41,7 +41,7 @@ Node 20 and Node 24. It never runs `npm run test:live`.
 runs. Do not add that tool to `package.json`: its own dependencies carry open security advisories, and nobody who
 only builds or tests the server needs it. `build/` is ignored by git.
 
-`npm run docs:tools`, after the build, writes the list of tools of `README.md` and `README.pt-BR.md` from what the
+`npm run docs:tools`, after the build, writes the list of tools of `docs/readme.md` and `docs/readme.pt-br.md` from what the
 server answers to `tools/list`. Run it after changing a tool, a parameter or a description: `npm test` fails when
 a README and the server differ. The Portuguese README says everything in Portuguese, so each new text of a tool
 needs its translation in `scripts/readme-tools.pt-BR.json`, and the script stops when one is missing.
@@ -70,14 +70,14 @@ needs its translation in `scripts/readme-tools.pt-BR.json`, and the script stops
 1. Register it with `server.registerTool`, with a `title`, a `description`, a description for every parameter
    and, when it answers data, an `outputSchema`.
 2. Add a scenario for it to `test/smoke.mjs`, with the answer the real API gives for that resource, and the row
-   of that scenario to the table of [`docs/TESTING.md`](docs/TESTING.md).
-3. Document it in [`docs/TOOLS.md`](docs/TOOLS.md): a section whose heading is the tool name in backticks, with
+   of that scenario to the table of [`docs/testing.md`](testing.md).
+3. Document it in [`docs/tools.md`](tools.md): a section whose heading is the tool name in backticks, with
    the parameter table, an example call, an example answer taken from the test, and its errors.
-4. Run `npm test`. It fails when a tool or a parameter of `tools/list` is not in `docs/TOOLS.md`, when the table
-   of `docs/TESTING.md` and the scenarios differ in a name or in the order, when the tools of a group are not
+4. Run `npm test`. It fails when a tool or a parameter of `tools/list` is not in `docs/tools.md`, when the table
+   of `docs/testing.md` and the scenarios differ in a name or in the order, when the tools of a group are not
    the ones its scenario lists, and when the `tools` list of `manifest.json` is not the list of the read tools.
-5. If it changes how the server meets a recommendation, update [`docs/COMPLIANCE.md`](docs/COMPLIANCE.md).
-6. Add a line to [`CHANGELOG.md`](CHANGELOG.md), under Unreleased.
+5. If it changes how the server meets a recommendation, update [`docs/compliance.md`](compliance.md).
+6. Add a line to [`docs/changelog.md`](changelog.md), under Unreleased.
 
 ## Releasing
 
@@ -88,7 +88,7 @@ Registry, so the steps below were not run for this project. What the registry as
 1. **One version in four places.** `package.json`, `server.json` (its `version` and the `version` of its
    package), `manifest.json` and the `McpServer` line of `src/index.ts` say the same version. `npm test` fails
    when one of them differs, and one scenario of `test/smoke.mjs` names the version too. Move what is under
-   Unreleased in `CHANGELOG.md` to the new version, then run `npm ci`, `npm run build` and `npm run coverage`.
+   Unreleased in `docs/changelog.md` to the new version, then run `npm ci`, `npm run build` and `npm run coverage`.
 2. **npm.** `npm publish`. The quickstart publishes with `npm publish --access public`; `package.json` sets that
    access in `publishConfig`. This comes before the registry: "The MCP Registry only hosts metadata, not
    artifacts, so we must publish the package to npm before publishing the server to the MCP Registry."
@@ -101,18 +101,18 @@ Registry, so the steps below were not run for this project. What the registry as
    currently in preview. Breaking changes or data resets may occur before general availability."
 4. **The extension.** `npm run pack:mcpb` writes `build/taiga-mcp-<version>.mcpb`. It is not committed and not
    published anywhere: hand the file to whoever installs it, as
-   [the Claude Desktop guide](docs/clients/claude-desktop.md#install-as-an-extension) says. It was not installed
+   [the Claude Desktop guide](clients/claude-desktop.md#install-as-an-extension) says. It was not installed
    in a real Claude Desktop yet, so do that before handing it over.
 
 ## Documentation
 
-- `README.md` and `docs/` are in English. `README.pt-BR.md` is the translation of the README: change both.
+- `docs/readme.md` and `docs/` are in English. `docs/readme.pt-br.md` is the translation of the README: change both.
 - Examples use `https://taiga.example.com`, the project `my-project`, the user `ana` and the token
   `<YOUR_TOKEN>`. No real server, project or person.
 - A statement about what a specification or a vendor recommends needs the URL of the page it was read on. What
   was not read is marked `[not verified]`.
 - Diagrams: each one has a Mermaid source inside the page and a drawn version in `docs/diagrams/`. Change both.
-  Check the Mermaid with `npx -y @mermaid-js/mermaid-cli -i docs/ARCHITECTURE.md -o /tmp/out.md`.
+  Check the Mermaid with `npx -y @mermaid-js/mermaid-cli -i docs/architecture.md -o /tmp/out.md`.
 
 ## Style
 

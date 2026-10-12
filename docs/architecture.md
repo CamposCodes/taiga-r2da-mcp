@@ -1,7 +1,7 @@
 # Architecture
 
 How the server is built and what happens between a request in plain language and the Taiga API. For the list of
-tools see [TOOLS.md](TOOLS.md); for the threat model see [SECURITY.md](../SECURITY.md).
+tools see [docs/tools.md](tools.md); for the threat model see [docs/security.md](security.md).
 
 ## Components
 
@@ -254,7 +254,7 @@ answers that are data as well as text.
 - Before a write, the server looks for the permission the write needs: `add_`, `modify_` or `delete_` followed by
   `us` (user story), `task` or `issue`. When it is missing nothing is sent, and the tool error says what that role
   may do in its place. Only the alternatives the role has the permission for are listed, and the last one is
-  always to ask a project admin. The table of alternatives is in [TOOLS.md](TOOLS.md#permissions).
+  always to ask a project admin. The table of alternatives is in [docs/tools.md](tools.md#permissions).
 - The error ends by telling the model not to work around the refusal on its own: it tells the user what was
   refused, offers the alternatives and waits for the choice. The instructions of the server say the same, and so
   does the error for a `403` that comes from Taiga.

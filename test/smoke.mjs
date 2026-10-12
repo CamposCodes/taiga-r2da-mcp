@@ -1,11 +1,11 @@
 // Runs dist/index.js over stdio against a fake Taiga that answers with the field names measured on the real one.
-// Each scenario below is a row of docs/TESTING.md. Usage, after "npm run build": npm test
+// Each scenario below is a row of docs/testing.md. Usage, after "npm run build": npm test
 import assert from 'node:assert/strict'
 import { spawn } from 'node:child_process'
-import { mkdirSync, readFileSync, rmSync, statSync, symlinkSync, writeFileSync } from 'node:fs'
+import { mkdirSync, readdirSync, readFileSync, rmSync, statSync, symlinkSync, writeFileSync } from 'node:fs'
 import { createServer } from 'node:http'
 import { homedir, tmpdir } from 'node:os'
-import { basename, dirname, join } from 'node:path'
+import { basename, dirname, join, posix } from 'node:path'
 
 const seen = []
 const KINDS = ['us', 'task', 'issue']
@@ -644,8 +644,8 @@ await scenario('TAIGA_DELETE=1 adds the one tool that deletes, marked as destruc
   assert.match(deleter.instructions, /taiga_items_delete, in two calls.*only after a yes/)
   assert.match(d.stderr(), /\(writes user stories, tasks, issues and attachments, and deletes them\)/)
 })
-await scenario('docs/TOOLS.md describes exactly the tools and the parameters that tools/list gives, in the same order', async () => {
-  const documented = readFileSync('docs/TOOLS.md', 'utf8').split(/^### `/m).slice(1).map((part) => [part.slice(0, part.indexOf('`')), [...part.matchAll(/^\| `(\w+)` \|/gm)].map((row) => row[1])])
+await scenario('docs/tools.md describes exactly the tools and the parameters that tools/list gives, in the same order', async () => {
+  const documented = readFileSync('docs/tools.md', 'utf8').split(/^### `/m).slice(1).map((part) => [part.slice(0, part.indexOf('`')), [...part.matchAll(/^\| `(\w+)` \|/gm)].map((row) => row[1])])
   assert.deepEqual(documented, deleter.tools.map((t) => [t.name, Object.keys(t.inputSchema.properties ?? {})]))
 })
 const CODE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
@@ -797,17 +797,38 @@ await scenario('manifest.json of the Claude Desktop extension names this version
   // It lists the tools that are always there, and says that more can appear.
   assert.deepEqual([manifest.tools.map((t) => t.name), manifest.tools_generated], [tools.map((t) => t.name), true])
 })
-await scenario('README.md and README.pt-BR.md list every tool with its parameters, as tools/list gives them', async () => {
+await scenario('docs/readme.md and docs/readme.pt-br.md list every tool with its parameters, as tools/list gives them', async () => {
   const expected = deleter.tools.map((t) => [t.name, Object.keys(t.inputSchema.properties ?? {})])
-  for (const file of ['README.md', 'README.pt-BR.md']) {
+  for (const file of ['docs/readme.md', 'docs/readme.pt-br.md']) {
     const list = readFileSync(file, 'utf8').split('<!-- tools:end -->')[0].split(/^- \*\*(?=taiga_)/m).slice(1)
     const listed = list.map((part) => [part.slice(0, part.indexOf('**')), [...part.matchAll(/^ {4}- `(\w+)` \(/gm)].map((row) => row[1])])
     assert.deepEqual(listed, expected, `${file}: run "npm run docs:tools"`)
   }
 })
-await scenario('docs/TESTING.md lists exactly these scenarios, in this order', async () => {
-  const listed = [...readFileSync('docs/TESTING.md', 'utf8').matchAll(/^\| S(\d+) \| (.+?) \|/gm)].map((row) => row[2])
-  assert.deepEqual(listed, [...done, 'docs/TESTING.md lists exactly these scenarios, in this order'])
+await scenario('Every link between the documents leads to a file and a heading that exist, in the same upper and lower case', async () => {
+  const pages = ['docs', 'docs/clients'].flatMap((folder) => readdirSync(folder).filter((name) => name.endsWith('.md')).map((name) => `${folder}/${name}`))
+  // Windows forgives a wrong case in a name and GitHub does not: each part of a path is looked up in its folder.
+  const exists = (path) => path.split('/').every((part, i, parts) => part === '..' || readdirSync(parts.slice(0, i).join('/') || '.').includes(part))
+  // The anchor GitHub gives a heading: lower case, punctuation dropped, spaces turned into dashes.
+  const headings = (page) => [...readFileSync(page, 'utf8').matchAll(/^#{1,6} (.+?)\r?$/gm)].map((m) => m[1].replaceAll('`', '').trim().toLowerCase().replace(/[^\p{L}\p{N} _-]/gu, '').replaceAll(' ', '-'))
+  let followed = 0
+  for (const page of pages) {
+    // What is inside a code block or a code span is an example, not a link.
+    const prose = readFileSync(page, 'utf8').replace(/```[^]*?```/g, '').replace(/`[^`\n]*`/g, '')
+    for (const [, target] of prose.matchAll(/!?\[[^\]]*\]\(([^)\s]+)\)/g)) {
+      if (/^(https?:|mailto:)/.test(target)) continue
+      const [path, anchor] = target.split('#')
+      const aimed = path ? posix.normalize(posix.join(posix.dirname(page), path)).replace(/\/$/, '') : page
+      assert.ok(exists(aimed), `${page}: ${target} leads to ${aimed}, which does not exist`)
+      if (anchor && aimed.endsWith('.md')) assert.ok(headings(aimed).includes(anchor), `${page}: ${target}: ${aimed} has no heading "${anchor}"`)
+      followed++
+    }
+  }
+  assert.ok(followed > 100, String(followed))
+})
+await scenario('docs/testing.md lists exactly these scenarios, in this order', async () => {
+  const listed = [...readFileSync('docs/testing.md', 'utf8').matchAll(/^\| S(\d+) \| (.+?) \|/gm)].map((row) => row[2])
+  assert.deepEqual(listed, [...done, 'docs/testing.md lists exactly these scenarios, in this order'])
 })
 fake.close()
 console.log(`ok: ${done.length} scenarios, 10 tools read-only, 7 more with TAIGA_WRITE=1, 1 more with TAIGA_DELETE=1`)

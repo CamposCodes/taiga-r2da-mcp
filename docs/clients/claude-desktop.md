@@ -22,7 +22,7 @@ npm run build
 
 The server is `dist/index.js`. Note its absolute path: the page says paths in the configuration must be
 "absolute and not relative". The package is not published to npm yet: what changes when it is, is in
-[From npm, once it is published](../../README.md#from-npm-once-it-is-published).
+[From npm, once it is published](../readme.md#from-npm-once-it-is-published).
 
 ## 2. Get a token
 
@@ -119,7 +119,7 @@ Add one line to `env` and restart:
 ```
 
 With it the model can create and edit user stories, tasks and issues and attach files to them, in your name. Read
-what it proposes before approving, and read [SECURITY.md](../../SECURITY.md) first.
+what it proposes before approving, and read [docs/security.md](../security.md) first.
 
 ## Turn deleting on
 
@@ -139,8 +139,8 @@ It adds one tool, `taiga_items_delete`, which deletes a user story, a task or an
 the first deletes nothing, shows the item and gives a code, and only a second call with that code can delete. On
 that second call, a client that has declared that it can put a question from a server to its user is made to ask
 you, and nothing is deleted without your yes there. Taiga keeps no trash, and a user story takes its tasks with
-it, so read what the model shows before approving. See [TOOLS.md](../TOOLS.md) and
-[SECURITY.md](../../SECURITY.md).
+it, so read what the model shows before approving. See [docs/tools.md](../tools.md) and
+[docs/security.md](../security.md).
 
 ## When it does not connect
 
@@ -161,7 +161,7 @@ needs to run, with a form in place of the configuration file. This repository bu
 committed and not published anywhere: a person builds it and hands it over.
 
 **The extension was not installed in a real Claude Desktop.** The packaging tool validated the manifest, and the
-server unpacked from the file passes the scenarios of [TESTING.md](../TESTING.md). What Claude Desktop shows and
+server unpacked from the file passes the scenarios of [docs/testing.md](../testing.md). What Claude Desktop shows and
 does with the file is quoted below from its documentation and was not seen by this project.
 
 The two pages quoted, both read on 2026-10-12:

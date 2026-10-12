@@ -918,7 +918,7 @@ What is refused, after links are followed to the real file:
 | A file the system makes up, on Linux | Anything under `/proc`, `/sys`, `/dev` or `/run`: `/proc/self/environ` is the environment of the server itself, token included |
 
 It is a deny list, not a sandbox: a secret kept under an ordinary name in an ordinary folder is not recognised.
-Any other file the user of the machine can read can be sent to Taiga. Read [SECURITY.md](../SECURITY.md) before
+Any other file the user of the machine can read can be sent to Taiga. Read [docs/security.md](security.md) before
 allowing this tool without a prompt.
 
 ## Delete tool
@@ -998,7 +998,7 @@ The server sends `DELETE /userstories/100` and answers with `"deleted": true`, t
   The model cannot answer that question: the client carries it to the person.
 - In a client that did not declare that capability, the second call deletes. Both calls are then made by the
   model, and what keeps a person in the loop is the permission prompt of the client, which the annotation
-  `destructiveHint: true` feeds. See [SECURITY.md](../SECURITY.md).
+  `destructiveHint: true` feeds. See [docs/security.md](security.md).
 
 Errors:
 

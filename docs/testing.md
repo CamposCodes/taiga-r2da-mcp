@@ -19,7 +19,7 @@ flowchart LR
     server["dist/index.js (one process per mode)"]
     fake["Simulated Taiga on 127.0.0.1"]
     cover["test/coverage.mjs"]
-    docs["docs/TOOLS.md and docs/TESTING.md"]
+    docs["docs/tools.md and docs/testing.md"]
 
     cover -->|"runs, with NODE_V8_COVERAGE"| runner
     runner -->|"JSON-RPC over stdio"| server
@@ -109,7 +109,7 @@ Node 20 or newer. `npm run coverage` runs the scenarios itself, so in a hurry it
 | S55 | Every change that reached Taiga and every tool error leaves a line on stderr | Permissions |
 | S56 | The token is in nothing the writing server says | Permissions |
 | S57 | TAIGA_DELETE=1 adds the one tool that deletes, marked as destructive | Deleting |
-| S58 | docs/TOOLS.md describes exactly the tools and the parameters that tools/list gives, in the same order | Deleting |
+| S58 | docs/tools.md describes exactly the tools and the parameters that tools/list gives, in the same order | Deleting |
 | S59 | The first call of taiga_items_delete deletes nothing: it shows the item and gives a random code | Deleting |
 | S60 | A code the server did not give for that item, as it is now, deletes nothing | Deleting |
 | S61 | With the code of the first call the item is deleted, whatever its kind, and the code works once | Deleting |
@@ -120,8 +120,9 @@ Node 20 or newer. `npm run coverage` runs the scenarios itself, so in a hurry it
 | S66 | Every answer that is data said the same as text and as structured content | Limits and documents |
 | S67 | package.json and server.json name the same server, the same version and the same variables | Limits and documents |
 | S68 | manifest.json of the Claude Desktop extension names this version, the four variables and the read tools | Limits and documents |
-| S69 | README.md and README.pt-BR.md list every tool with its parameters, as tools/list gives them | Limits and documents |
-| S70 | docs/TESTING.md lists exactly these scenarios, in this order | Limits and documents |
+| S69 | docs/readme.md and docs/readme.pt-br.md list every tool with its parameters, as tools/list gives them | Limits and documents |
+| S70 | Every link between the documents leads to a file and a heading that exist, in the same upper and lower case | Limits and documents |
+| S71 | docs/testing.md lists exactly these scenarios, in this order | Limits and documents |
 
 What the scenarios use, in the simulated Taiga:
 
