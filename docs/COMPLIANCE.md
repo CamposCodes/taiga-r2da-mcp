@@ -215,4 +215,4 @@ Not measured:
 - **The time limit.** No scenario waits 120 seconds to see it fire.
 - **The configuration files of the MCP clients and the history of the shell**, outside this repository, where a
   real token may be: they were not opened.
-- **A real Taiga.** Not run yet: it waits for a `.env` with a token. See [TESTING.md](TESTING.md#live-test).
+- **A real Taiga.** Run on 2026-10-12 with `npm run test:live`, in one project of a Taiga 6 installation: 15 of 15 steps passed and no test item was left behind. The role of the token had every permission the steps needed, so a refusal for lack of permission was not seen against a real Taiga. See [TESTING.md](TESTING.md#live-test).

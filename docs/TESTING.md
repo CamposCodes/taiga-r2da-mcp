@@ -199,7 +199,42 @@ are created and deleted.
 
 ### Result
 
-Not run yet.
+Run on 2026-10-12, on Windows 11 with Node 24.15.0, version 0.3.0 of the server, against a Taiga 6 installation,
+in one project. The role of the token may create, edit and delete user stories, tasks and issues there.
+
+| Result | Count |
+| --- | --- |
+| Steps that passed | 15 of 15 |
+| Steps with a refusal for lack of permission | 0 |
+| Steps skipped | 0 |
+| Test items left in the project | 0 |
+
+The steps:
+
+| # | Step |
+| --- | --- |
+| L01 | The server starts with the token of .env and lists 18 tools |
+| L02 | taiga_me, taiga_projects_list and taiga_projects_get answer in the declared shape |
+| L03 | The lists and the search answer in the declared shape on the real data |
+| L04 | taiga_items_get reads items that already exist, with comments and history, without changing them |
+| L05 | taiga_userstories_create creates a user story marked as a test |
+| L06 | taiga_userstories_update moves it to another status, blocks it, unblocks it and comments |
+| L07 | taiga_tasks_create creates a task in that user story |
+| L08 | taiga_tasks_update moves the task, assigns it, sets and clears a due date, and comments |
+| L09 | taiga_issues_create and taiga_issues_update create an issue and move it |
+| L10 | taiga_attachments_add sends a file to each item, and taiga_attachments_get reads it back |
+| L11 | taiga_attachments_add refuses a file that looks like a credential, before anything is sent |
+| L12 | taiga_items_get shows what the test wrote: the comment, the attachment, the task of the story |
+| L13 | A wrong kind, an unknown name and an edit of nothing are refused by the server |
+| L14 | taiga_items_delete shows first and deletes only with the code: every item of the test is removed |
+| L15 | The token is in nothing the server wrote |
+
+What this run did not show:
+
+- **A refusal for lack of permission.** The role had every permission the steps needed, so the refusals and their
+  alternatives are proven only by the scenarios against the simulated Taiga.
+- **Other projects.** The test works in one project by design.
+- **A sprint.** The project has none, so a task without a user story, which needs a sprint, was not created.
 
 ## Requests to try with a model
 
