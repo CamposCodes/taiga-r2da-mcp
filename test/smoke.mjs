@@ -453,6 +453,17 @@ await scenario('TAIGA_WRITE=1 adds 7 tools that write, and none that deletes', a
   assert.match(writer.instructions, /do not work around it.*Nothing can be deleted\./)
   assert.match(w.stderr(), /\(writes user stories, tasks, issues and attachments\)/)
 })
+await scenario('TAIGA_WRITE and TAIGA_DELETE are on with 1 or with true, and with nothing else', async () => {
+  const count = async (extra) => {
+    const server = start('good', extra)
+    const { tools } = await server.open()
+    await server.stop()
+    return tools.length
+  }
+  assert.equal(await count({ TAIGA_WRITE: 'true' }), 17)
+  assert.equal(await count({ TAIGA_WRITE: 'true', TAIGA_DELETE: 'true' }), 18)
+  for (const value of ['yes', 'on', 'TRUE', '0', 'false', '']) assert.equal(await count({ TAIGA_WRITE: value, TAIGA_DELETE: value }), 10, value)
+})
 await scenario('A task that would be on no board is refused before anything is sent', async () => {
   assert.match((await w.call('taiga_tasks_create', { project: 'my-project', subject: 'Solta' })).error, /needs a user story or a sprint/)
   assert.match((await w.call('taiga_tasks_create', { project: 'my-project', subject: 'Solta', sprint: 'backlog' })).error, /cannot go to the backlog/)

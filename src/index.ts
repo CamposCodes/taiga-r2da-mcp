@@ -1271,8 +1271,11 @@ async function main() {
     throw new Error("TAIGA_TOKEN has a space, a line break or another character no token has: copy it again, in one piece.");
   }
   const client = new TaigaClient(url, token);
-  const write = process.env.TAIGA_WRITE === "1";
-  const remove = process.env.TAIGA_DELETE === "1";
+  // A switch is on with 1, or with true: that is how a client that builds the environment from a form writes a
+  // ticked box. Anything else, "yes" and "on" included, leaves it off.
+  const on = (name: string) => ["1", "true"].includes(process.env[name] ?? "");
+  const write = on("TAIGA_WRITE");
+  const remove = on("TAIGA_DELETE");
   if (remove && !write) {
     throw new Error("TAIGA_DELETE=1 needs TAIGA_WRITE=1: deleting is a kind of writing.");
   }
