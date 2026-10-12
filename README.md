@@ -30,6 +30,27 @@ Your MCP client starts `node dist/index.js` with the address of your Taiga and y
 token, registers its tools and waits. Each tool call becomes one or more requests to the Taiga REST API, and the
 answer goes back to the model as short JSON. More in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
+The diagram follows one question from start to finish: the model picks a tool, the server turns the call into
+requests to Taiga, and the answer comes back short.
+
+```mermaid
+sequenceDiagram
+    participant U as You
+    participant C as MCP client and model
+    participant S as taiga-mcp
+    participant T as Taiga API
+    U->>C: What is open in the current sprint?
+    C->>S: tools/call taiga_tasks_list, over stdio
+    S->>T: GET the project, with the token
+    T-->>S: statuses, members and sprints
+    Note over S: names become ids
+    S->>T: GET one page of tasks
+    T-->>S: tasks
+    Note over S: ids become names, one short line per task
+    S-->>C: tool result
+    C-->>U: the answer in plain language
+```
+
 ## Quick start
 
 Requires Node 20 or newer and a Taiga 6 you can log in to, reached over `https://`.
@@ -141,6 +162,29 @@ requests: [docs/USAGE.md](docs/USAGE.md).
 | `TAIGA_DELETE` | no | `1` or `true` registers `taiga_items_delete`, the tool that deletes. It needs `TAIGA_WRITE` on as well: without it the server stops at start |
 
 The server reads these from its environment and from nowhere else. [`.env.example`](.env.example) lists them.
+
+The diagram shows which tools exist for each setting of the two switches.
+
+```mermaid
+flowchart TD
+    start(["The client starts the server"])
+    read["10 read tools: always there"]
+    w{"TAIGA_WRITE is 1 or true?"}
+    write["7 write tools: create, edit, move, attach"]
+    d{"TAIGA_DELETE is 1 or true?"}
+    del["1 delete tool: shows first, asks, then deletes"]
+    ro(["Read-only: every request to Taiga is a GET"])
+    rw(["Reads and writes, deletes nothing"])
+    all(["Reads, writes and deletes"])
+    start --> read
+    read --> w
+    w -->|"no"| ro
+    w -->|"yes"| write
+    write --> d
+    d -->|"no"| rw
+    d -->|"yes"| del
+    del --> all
+```
 
 The token expires after a time set by your Taiga. When it does, tools answer
 `Taiga refused the token: it expired or is wrong.` and you copy a new one. The server does not renew it.

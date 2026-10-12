@@ -33,6 +33,27 @@ O seu cliente MCP inicia `node dist/index.js` com o endereço do seu Taiga e o s
 token, registra as tools e espera. Cada chamada de tool vira uma ou mais chamadas à API REST do Taiga, e a
 resposta volta ao modelo em JSON curto. Mais em [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
+O diagrama acompanha uma pergunta do começo ao fim: o modelo escolhe uma tool, o servidor transforma a chamada em
+pedidos ao Taiga, e a resposta volta curta.
+
+```mermaid
+sequenceDiagram
+    participant U as Você
+    participant C as Cliente MCP e modelo
+    participant S as taiga-mcp
+    participant T as API do Taiga
+    U->>C: O que está aberto na sprint atual?
+    C->>S: tools/call taiga_tasks_list, por stdio
+    S->>T: GET do projeto, com o token
+    T-->>S: status, membros e sprints
+    Note over S: nomes viram ids
+    S->>T: GET de uma página de tarefas
+    T-->>S: tarefas
+    Note over S: ids viram nomes, uma linha curta por tarefa
+    S-->>C: resultado da tool
+    C-->>U: a resposta em linguagem comum
+```
+
 ## Início rápido
 
 Requer Node 20 ou mais novo e um Taiga 6 em que você consiga entrar, acessado por `https://`.
@@ -147,6 +168,29 @@ pedidos de exemplo: [docs/USAGE.md](docs/USAGE.md).
 
 O servidor lê essas variáveis do próprio ambiente e de nenhum outro lugar. O arquivo
 [`.env.example`](.env.example) lista todas elas.
+
+O diagrama mostra quais tools existem para cada ajuste das duas chaves.
+
+```mermaid
+flowchart TD
+    start(["O cliente inicia o servidor"])
+    read["10 tools de leitura: sempre presentes"]
+    w{"TAIGA_WRITE é 1 ou true?"}
+    write["7 tools de escrita: criar, editar, mover, anexar"]
+    d{"TAIGA_DELETE é 1 ou true?"}
+    del["1 tool de exclusão: mostra antes, pergunta, depois exclui"]
+    ro(["Somente leitura: todo pedido ao Taiga é um GET"])
+    rw(["Lê e escreve, não exclui nada"])
+    all(["Lê, escreve e exclui"])
+    start --> read
+    read --> w
+    w -->|"não"| ro
+    w -->|"sim"| write
+    write --> d
+    d -->|"não"| rw
+    d -->|"sim"| del
+    del --> all
+```
 
 O token expira depois de um tempo definido pelo seu Taiga. Quando isso acontece, as tools respondem
 `Taiga refused the token: it expired or is wrong.` e você copia um novo. O servidor não renova o token.
