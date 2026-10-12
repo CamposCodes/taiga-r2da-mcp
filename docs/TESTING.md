@@ -162,12 +162,29 @@ What the scenarios do not prove:
 
 - **The time limit.** Every request to Taiga has a limit of 120 seconds. The option is on the line that is run, but
   no scenario waits two minutes to see it fire.
-- **Other systems.** This run was on Windows. The mode of the temp folder is checked only on Linux and macOS, the
-  refusal of the profile folder only on Windows and macOS, and a link to a secret only where a link can be made
-  without a privilege. The CI runs the scenarios on the three systems, on Node 20 and 24; it has not run yet.
+- **Other systems, on this machine.** The run above was on Windows. The mode of the temp folder is checked only on
+  Linux and macOS, the refusal of the profile folder only on Windows and macOS, the refusal of `/proc` only on
+  Linux, and a link to a secret only where a link can be made without a privilege. Those are covered by the CI:
+  see [The same scenarios on other systems](#the-same-scenarios-on-other-systems).
 - **A model.** The scenarios call the tools directly. Whether a model picks the right tool from a request is not
   measured here: see [Requests to try with a model](#requests-to-try-with-a-model).
 - **A real Taiga.** That is the live test, below.
+
+### The same scenarios on other systems
+
+The CI runs `npm run coverage` on every push. Its first run, on 2026-10-12, at commit `a38806d`:
+<https://github.com/CamposCodes/taiga-r2da-mcp/actions/runs/38279171114>.
+
+| System | Node | Scenarios | Lines of dist/index.js run in full |
+| --- | --- | --- | --- |
+| Linux (ubuntu-latest) | 20 | 69 passed | 1096 of 1100 (99.6%) |
+| Linux (ubuntu-latest) | 24 | 69 passed | 1096 of 1100 (99.6%) |
+| macOS (macos-latest) | 20 | 69 passed | 1097 of 1100 (99.7%) |
+| macOS (macos-latest) | 24 | 69 passed | 1097 of 1100 (99.7%) |
+| Windows (windows-latest) | 20 | 69 passed | 1097 of 1100 (99.7%) |
+| Windows (windows-latest) | 24 | 69 passed | 1097 of 1100 (99.7%) |
+
+Linux runs one line less in full: the check of the profile folder, which exists only on Windows and macOS.
 
 ## Live test
 

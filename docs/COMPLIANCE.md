@@ -253,16 +253,16 @@ These were not read on the audit dates and are not stated as fact anywhere in th
   field is stored.
 - Whether the MCP Registry accepts capital letters in the user name of `mcpName`.
 
+Measured by the CI, on 2026-10-12 (<https://github.com/CamposCodes/taiga-r2da-mcp/actions/runs/38279171114>): the
+69 scenarios passed on Linux, macOS and Windows, each with Node 20 and Node 24. That run is where the mode
+of the folder `mkdtemp` makes (S18), the refusal of a link to a secret and, on Linux, the refusal of `/proc` were
+checked: the machine the server was written on is Windows.
+
 Not measured:
 
-- **Other systems and Node versions.** Version 0.3.0 was built and tested on Windows 11 with Node 24.15. The CI
-  is set to run on Linux, macOS and Windows with Node 20 and 24, and has not run yet: the repository has no remote.
-  The mode of the folder `mkdtemp` makes (S18) and the refusal of a link to a secret are checked only where the
-  CI runs.
 - **The time limit.** No scenario waits 120 seconds to see it fire.
 - **The ten minutes of a deletion code.** No scenario waits for one to grow old.
 - **A drive mapped to a share**, which `realpath` gives back as a network path: reasoned from the code, not tried.
-- **The refusal of `/proc`** runs only on Linux, where the scenarios have not run yet.
 - **The configuration files of the MCP clients and the history of the shell**, outside this repository, where a
   real token may be: they were not opened.
 - **A real Taiga.** Run on 2026-10-12 with `npm run test:live`, in one project of a Taiga 6 installation, and repeated after each change of that day: in the last run 16 of 16 steps passed and no test item was left behind. A separate check in a second project, where the role may not create a user story, showed the refusal with its alternatives and no request sent. See [TESTING.md](TESTING.md#live-test).
