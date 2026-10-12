@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>One call for the task, one per attachment</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Ubuntu:wght@400;500;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper:   #e6f6f4;
+      --color-ink:     #212121;
+      --color-muted:   #414147;
+      --color-accent:  #006557;
+      --font-sans:     'Ubuntu', 'Segoe UI', sans-serif;
+      --font-serif:    'Instrument Serif', serif;
+      --font-mono:     'Geist Mono', ui-monospace, Consolas, monospace;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-paper);
+      color: var(--color-ink);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 2rem;
+    }
+
+    .frame { max-width: 1200px; width: 100%; }
+    /* The SVG holds its readable width (min-width == the viewBox width).
+       This wrapper lets a narrow screen scroll the diagram, not the page. */
+    .diagram-container { width: 100%; overflow-x: auto; }
+
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      color: var(--color-ink);
+      margin-bottom: 1.5rem;
+    }
+
+    svg { width: 100%; min-width: 960px; display: block; }
+    /* Must come after the svg rule: paper has no scrollbar. */
+    @media print {
+      .diagram-container { overflow-x: visible; }
+      svg { min-width: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Sequence · taiga-mcp</p>
+    <h1>One call for the task, one per attachment</h1>
+
+    <div class="diagram-container">
+      <svg viewBox="0 0 960 840" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="d-05-whole-task-title d-05-whole-task-desc">
+        <title id="d-05-whole-task-title">How a model reads a whole task</title>
+        <desc id="d-05-whole-task-desc">Sequence showing how a model understands a whole task: one taiga_items_get call returns the description, the comments and the list of attachments, then one taiga_attachments_get call per attachment listed returns an image, a text or the path of a saved file.</desc>
+        <defs>
+          <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#414147"/></marker>
+          <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#006557"/></marker>
+          <marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#b85c33"/></marker>
+        </defs>
+
+        <rect width="100%" height="100%" fill="#e6f6f4"/>
+
+        <!-- Combined fragments: frame, operator tab, guard -->
+        <rect x="144" y="416" width="736" height="252" rx="4" fill="#f5f5f5" stroke="#d3d3d3" stroke-width="1"/>
+        <rect x="144" y="416" width="40" height="16" rx="2" fill="#ffffff" stroke="#d3d3d3" stroke-width="1"/>
+        <text x="164" y="427" font-size="8" font-family="'Geist Mono', ui-monospace, Consolas, monospace" fill="#414147" text-anchor="middle" letter-spacing="0.12em">LOOP</text>
+        <text x="156" y="446" font-size="8" font-family="'Geist Mono', ui-monospace, Consolas, monospace" fill="#414147" letter-spacing="0.04em">[each attachment listed]</text>
+
+        <!-- Lifelines -->
+        <line x1="104" y1="88" x2="104" y2="760" stroke="rgba(0,0,0,0.22)" stroke-width="1" stroke-dasharray="3,3"/>
+        <line x1="316" y1="88" x2="316" y2="760" stroke="rgba(0,0,0,0.22)" stroke-width="1" stroke-dasharray="3,3"/>
+        <line x1="560" y1="88" x2="560" y2="760" stroke="rgba(0,0,0,0.22)" stroke-width="1" stroke-dasharray="3,3"/>
+        <line x1="856" y1="88" x2="856" y2="760" stroke="rgba(0,0,0,0.22)" stroke-width="1" stroke-dasharray="3,3"/>
+
+        <!-- Activation bars -->
+        <rect x="312" y="132" width="8" height="584" fill="#ffffff" stroke="#414147" stroke-width="0.8"/>
+        <rect x="556" y="196" width="8" height="172" fill="#ffffff" stroke="#414147" stroke-width="0.8"/>
+        <rect x="556" y="460" width="8" height="160" fill="#ffffff" stroke="#414147" stroke-width="0.8"/>
+        <rect x="852" y="252" width="8" height="76" fill="#ffffff" stroke="#414147" stroke-width="0.8"/>
+        <rect x="852" y="516" width="8" height="64" fill="#ffffff" stroke="#414147" stroke-width="0.8"/>
+
+        <!-- Messages: time flows top to bottom -->
+        <line x1="104" y1="136" x2="312" y2="136" stroke="#414147" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <line x1="320" y1="200" x2="556" y2="200" stroke="#006557" stroke-width="1.4" marker-end="url(#arrow-accent)"/>
+        <line x1="564" y1="256" x2="852" y2="256" stroke="#b85c33" stroke-width="1.2" marker-end="url(#arrow-link)"/>
+        <line x1="852" y1="324" x2="564" y2="324" stroke="#414147" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#arrow)"/>
+        <line x1="556" y1="364" x2="320" y2="364" stroke="#414147" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#arrow)"/>
+        <line x1="320" y1="464" x2="556" y2="464" stroke="#414147" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <line x1="564" y1="520" x2="852" y2="520" stroke="#b85c33" stroke-width="1.2" marker-end="url(#arrow-link)"/>
+        <line x1="852" y1="576" x2="564" y2="576" stroke="#414147" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#arrow)"/>
+        <line x1="556" y1="616" x2="320" y2="616" stroke="#414147" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#arrow)"/>
+        <line x1="312" y1="712" x2="104" y2="712" stroke="#414147" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#arrow)"/>
+
+        <!-- Message labels: each mask stops 8px short of its stroke -->
+        <rect x="194" y="116" width="32" height="12" rx="2" fill="#e6f6f4"/>
+        <text x="210" y="125" font-size="8" font-family="'Geist Mono', ui-monospace, Consolas, monospace" fill="#414147" text-anchor="middle" letter-spacing="0.08em">ASK</text>
+        <rect x="114" y="144" width="192" height="28" rx="2" fill="#e6f6f4"/>
+        <text x="210" y="154" font-size="9" font-family="'Geist Mono', ui-monospace, Consolas, monospace" fill="#555555" text-anchor="middle"><tspan fill="#212121">“Read task 13 of my-project</tspan></text>
+        <text x="210" y="166" font-size="9" font-family="'Geist Mono', ui-monospace, Consolas, monospace" fill="#555555" text-anchor="middle"><tspan fill="#212121">with comments and attachments”</tspan></text>
+        <rect x="402" y="180" width="72" height="12" rx="2" fill="#e6f6f4"/>
+        <text x="438" y="189" font-size="8" font-family="'Geist Mono', ui-monospace, Consolas, monospace" fill="#006557" text-anchor="middle" letter-spacing="0.08em">TOOL CALL</text>
+        <rect x="334" y="208" width="208" height="32" rx="2" fill="#e6f6f4"/>
+        <text x="438" y="221" font-size="12" font-family="'Geist Mono', ui-monospace, Consolas, monospace" fill="#006557" font-weight="600" text-anchor="middle">taiga_items_get</text>
+        <text x="438" y="235" font-size="9" font-family="'Geist Mono', ui-monospace, Consolas, monospace" fill="#555555" text-anchor="middle"><tspan fill="#555555">with </tspan><tspan fill="#212121">ref 13</tspan><tspan fill="#555555"> and </tspan><tspan fill="#212121">include comments</tspan></text>
+        <rect x="664" y="236" width="88" height="12" rx="2" fill="#e6f6f4"/>
+        <text x="708" y="245" font-size="8" font-family="'Geist Mono', ui-monospace, Consolas, monospace" fill="#b85c33" text-anchor="middle" letter-spacing="0.08em">READ THE TASK</text>
+        <rect x="600" y="264" width="216" height="28" rx="2" fill="#e6f6f4"/>
+        <text x="708" y="274" font-size="9" font-family="'Geist Mono', ui-monospace, Consolas, monospace" fill="#555555" text-anchor="middle"><tspan fill="#555555">resolve the number, read the task,</tspan></text>
+        <text x="708" y="286" font-size="9" font-family="'Geist Mono', ui-monospace, Consolas, monospace" fill="#555555" text-anchor="middle"><tspan fill="#555555">its attachments and history</tspan></text>
+        <rect x="672" y="304" width="72" height="12" rx="2" fill="#e6f6f4"/>
+        <text x="708" y="313" font-size="8" font-family="'Geist Mono', ui-monospace, Consolas, monospace" fill="#414147" text-anchor="middle" letter-spacing="0.08em">TASK DATA</text>
+        <rect x="398" y="344" width="80" height="12" rx="2" fill="#e6f6f4"/>
+        <text x="438" y="353" font-size="8" font-family="'Geist Mono', ui-monospace, Consolas, monospace" fill="#414147" text-anchor="middle" letter-spacing="0.08em">TOOL RESULT</text>
+        <rect x="358" y="372" width="160" height="28" rx="2" fill="#e6f6f4"/>
+        <text x="438" y="382" font-size="9" font-family="'Geist Mono', ui-monospace, Consolas, monospace" fill="#555555" text-anchor="middle"><tspan fill="#212121">description, commentList</tspan></text>
+        <text x="438" y="394" font-size="9" font-family="'Geist Mono', ui-monospace, Consolas, monospace" fill="#555555" text-anchor="middle"><tspan fill="#555555">and </tspan><tspan fill="#212121">attachments</tspan></text>
+        <rect x="402" y="444" width="72" height="12" rx="2" fill="#f5f5f5"/>
+        <text x="438" y="453" font-size="8" font-family="'Geist Mono', ui-monospace, Consolas, monospace" fill="#414147" text-anchor="middle" letter-spacing="0.08em">TOOL CALL</text>
+        <rect x="342" y="472" width="192" height="28" rx="2" fill="#f5f5f5"/>
+        <text x="438" y="482" font-size="9" font-family="'Geist Mono', ui-monospace, Consolas, monospace" fill="#555555" text-anchor="middle"><tspan fill="#212121" font-weight="600">taiga_attachments_get</tspan></text>
+        <text x="438" y="494" font-size="9" font-family="'Geist Mono', ui-monospace, Consolas, monospace" fill="#555555" text-anchor="middle"><tspan fill="#555555">with the attachment name or id</tspan></text>
+        <rect x="664" y="500" width="88" height="12" rx="2" fill="#f5f5f5"/>
+        <text x="708" y="509" font-size="8" font-family="'Geist Mono', ui-monospace, Consolas, monospace" fill="#b85c33" text-anchor="middle" letter-spacing="0.08em">DOWNLOAD FILE</text>
+        <rect x="616" y="528" width="184" height="16" rx="2" fill="#f5f5f5"/>
+        <text x="708" y="538" font-size="9" font-family="'Geist Mono', ui-monospace, Consolas, monospace" fill="#555555" text-anchor="middle"><tspan fill="#555555">from the address Taiga lists</tspan></text>
+        <rect x="684" y="556" width="48" height="12" rx="2" fill="#f5f5f5"/>
+        <text x="708" y="565" font-size="8" font-family="'Geist Mono', ui-monospace, Consolas, monospace" fill="#414147" text-anchor="middle" letter-spacing="0.08em">BYTES</text>
+        <rect x="398" y="596" width="80" height="12" rx="2" fill="#f5f5f5"/>
+        <text x="438" y="605" font-size="8" font-family="'Geist Mono', ui-monospace, Consolas, monospace" fill="#414147" text-anchor="middle" letter-spacing="0.08em">TOOL RESULT</text>
+        <rect x="362" y="624" width="152" height="28" rx="2" fill="#f5f5f5"/>
+        <text x="438" y="634" font-size="9" font-family="'Geist Mono', ui-monospace, Consolas, monospace" fill="#555555" text-anchor="middle"><tspan fill="#555555">image, text or the path</tspan></text>
+        <text x="438" y="646" font-size="9" font-family="'Geist Mono', ui-monospace, Consolas, monospace" fill="#555555" text-anchor="middle"><tspan fill="#555555">of a saved file</tspan></text>
+        <rect x="186" y="692" width="48" height="12" rx="2" fill="#e6f6f4"/>
+        <text x="210" y="701" font-size="8" font-family="'Geist Mono', ui-monospace, Consolas, monospace" fill="#414147" text-anchor="middle" letter-spacing="0.08em">ANSWER</text>
+        <rect x="142" y="720" width="136" height="28" rx="2" fill="#e6f6f4"/>
+        <text x="210" y="730" font-size="9" font-family="'Geist Mono', ui-monospace, Consolas, monospace" fill="#555555" text-anchor="middle"><tspan fill="#555555">what was asked, said</tspan></text>
+        <text x="210" y="742" font-size="9" font-family="'Geist Mono', ui-monospace, Consolas, monospace" fill="#555555" text-anchor="middle"><tspan fill="#555555">and attached</tspan></text>
+
+        <!-- Actors and focal step, drawn after the arrows -->
+        <rect x="40" y="40" width="128" height="48" rx="6" fill="#e6f6f4"/>
+        <rect x="40" y="40" width="128" height="48" rx="6" fill="#ffffff" stroke="#212121" stroke-width="1"/>
+        <text x="104" y="68" font-size="12" font-family="'Ubuntu', 'Segoe UI', sans-serif" fill="#212121" font-weight="500" text-anchor="middle">User</text>
+        <rect x="252" y="40" width="128" height="48" rx="6" fill="#e6f6f4"/>
+        <rect x="252" y="40" width="128" height="48" rx="6" fill="#ffffff" stroke="#212121" stroke-width="1"/>
+        <text x="316" y="68" font-size="12" font-family="'Ubuntu', 'Segoe UI', sans-serif" fill="#212121" font-weight="500" text-anchor="middle">Model</text>
+        <rect x="496" y="40" width="128" height="48" rx="6" fill="#e6f6f4"/>
+        <rect x="496" y="40" width="128" height="48" rx="6" fill="#ffffff" stroke="#212121" stroke-width="1"/>
+        <text x="560" y="68" font-size="12" font-family="'Ubuntu', 'Segoe UI', sans-serif" fill="#212121" font-weight="500" text-anchor="middle">taiga-mcp</text>
+        <rect x="792" y="40" width="128" height="48" rx="6" fill="#e6f6f4"/>
+        <rect x="792" y="40" width="128" height="48" rx="6" fill="#ffffff" stroke="#212121" stroke-width="1"/>
+        <text x="856" y="68" font-size="12" font-family="'Ubuntu', 'Segoe UI', sans-serif" fill="#212121" font-weight="500" text-anchor="middle">Taiga</text>
+
+        <!-- Legend strip -->
+        <line x1="40" y1="784" x2="920" y2="784" stroke="rgba(0,0,0,0.12)" stroke-width="1"/>
+        <text x="40" y="812" font-size="8" font-family="'Geist Mono', ui-monospace, Consolas, monospace" fill="#555555" letter-spacing="0.18em">LEGEND</text>
+        <line x1="112" y1="808" x2="140" y2="808" stroke="#414147" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <text x="148" y="812" font-size="9" font-family="'Ubuntu', 'Segoe UI', sans-serif" fill="#414147">Call</text>
+        <line x1="196" y1="808" x2="224" y2="808" stroke="#b85c33" stroke-width="1.2" marker-end="url(#arrow-link)"/>
+        <text x="232" y="812" font-size="9" font-family="'Ubuntu', 'Segoe UI', sans-serif" fill="#414147">HTTP call</text>
+        <line x1="308" y1="808" x2="336" y2="808" stroke="#414147" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#arrow)"/>
+        <text x="344" y="812" font-size="9" font-family="'Ubuntu', 'Segoe UI', sans-serif" fill="#414147">Return</text>
+        <line x1="404" y1="808" x2="432" y2="808" stroke="#006557" stroke-width="1.4" marker-end="url(#arrow-accent)"/>
+        <text x="440" y="812" font-size="9" font-family="'Ubuntu', 'Segoe UI', sans-serif" fill="#414147">Focal message</text>
+        <rect x="536" y="801" width="28" height="14" rx="2" fill="#f5f5f5" stroke="#d3d3d3" stroke-width="1"/>
+        <text x="550" y="810.5" font-size="7" font-family="'Geist Mono', ui-monospace, Consolas, monospace" fill="#414147" text-anchor="middle" letter-spacing="0.08em">LOOP</text>
+        <text x="572" y="812" font-size="9" font-family="'Ubuntu', 'Segoe UI', sans-serif" fill="#414147">Repeats per attachment</text>
+        <rect x="716" y="800" width="8" height="16" fill="#ffffff" stroke="#414147" stroke-width="0.8"/>
+        <text x="732" y="812" font-size="9" font-family="'Ubuntu', 'Segoe UI', sans-serif" fill="#414147">Active</text>
+        </svg>
+    </div>
+  </div>
+</body>
+</html>

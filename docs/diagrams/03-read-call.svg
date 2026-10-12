@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 960 800" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="d-03-read-call-title d-03-read-call-desc" id="d-03-read-call-root">
+        <title id="d-03-read-call-title">Read call: taiga_tasks_list end to end</title>
+        <desc id="d-03-read-call-desc">Sequence of a read call: the model calls taiga_tasks_list with names, the taiga-mcp server reads the project, turns the status and assignee names into ids 12 and 9, asks the Taiga API for one page of tasks and answers with the ids turned back into names.</desc>
+        <defs>
+      <style>#d-03-read-call-root { --color-paper:   #e6f6f4;
+      --color-ink:     #212121;
+      --color-muted:   #414147;
+      --color-accent:  #006557;
+      --font-sans:     sans-serif;
+      --font-serif:    serif;
+      --font-mono:     monospace; }
+      #d-03-read-call-root { font-family: var(--font-sans); color: var(--color-ink); }
+      #d-03-read-call-root .diagram-container { width: 100%; overflow-x: auto; }
+      #d-03-read-call-root .diagram-container { overflow-x: visible; }</style>
+          <marker id="d-03-read-call-arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#414147"/></marker>
+          <marker id="d-03-read-call-arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#006557"/></marker>
+          <marker id="d-03-read-call-arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#b85c33"/></marker>
+        </defs>
+
+        <rect width="100%" height="100%" fill="#e6f6f4"/>
+
+        <!-- Lifelines -->
+        <line x1="104" y1="88" x2="104" y2="720" stroke="#000000" stroke-opacity="0.22" stroke-width="1" stroke-dasharray="3,3"/>
+        <line x1="304" y1="88" x2="304" y2="720" stroke="#000000" stroke-opacity="0.22" stroke-width="1" stroke-dasharray="3,3"/>
+        <line x1="520" y1="88" x2="520" y2="720" stroke="#000000" stroke-opacity="0.22" stroke-width="1" stroke-dasharray="3,3"/>
+        <line x1="856" y1="88" x2="856" y2="720" stroke="#000000" stroke-opacity="0.22" stroke-width="1" stroke-dasharray="3,3"/>
+
+        <!-- Activation bars -->
+        <rect x="300" y="132" width="8" height="568" fill="#ffffff" stroke="#414147" stroke-width="0.8"/>
+        <rect x="516" y="180" width="8" height="472" fill="#ffffff" stroke="#414147" stroke-width="0.8"/>
+        <rect x="852" y="228" width="8" height="64" fill="#ffffff" stroke="#414147" stroke-width="0.8"/>
+        <rect x="852" y="436" width="8" height="80" fill="#ffffff" stroke="#414147" stroke-width="0.8"/>
+
+        <!-- Messages: time flows top to bottom -->
+        <line x1="104" y1="136" x2="300" y2="136" stroke="#414147" stroke-width="1.2" marker-end="url(#d-03-read-call-arrow)"/>
+        <line x1="308" y1="184" x2="516" y2="184" stroke="#414147" stroke-width="1.2" marker-end="url(#d-03-read-call-arrow)"/>
+        <line x1="524" y1="232" x2="852" y2="232" stroke="#b85c33" stroke-width="1.2" marker-end="url(#d-03-read-call-arrow-link)"/>
+        <line x1="852" y1="288" x2="524" y2="288" stroke="#414147" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#d-03-read-call-arrow)"/>
+        <path d="M 524 336 L 548 336 Q 556 336 556 344 L 556 368 Q 556 376 548 376 L 524 376" fill="none" stroke="#006557" stroke-width="1.4" marker-end="url(#d-03-read-call-arrow-accent)"/>
+        <line x1="524" y1="440" x2="852" y2="440" stroke="#b85c33" stroke-width="1.2" marker-end="url(#d-03-read-call-arrow-link)"/>
+        <line x1="852" y1="512" x2="524" y2="512" stroke="#414147" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#d-03-read-call-arrow)"/>
+        <path d="M 524 560 L 548 560 Q 556 560 556 568 L 556 592 Q 556 600 548 600 L 524 600" fill="none" stroke="#414147" stroke-width="1.2" marker-end="url(#d-03-read-call-arrow)"/>
+        <line x1="516" y1="648" x2="308" y2="648" stroke="#414147" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#d-03-read-call-arrow)"/>
+        <line x1="300" y1="696" x2="104" y2="696" stroke="#414147" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#d-03-read-call-arrow)"/>
+
+        <!-- Message labels: each mask stops 8px short of its stroke -->
+        <rect x="168" y="116" width="72" height="12" rx="2" fill="#e6f6f4"/>
+        <text x="204" y="125" font-size="8" font-family="monospace" fill="#414147" text-anchor="middle" letter-spacing="0.08em">TOOL CALL</text>
+        <rect x="144" y="144" width="120" height="52" rx="2" fill="#e6f6f4"/>
+        <text x="204" y="154" font-size="9" font-family="monospace" fill="#555555" text-anchor="middle"><tspan fill="#212121" font-weight="600">taiga_tasks_list</tspan></text>
+        <text x="204" y="166" font-size="9" font-family="monospace" fill="#555555" text-anchor="middle"><tspan fill="#555555">project </tspan><tspan fill="#212121">my-project</tspan></text>
+        <text x="204" y="178" font-size="9" font-family="monospace" fill="#555555" text-anchor="middle"><tspan fill="#555555">status </tspan><tspan fill="#212121">In progress</tspan></text>
+        <text x="204" y="190" font-size="9" font-family="monospace" fill="#555555" text-anchor="middle"><tspan fill="#555555">assignee </tspan><tspan fill="#212121">ana</tspan></text>
+        <rect x="376" y="164" width="72" height="12" rx="2" fill="#e6f6f4"/>
+        <text x="412" y="173" font-size="8" font-family="monospace" fill="#414147" text-anchor="middle" letter-spacing="0.08em">OVER STDIO</text>
+        <rect x="376" y="192" width="72" height="16" rx="2" fill="#e6f6f4"/>
+        <text x="412" y="202" font-size="9" font-family="monospace" fill="#555555" text-anchor="middle"><tspan fill="#212121">tools/call</tspan></text>
+        <rect x="644" y="212" width="88" height="12" rx="2" fill="#e6f6f4"/>
+        <text x="688" y="221" font-size="8" font-family="monospace" fill="#b85c33" text-anchor="middle" letter-spacing="0.08em">READ PROJECT</text>
+        <rect x="568" y="240" width="240" height="16" rx="2" fill="#e6f6f4"/>
+        <text x="688" y="250" font-size="9" font-family="monospace" fill="#555555" text-anchor="middle"><tspan fill="#212121">GET /projects/by_slug?slug=my-project</tspan></text>
+        <rect x="660" y="268" width="56" height="12" rx="2" fill="#e6f6f4"/>
+        <text x="688" y="277" font-size="8" font-family="monospace" fill="#414147" text-anchor="middle" letter-spacing="0.08em">PROJECT</text>
+        <rect x="580" y="296" width="216" height="16" rx="2" fill="#e6f6f4"/>
+        <text x="688" y="306" font-size="9" font-family="monospace" fill="#555555" text-anchor="middle"><tspan fill="#555555">with statuses, members and sprints</tspan></text>
+        <rect x="644" y="420" width="88" height="12" rx="2" fill="#e6f6f4"/>
+        <text x="688" y="429" font-size="8" font-family="monospace" fill="#b85c33" text-anchor="middle" letter-spacing="0.08em">READ ONE PAGE</text>
+        <rect x="544" y="448" width="288" height="28" rx="2" fill="#e6f6f4"/>
+        <text x="688" y="458" font-size="9" font-family="monospace" fill="#555555" text-anchor="middle"><tspan fill="#212121">GET /tasks?project=32&amp;</tspan><tspan fill="#212121" font-weight="600">status=12</tspan><tspan fill="#212121">&amp;</tspan><tspan fill="#212121" font-weight="600">assigned_to=9</tspan></text>
+        <text x="688" y="470" font-size="9" font-family="monospace" fill="#555555" text-anchor="middle"><tspan fill="#212121">&amp;page=1&amp;page_size=50</tspan></text>
+        <rect x="644" y="492" width="88" height="12" rx="2" fill="#e6f6f4"/>
+        <text x="688" y="501" font-size="8" font-family="monospace" fill="#414147" text-anchor="middle" letter-spacing="0.08em">PAGE OF TASKS</text>
+        <rect x="580" y="520" width="216" height="16" rx="2" fill="#e6f6f4"/>
+        <text x="688" y="530" font-size="9" font-family="monospace" fill="#555555" text-anchor="middle"><tspan fill="#555555">and the </tspan><tspan fill="#212121">x-pagination-count</tspan><tspan fill="#555555"> header</tspan></text>
+        <rect x="568" y="562" width="168" height="36" rx="2" fill="#e6f6f4"/>
+        <text x="574" y="577" font-size="12" font-family="sans-serif" fill="#212121" font-weight="500">Ids become names</text>
+        <text x="574" y="593" font-size="9" font-family="monospace" fill="#212121"><tspan fill="#555555">one summary line per task</tspan></text>
+        <rect x="376" y="628" width="72" height="12" rx="2" fill="#e6f6f4"/>
+        <text x="412" y="637" font-size="8" font-family="monospace" fill="#414147" text-anchor="middle" letter-spacing="0.08em">JSON TEXT</text>
+        <rect x="324" y="656" width="176" height="16" rx="2" fill="#e6f6f4"/>
+        <text x="412" y="666" font-size="9" font-family="monospace" fill="#555555" text-anchor="middle"><tspan fill="#212121">total, page, size</tspan><tspan fill="#555555"> and </tspan><tspan fill="#212121">items</tspan></text>
+        <rect x="164" y="676" width="80" height="12" rx="2" fill="#e6f6f4"/>
+        <text x="204" y="685" font-size="8" font-family="monospace" fill="#414147" text-anchor="middle" letter-spacing="0.08em">TOOL RESULT</text>
+
+        <!-- Actors and focal step, drawn after the arrows -->
+        <rect x="40" y="40" width="128" height="48" rx="6" fill="#e6f6f4"/>
+        <rect x="40" y="40" width="128" height="48" rx="6" fill="#ffffff" stroke="#212121" stroke-width="1"/>
+        <text x="104" y="68" font-size="12" font-family="sans-serif" fill="#212121" font-weight="500" text-anchor="middle">Model</text>
+        <rect x="240" y="40" width="128" height="48" rx="6" fill="#e6f6f4"/>
+        <rect x="240" y="40" width="128" height="48" rx="6" fill="#ffffff" stroke="#212121" stroke-width="1"/>
+        <text x="304" y="68" font-size="12" font-family="sans-serif" fill="#212121" font-weight="500" text-anchor="middle">MCP client</text>
+        <rect x="456" y="40" width="128" height="48" rx="6" fill="#e6f6f4"/>
+        <rect x="456" y="40" width="128" height="48" rx="6" fill="#ffffff" stroke="#212121" stroke-width="1"/>
+        <text x="520" y="68" font-size="12" font-family="sans-serif" fill="#212121" font-weight="500" text-anchor="middle">taiga-mcp</text>
+        <rect x="792" y="40" width="128" height="48" rx="6" fill="#e6f6f4"/>
+        <rect x="792" y="40" width="128" height="48" rx="6" fill="#ffffff" stroke="#212121" stroke-width="1"/>
+        <text x="856" y="68" font-size="12" font-family="sans-serif" fill="#212121" font-weight="500" text-anchor="middle">Taiga API</text>
+        <rect x="568" y="324" width="176" height="64" rx="6" fill="#e6f6f4"/>
+        <rect x="568" y="324" width="176" height="64" rx="6" fill="#dff5ec" stroke="#006557" stroke-width="1.5"/>
+        <text x="584" y="347" font-size="12" font-family="sans-serif" fill="#0b302c" font-weight="500">Names become ids</text>
+        <text x="584" y="363" font-size="9" font-family="monospace" fill="#0b302c"><tspan fill="#0b302c">status In progress → </tspan><tspan fill="#0b302c" font-weight="600">12</tspan></text>
+        <text x="584" y="375" font-size="9" font-family="monospace" fill="#0b302c"><tspan fill="#0b302c">assignee ana → </tspan><tspan fill="#0b302c" font-weight="600">9</tspan></text>
+
+        <!-- Legend strip -->
+        <line x1="40" y1="744" x2="920" y2="744" stroke="#000000" stroke-opacity="0.12" stroke-width="1"/>
+        <text x="40" y="772" font-size="8" font-family="monospace" fill="#555555" letter-spacing="0.18em">LEGEND</text>
+        <line x1="112" y1="768" x2="140" y2="768" stroke="#414147" stroke-width="1.2" marker-end="url(#d-03-read-call-arrow)"/>
+        <text x="148" y="772" font-size="9" font-family="sans-serif" fill="#414147">Call</text>
+        <line x1="196" y1="768" x2="224" y2="768" stroke="#b85c33" stroke-width="1.2" marker-end="url(#d-03-read-call-arrow-link)"/>
+        <text x="232" y="772" font-size="9" font-family="sans-serif" fill="#414147">HTTP call</text>
+        <line x1="308" y1="768" x2="336" y2="768" stroke="#414147" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#d-03-read-call-arrow)"/>
+        <text x="344" y="772" font-size="9" font-family="sans-serif" fill="#414147">Return</text>
+        <rect x="404" y="762" width="28" height="12" rx="2" fill="#dff5ec" stroke="#006557" stroke-width="1.2"/>
+        <text x="440" y="772" font-size="9" font-family="sans-serif" fill="#414147">Focal step</text>
+        <rect x="520" y="760" width="8" height="16" fill="#ffffff" stroke="#414147" stroke-width="0.8"/>
+        <text x="536" y="772" font-size="9" font-family="sans-serif" fill="#414147">Active</text>
+        </svg>

@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Token lifecycle</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Ubuntu:wght@400;500;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper:   #e6f6f4;
+      --color-ink:     #212121;
+      --color-muted:   #414147;
+      --color-accent:  #006557;
+      --font-sans:     'Ubuntu', 'Segoe UI', sans-serif;
+      --font-serif:    'Instrument Serif', serif;
+      --font-mono:     'Geist Mono', ui-monospace, Consolas, monospace;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-paper);
+      color: var(--color-ink);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 2rem;
+    }
+
+    .frame { max-width: 1200px; width: 100%; }
+    /* The SVG holds its readable width (min-width == the viewBox width).
+       This wrapper lets a narrow screen scroll the diagram, not the page. */
+    .diagram-container { width: 100%; overflow-x: auto; }
+
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      color: var(--color-ink);
+      margin-bottom: 1.5rem;
+    }
+
+    svg { width: 100%; min-width: 960px; display: block; }
+    /* Must come after the svg rule: paper has no scrollbar. */
+    @media print {
+      .diagram-container { overflow-x: visible; }
+      svg { min-width: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">State machine · taiga-mcp</p>
+    <h1>The life of a token</h1>
+
+    <div class="diagram-container">
+      <svg viewBox="0 0 960 520" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="d-09-token-lifecycle-title d-09-token-lifecycle-desc">
+        <title id="d-09-token-lifecycle-title">Token lifecycle</title>
+        <desc id="d-09-token-lifecycle-desc">Lifecycle of the Taiga token: copied from the browser after login, configured as TAIGA_TOKEN in the client config, checked when the server starts and calls /users/me, then active on every API call; a 401 at startup or later leads to Refused or Expired, and both lead back to copying a token by hand.</desc>
+        <defs>
+          <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#414147"/></marker>
+          <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#006557"/></marker>
+        </defs>
+
+        <rect width="100%" height="100%" fill="#e6f6f4"/>
+
+        <!-- Zones (behind connectors and nodes) -->
+        <text x="40" y="61" fill="#555555" font-size="8" font-weight="500" font-family="'Geist Mono', ui-monospace, Consolas, monospace" letter-spacing="0.14em">PRIMARY PHASES</text>
+        <rect x="176" y="272" width="744" height="160" rx="8" fill="#f5f5f5" stroke="#d3d3d3" stroke-width="1"/>
+        <text x="192" y="289" fill="#555555" font-size="8" font-weight="500" font-family="'Geist Mono', ui-monospace, Consolas, monospace" letter-spacing="0.14em">FAILURE · NO AUTOMATIC RENEWAL</text>
+
+        <!-- Connectors first, so they sit behind the nodes -->
+        <!-- start-copied -->
+        <path d="M100,98 V160" fill="none" stroke="#414147" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <!-- copied-configured -->
+        <path d="M160,196 H256" fill="none" stroke="#414147" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <!-- configured-checked -->
+        <path d="M376,196 H472" fill="none" stroke="#414147" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <!-- checked-active -->
+        <path d="M592,196 H688" fill="none" stroke="#006557" stroke-width="1.6" marker-end="url(#arrow-accent)"/>
+        <!-- active-active -->
+        <path d="M728,160 V136 Q728,128 736,128 H760 Q768,128 768,136 V160" fill="none" stroke="#414147" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <!-- active-end -->
+        <path d="M808,196 H900" fill="none" stroke="#414147" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <!-- checked-refused -->
+        <path d="M532,232 V312" fill="none" stroke="#414147" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <!-- active-expired -->
+        <path d="M748,232 V312" fill="none" stroke="#414147" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <!-- refused-copied -->
+        <path d="M460,344 H128 Q120,344 120,336 V232" fill="none" stroke="#414147" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#arrow)"/>
+        <!-- expired-copied -->
+        <path d="M748,376 V400 Q748,408 740,408 H88 Q80,408 80,400 V232" fill="none" stroke="#414147" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#arrow)"/>
+
+        <!-- Connector labels, each on an opaque mask clear of its line -->
+        <rect x="108" y="123" width="68" height="12" rx="2" fill="#e6f6f4"/><text x="142" y="132" fill="#414147" font-size="8" font-family="'Geist Mono', ui-monospace, Consolas, monospace" text-anchor="middle" letter-spacing="0.06em">AFTER LOGIN</text>
+        <rect x="174" y="176" width="68" height="12" rx="2" fill="#e6f6f4"/><text x="208" y="185" fill="#414147" font-size="8" font-family="'Geist Mono', ui-monospace, Consolas, monospace" text-anchor="middle" letter-spacing="0.06em">TAIGA_TOKEN</text>
+        <rect x="384" y="176" width="80" height="12" rx="2" fill="#e6f6f4"/><text x="424" y="185" fill="#414147" font-size="8" font-family="'Geist Mono', ui-monospace, Consolas, monospace" text-anchor="middle" letter-spacing="0.06em">SERVER STARTS</text>
+        <rect x="598" y="176" width="84" height="12" rx="2" fill="#e6f6f4"/><text x="640" y="185" fill="#006557" font-size="8" font-family="'Geist Mono', ui-monospace, Consolas, monospace" text-anchor="middle" letter-spacing="0.06em">TOKEN ACCEPTED</text>
+        <rect x="706" y="108" width="84" height="12" rx="2" fill="#e6f6f4"/><text x="748" y="117" fill="#414147" font-size="8" font-family="'Geist Mono', ui-monospace, Consolas, monospace" text-anchor="middle" letter-spacing="0.06em">EVERY API CALL</text>
+        <rect x="814" y="176" width="80" height="12" rx="2" fill="#e6f6f4"/><text x="854" y="185" fill="#414147" font-size="8" font-family="'Geist Mono', ui-monospace, Consolas, monospace" text-anchor="middle" letter-spacing="0.06em">CLIENT CLOSES</text>
+        <rect x="540" y="244" width="84" height="12" rx="2" fill="#e6f6f4"/><text x="582" y="253" fill="#414147" font-size="8" font-family="'Geist Mono', ui-monospace, Consolas, monospace" text-anchor="middle" letter-spacing="0.06em">401 AT STARTUP</text>
+        <rect x="756" y="244" width="84" height="12" rx="2" fill="#e6f6f4"/><text x="798" y="253" fill="#414147" font-size="8" font-family="'Geist Mono', ui-monospace, Consolas, monospace" text-anchor="middle" letter-spacing="0.06em">401 FROM TAIGA</text>
+        <rect x="286" y="324" width="64" height="12" rx="2" fill="#f5f5f5"/><text x="318" y="333" fill="#414147" font-size="8" font-family="'Geist Mono', ui-monospace, Consolas, monospace" text-anchor="middle" letter-spacing="0.06em">COPY AGAIN</text>
+        <rect x="282" y="388" width="72" height="12" rx="2" fill="#f5f5f5"/><text x="318" y="397" fill="#414147" font-size="8" font-family="'Geist Mono', ui-monospace, Consolas, monospace" text-anchor="middle" letter-spacing="0.06em">LOG IN AGAIN</text>
+
+        <!-- Nodes -->
+        <!-- start -->
+        <circle cx="100" cy="92" r="6" fill="#212121"/>
+        <!-- Copied -->
+        <rect x="40" y="160" width="120" height="72" rx="8" fill="#ffffff" stroke="#212121" stroke-width="1"/>
+        <text x="100" y="192" fill="#212121" font-size="12" font-weight="500" font-family="'Ubuntu', 'Segoe UI', sans-serif" text-anchor="middle">Copied</text>
+        <text x="100" y="208" fill="#555555" font-size="9" font-family="'Geist Mono', ui-monospace, Consolas, monospace" text-anchor="middle">from the browser</text>
+        <!-- Configured -->
+        <rect x="256" y="160" width="120" height="72" rx="8" fill="#ffffff" stroke="#212121" stroke-width="1"/>
+        <text x="316" y="192" fill="#212121" font-size="12" font-weight="500" font-family="'Ubuntu', 'Segoe UI', sans-serif" text-anchor="middle">Configured</text>
+        <text x="316" y="208" fill="#555555" font-size="9" font-family="'Geist Mono', ui-monospace, Consolas, monospace" text-anchor="middle">in client config</text>
+        <!-- Checked -->
+        <rect x="472" y="160" width="120" height="72" rx="8" fill="#ffffff" stroke="#212121" stroke-width="1"/>
+        <text x="532" y="192" fill="#212121" font-size="12" font-weight="500" font-family="'Ubuntu', 'Segoe UI', sans-serif" text-anchor="middle">Checked</text>
+        <text x="532" y="208" fill="#555555" font-size="9" font-family="'Geist Mono', ui-monospace, Consolas, monospace" text-anchor="middle">calls /users/me</text>
+        <!-- Active -->
+        <rect x="688" y="160" width="120" height="72" rx="8" fill="#dff5ec" stroke="#006557" stroke-width="1.4"/>
+        <text x="748" y="192" fill="#0b302c" font-size="12" font-weight="500" font-family="'Ubuntu', 'Segoe UI', sans-serif" text-anchor="middle">Active</text>
+        <text x="748" y="208" fill="#555555" font-size="9" font-family="'Geist Mono', ui-monospace, Consolas, monospace" text-anchor="middle">sends the token</text>
+        <!-- end -->
+        <circle cx="908" cy="196" r="8" fill="#e6f6f4" stroke="#212121" stroke-width="1"/>
+        <circle cx="908" cy="196" r="5" fill="#212121"/>
+        <!-- Refused -->
+        <rect x="460" y="312" width="144" height="64" rx="8" fill="#ffffff" stroke="#414147" stroke-width="1" stroke-dasharray="5,4"/>
+        <text x="532" y="340" fill="#212121" font-size="12" font-weight="500" font-family="'Ubuntu', 'Segoe UI', sans-serif" text-anchor="middle">Refused</text>
+        <text x="532" y="356" fill="#555555" font-size="9" font-family="'Geist Mono', ui-monospace, Consolas, monospace" text-anchor="middle">the server exits</text>
+        <!-- Expired -->
+        <rect x="664" y="312" width="168" height="64" rx="8" fill="#ffffff" stroke="#414147" stroke-width="1" stroke-dasharray="5,4"/>
+        <text x="748" y="340" fill="#212121" font-size="12" font-weight="500" font-family="'Ubuntu', 'Segoe UI', sans-serif" text-anchor="middle">Expired</text>
+        <text x="748" y="356" fill="#555555" font-size="9" font-family="'Geist Mono', ui-monospace, Consolas, monospace" text-anchor="middle">the tools return an error</text>
+
+        <!-- Legend: bottom strip -->
+        <line x1="40" y1="464" x2="920" y2="464" stroke="rgba(0,0,0,0.12)" stroke-width="1"/>
+        <text x="40" y="492" fill="#555555" font-size="8" font-family="'Geist Mono', ui-monospace, Consolas, monospace" letter-spacing="0.18em">LEGEND</text>
+        <circle cx="124" cy="488" r="6" fill="#212121"/>
+        <text x="144" y="492" fill="#414147" font-size="9" font-family="'Ubuntu', 'Segoe UI', sans-serif">Start</text>
+        <circle cx="212" cy="488" r="7" fill="#e6f6f4" stroke="#212121" stroke-width="1"/><circle cx="212" cy="488" r="4" fill="#212121"/>
+        <text x="232" y="492" fill="#414147" font-size="9" font-family="'Ubuntu', 'Segoe UI', sans-serif">End</text>
+        <rect x="276" y="482" width="24" height="12" rx="3" fill="#dff5ec" stroke="#006557" stroke-width="1.4"/>
+        <text x="308" y="492" fill="#414147" font-size="9" font-family="'Ubuntu', 'Segoe UI', sans-serif">Working state</text>
+        <rect x="400" y="482" width="24" height="12" rx="3" fill="#ffffff" stroke="#414147" stroke-width="1" stroke-dasharray="4,3"/>
+        <text x="432" y="492" fill="#414147" font-size="9" font-family="'Ubuntu', 'Segoe UI', sans-serif">Failure state</text>
+        <line x1="520" y1="488" x2="548" y2="488" stroke="#414147" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#arrow)"/>
+        <text x="556" y="492" fill="#414147" font-size="9" font-family="'Ubuntu', 'Segoe UI', sans-serif">Back to Copied, by hand</text>
+      </svg>
+    </div>
+  </div>
+</body>
+</html>

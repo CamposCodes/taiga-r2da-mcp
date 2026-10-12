@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 960 520" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="d-07-tool-map-title d-07-tool-map-desc" id="d-07-tool-map-root">
+  <defs>
+      <style>#d-07-tool-map-root { --color-paper:   #e6f6f4;
+      --color-ink:     #212121;
+      --color-muted:   #414147;
+      --color-accent:  #006557;
+      --font-sans:     sans-serif;
+      --font-serif:    serif;
+      --font-mono:     monospace; }
+      #d-07-tool-map-root { font-family: var(--font-sans); color: var(--color-ink); }
+      #d-07-tool-map-root .diagram-container { width: 100%; overflow-x: auto; }
+      #d-07-tool-map-root .diagram-container { overflow-x: visible; }</style>
+  </defs>
+        <title id="d-07-tool-map-title">taiga-mcp tool map</title>
+        <desc id="d-07-tool-map-desc">Containment diagram: the taiga-mcp server holds 10 read tools that are always registered, 7 write tools that are registered only with TAIGA_WRITE=1 and one tool that deletes, registered only with TAIGA_WRITE=1 and TAIGA_DELETE=1, each listed by name.</desc>
+
+        <rect width="100%" height="100%" fill="#e6f6f4"/>
+
+        <!-- Level 1: the server -->
+        <rect x="40" y="40" width="880" height="440" rx="8" fill="#f5f5f5" stroke="#414147" stroke-width="1"/>
+        <text x="64" y="65" fill="#555555" font-size="8" font-family="monospace" letter-spacing="0.14em">SERVER</text>
+        <text x="64" y="84" fill="#212121" font-size="14" font-weight="500" font-family="sans-serif">taiga-mcp</text>
+
+        <!-- Level 2: read tools, always registered -->
+        <rect x="64" y="100" width="512" height="232" rx="8" fill="#ffffff" stroke="#212121" stroke-width="1"/>
+        <text x="88" y="130" fill="#212121" font-size="14" font-weight="500" font-family="sans-serif">Read tools</text>
+        <text x="88" y="146" fill="#555555" font-size="9" font-family="monospace">always registered</text>
+        <rect x="496" y="116" width="56" height="16" rx="2" fill="none" stroke="#d3d3d3" stroke-width="1"/>
+        <text x="524" y="127" fill="#414147" font-size="8" font-family="monospace" text-anchor="middle" letter-spacing="0.08em">10 TOOLS</text>
+        <line x1="88" y1="164" x2="552" y2="164" stroke="#000000" stroke-opacity="0.12" stroke-width="1"/>
+        <line x1="320" y1="176" x2="320" y2="312" stroke="#000000" stroke-opacity="0.12" stroke-width="1"/>
+        <!-- Level 3: tool names, source order, down the first column then the second -->
+        <g font-family="monospace" font-size="12" font-weight="500" fill="#212121">
+          <text x="88" y="192">taiga_me</text>
+          <text x="88" y="220">taiga_projects_list</text>
+          <text x="88" y="248">taiga_projects_get</text>
+          <text x="88" y="276">taiga_sprints_list</text>
+          <text x="88" y="304">taiga_userstories_list</text>
+          <text x="344" y="192">taiga_tasks_list</text>
+          <text x="344" y="220">taiga_issues_list</text>
+          <text x="344" y="248">taiga_items_get</text>
+          <text x="344" y="276">taiga_search</text>
+          <text x="344" y="304">taiga_attachments_get</text>
+        </g>
+
+        <!-- Level 2: write tools, gated (focal, dashed border) -->
+        <rect x="608" y="100" width="288" height="356" rx="8" fill="#dff5ec" stroke="#006557" stroke-width="1.5" stroke-dasharray="6,4"/>
+        <text x="632" y="130" fill="#0b302c" font-size="14" font-weight="500" font-family="sans-serif">Write tools</text>
+        <text x="632" y="146" fill="#0b302c" font-size="9" font-family="monospace">only with TAIGA_WRITE=1</text>
+        <rect x="816" y="116" width="56" height="16" rx="2" fill="none" stroke="#006557" stroke-opacity="0.5" stroke-width="1"/>
+        <text x="844" y="127" fill="#006557" font-size="8" font-family="monospace" text-anchor="middle" letter-spacing="0.08em">7 TOOLS</text>
+        <line x1="632" y1="164" x2="872" y2="164" stroke="#006557" stroke-opacity="0.3" stroke-width="1"/>
+        <g font-family="monospace" font-size="12" font-weight="500" fill="#0b302c">
+          <text x="632" y="192">taiga_userstories_create</text>
+          <text x="632" y="220">taiga_userstories_update</text>
+          <text x="632" y="248">taiga_tasks_create</text>
+          <text x="632" y="276">taiga_tasks_update</text>
+          <text x="632" y="304">taiga_issues_create</text>
+          <text x="632" y="332">taiga_issues_update</text>
+          <text x="632" y="360">taiga_attachments_add</text>
+        </g>
+
+        <!-- Level 2: the tool that deletes, behind a second gate (dashed border) -->
+        <rect x="64" y="356" width="512" height="100" rx="8" fill="#ffffff" stroke="#212121" stroke-width="1" stroke-dasharray="4,3"/>
+        <text x="88" y="386" fill="#212121" font-size="14" font-weight="500" font-family="sans-serif">Delete tool</text>
+        <text x="88" y="402" fill="#555555" font-size="9" font-family="monospace">only with TAIGA_WRITE=1 and TAIGA_DELETE=1</text>
+        <rect x="496" y="372" width="56" height="16" rx="2" fill="none" stroke="#d3d3d3" stroke-width="1"/>
+        <text x="524" y="383" fill="#414147" font-size="8" font-family="monospace" text-anchor="middle" letter-spacing="0.08em">1 TOOL</text>
+        <line x1="88" y1="416" x2="552" y2="416" stroke="#000000" stroke-opacity="0.12" stroke-width="1"/>
+        <text x="88" y="440" fill="#212121" font-size="12" font-weight="500" font-family="monospace">taiga_items_delete</text>
+        <text x="344" y="440" fill="#555555" font-size="9" font-family="monospace">two calls: show, then delete</text>
+      </svg>

@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>taiga-mcp architecture</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Ubuntu:wght@400;500;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper:   #e6f6f4;
+      --color-ink:     #212121;
+      --color-muted:   #414147;
+      --color-accent:  #006557;
+      --font-sans:     'Ubuntu', 'Segoe UI', sans-serif;
+      --font-serif:    'Instrument Serif', serif;
+      --font-mono:     'Geist Mono', ui-monospace, Consolas, monospace;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-paper);
+      color: var(--color-ink);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 2rem;
+    }
+
+    .frame { max-width: 1200px; width: 100%; }
+    /* The SVG holds its readable width (min-width == the viewBox width).
+       This wrapper lets a narrow screen scroll the diagram, not the page. */
+    .diagram-container { width: 100%; overflow-x: auto; }
+
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      color: var(--color-ink);
+      margin-bottom: 1.5rem;
+    }
+
+    svg { width: 100%; min-width: 960px; display: block; }
+    /* Must come after the svg rule: paper has no scrollbar. */
+    @media print {
+      .diagram-container { overflow-x: visible; }
+      svg { min-width: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Architecture · taiga-mcp</p>
+    <h1>Where the server runs and what it talks to</h1>
+
+    <div class="diagram-container">
+      <svg viewBox="0 0 960 432" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="d-01-architecture-title d-01-architecture-desc">
+        <title id="d-01-architecture-title">taiga-mcp architecture</title>
+        <desc id="d-01-architecture-desc">Architecture diagram: on the user's machine an MCP client and the taiga-mcp server talk over stdio; the server calls the Taiga REST API over HTTPS with the token and the attachment file server without it, saves binaries to a temp folder and reads local files only for taiga_attachments_add.</desc>
+        <defs>
+          <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto-start-reverse"><polygon points="0 0, 8 3, 0 6" fill="#414147"/></marker>
+          <marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto-start-reverse"><polygon points="0 0, 8 3, 0 6" fill="#b85c33"/></marker>
+        </defs>
+
+        <rect width="100%" height="100%" fill="#e6f6f4"/>
+
+        <!-- Zones (behind arrows and nodes) -->
+        <rect x="184" y="40" width="440" height="312" rx="8" fill="#f5f5f5" stroke="#d3d3d3" stroke-width="1"/>
+        <rect x="728" y="40" width="192" height="312" rx="8" fill="#f5f5f5" stroke="#d3d3d3" stroke-width="1"/>
+        <g font-family="'Geist Mono', ui-monospace, Consolas, monospace" font-size="8" fill="#555555" letter-spacing="0.14em">
+          <text x="200" y="57">USER'S MACHINE</text>
+          <text x="744" y="57">TAIGA INSTALLATION</text>
+        </g>
+
+        <!-- Arrows first (behind boxes). Every one is a straight horizontal run. -->
+        <!-- User to MCP client -->
+        <line x1="136" y1="104" x2="200" y2="104" stroke="#414147" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <!-- MCP client and server, both directions -->
+        <line x1="360" y1="104" x2="464" y2="104" stroke="#414147" stroke-width="1.2" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+        <!-- Local files to server: dashed, one tool only -->
+        <line x1="360" y1="200" x2="464" y2="200" stroke="#414147" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#arrow)"/>
+        <!-- Server to temp folder -->
+        <line x1="464" y1="296" x2="360" y2="296" stroke="#414147" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <!-- Server to Taiga REST API -->
+        <line x1="608" y1="104" x2="744" y2="104" stroke="#b85c33" stroke-width="1.2" marker-end="url(#arrow-link)"/>
+        <!-- Server to attachment file server -->
+        <line x1="608" y1="296" x2="744" y2="296" stroke="#b85c33" stroke-width="1.2" marker-end="url(#arrow-link)"/>
+
+        <!-- Arrow labels: mask ends 8px above its line -->
+        <rect x="144" y="84" width="32" height="12" rx="2" fill="#e6f6f4"/>
+        <rect x="368" y="84" width="88" height="12" rx="2" fill="#f5f5f5"/>
+        <rect x="392" y="180" width="40" height="12" rx="2" fill="#f5f5f5"/>
+        <rect x="368" y="276" width="88" height="12" rx="2" fill="#f5f5f5"/>
+        <rect x="636" y="84" width="80" height="12" rx="2" fill="#e6f6f4"/>
+        <rect x="632" y="276" width="88" height="12" rx="2" fill="#e6f6f4"/>
+        <g font-family="'Geist Mono', ui-monospace, Consolas, monospace" font-size="8" fill="#414147" text-anchor="middle" letter-spacing="0.06em">
+          <text x="160" y="93">ASKS</text>
+          <text x="412" y="93">STDIO JSON-RPC</text>
+          <text x="412" y="189">READS</text>
+          <text x="412" y="285">SAVES BINARIES</text>
+          <text x="676" y="93">HTTPS + TOKEN</text>
+          <text x="676" y="285">HTTPS NO TOKEN</text>
+        </g>
+
+        <!-- Nodes -->
+        <g font-family="'Ubuntu', 'Segoe UI', sans-serif" font-size="12" font-weight="500" fill="#212121" text-anchor="middle">
+          <!-- User -->
+          <rect x="40" y="72" width="96" height="64" rx="6" fill="#ffffff" stroke="#212121" stroke-width="1"/>
+          <text x="88" y="102">User</text>
+          <text x="88" y="118" font-family="'Geist Mono', ui-monospace, Consolas, monospace" font-size="9" font-weight="400" fill="#555555">plain language</text>
+
+          <!-- MCP client -->
+          <rect x="200" y="72" width="160" height="64" rx="6" fill="#ffffff" stroke="#212121" stroke-width="1"/>
+          <text x="280" y="93">MCP client</text>
+          <text x="280" y="109" font-family="'Geist Mono', ui-monospace, Consolas, monospace" font-size="9" font-weight="400" fill="#555555">Claude Code,</text>
+          <text x="280" y="122" font-family="'Geist Mono', ui-monospace, Consolas, monospace" font-size="9" font-weight="400" fill="#555555">Claude Desktop or Codex</text>
+
+          <!-- Local files (store) -->
+          <rect x="200" y="168" width="160" height="64" rx="6" fill="#ffffff" stroke="#d3d3d3" stroke-width="1"/>
+          <text x="280" y="189">Local files</text>
+          <text x="280" y="205" font-family="'Geist Mono', ui-monospace, Consolas, monospace" font-size="9" font-weight="400" fill="#555555">read only by</text>
+          <text x="280" y="218" font-family="'Geist Mono', ui-monospace, Consolas, monospace" font-size="9" font-weight="400" fill="#555555">taiga_attachments_add</text>
+
+          <!-- Temp folder (store) -->
+          <rect x="200" y="264" width="160" height="64" rx="6" fill="#ffffff" stroke="#d3d3d3" stroke-width="1"/>
+          <text x="280" y="294">Temp folder</text>
+          <text x="280" y="310" font-family="'Geist Mono', ui-monospace, Consolas, monospace" font-size="9" font-weight="400" fill="#555555">taiga-mcp-XXXXXX</text>
+
+          <!-- taiga-mcp server (focal) -->
+          <rect x="464" y="72" width="144" height="256" rx="6" fill="#dff5ec" stroke="#006557" stroke-width="1.5"/>
+          <text x="536" y="198" fill="#0b302c">taiga-mcp server</text>
+          <text x="536" y="214" font-family="'Geist Mono', ui-monospace, Consolas, monospace" font-size="9" font-weight="400" fill="#0b302c">node dist/index.js</text>
+
+          <!-- Taiga REST API -->
+          <rect x="744" y="72" width="160" height="64" rx="6" fill="#ffffff" stroke="#212121" stroke-width="1"/>
+          <text x="824" y="102">Taiga REST API</text>
+          <text x="824" y="118" font-family="'Geist Mono', ui-monospace, Consolas, monospace" font-size="9" font-weight="400" fill="#555555">/api/v1</text>
+
+          <!-- Attachment file server -->
+          <rect x="744" y="264" width="160" height="64" rx="6" fill="#ffffff" stroke="#212121" stroke-width="1"/>
+          <text x="824" y="292">Attachment</text>
+          <text x="824" y="308">file server</text>
+        </g>
+
+        <!-- Legend strip -->
+        <line x1="40" y1="376" x2="920" y2="376" stroke="rgba(0,0,0,0.12)" stroke-width="1"/>
+        <text x="40" y="404" fill="#555555" font-size="8" font-family="'Geist Mono', ui-monospace, Consolas, monospace" letter-spacing="0.18em">LEGEND</text>
+        <rect x="112" y="394" width="24" height="12" rx="2" fill="#dff5ec" stroke="#006557" stroke-width="1.2"/>
+        <rect x="244" y="394" width="24" height="12" rx="2" fill="#ffffff" stroke="#212121" stroke-width="1"/>
+        <rect x="392" y="394" width="24" height="12" rx="2" fill="#ffffff" stroke="#d3d3d3" stroke-width="1"/>
+        <line x1="500" y1="400" x2="528" y2="400" stroke="#b85c33" stroke-width="1.2" marker-end="url(#arrow-link)"/>
+        <line x1="616" y1="400" x2="644" y2="400" stroke="#414147" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <line x1="728" y1="400" x2="756" y2="400" stroke="#414147" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#arrow)"/>
+        <g font-family="'Ubuntu', 'Segoe UI', sans-serif" font-size="9" fill="#414147">
+          <text x="144" y="404">This server</text>
+          <text x="276" y="404">Person or program</text>
+          <text x="424" y="404">Local disk</text>
+          <text x="536" y="404">HTTPS call</text>
+          <text x="652" y="404">Local I/O</text>
+          <text x="764" y="404">One tool only</text>
+        </g>
+      </svg>
+    </div>
+  </div>
+</body>
+</html>

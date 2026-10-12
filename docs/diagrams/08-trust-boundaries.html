@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trust boundaries of taiga-mcp</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Ubuntu:wght@400;500;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper:   #e6f6f4;
+      --color-ink:     #212121;
+      --color-muted:   #414147;
+      --color-accent:  #006557;
+      --font-sans:     'Ubuntu', 'Segoe UI', sans-serif;
+      --font-serif:    'Instrument Serif', serif;
+      --font-mono:     'Geist Mono', ui-monospace, Consolas, monospace;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-paper);
+      color: var(--color-ink);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 2rem;
+    }
+
+    .frame { max-width: 1200px; width: 100%; }
+    /* The SVG holds its readable width (min-width == the viewBox width).
+       This wrapper lets a narrow screen scroll the diagram, not the page. */
+    .diagram-container { width: 100%; overflow-x: auto; }
+
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      color: var(--color-ink);
+      margin-bottom: 1.5rem;
+    }
+
+    svg { width: 100%; min-width: 960px; display: block; }
+    /* Must come after the svg rule: paper has no scrollbar. */
+    @media print {
+      .diagram-container { overflow-x: visible; }
+      svg { min-width: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Architecture · taiga-mcp</p>
+    <h1>Where the token, third-party text and local files cross</h1>
+
+    <div class="diagram-container">
+      <svg viewBox="0 0 960 600" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="d-08-trust-boundaries-title d-08-trust-boundaries-desc">
+        <title id="d-08-trust-boundaries-title">Trust boundaries of taiga-mcp</title>
+        <desc id="d-08-trust-boundaries-desc">Trust-boundary map of taiga-mcp: the token goes from the client config to the server as an environment variable and on to the Taiga REST API in the Authorization header, never to the attachment files; text and files written by other project members enter through Taiga and reach the model inside tool results; local files cross only when taiga_attachments_add sends one or a downloaded file is saved.</desc>
+        <defs>
+          <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#414147"/></marker>
+          <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#006557"/></marker>
+          <marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#b85c33"/></marker>
+        </defs>
+
+        <rect width="100%" height="100%" fill="#e6f6f4"/>
+
+        <!-- Zones (behind connectors and nodes) -->
+        <rect x="40" y="40" width="520" height="468" rx="8" fill="#f5f5f5" stroke="#0b302c" stroke-width="1.4"/>
+        <text x="56" y="57" fill="#0b302c" font-size="8" font-weight="500" font-family="'Geist Mono', ui-monospace, Consolas, monospace" letter-spacing="0.14em">YOUR MACHINE</text>
+        <text x="56" y="69" fill="#555555" font-size="8" font-weight="400" font-family="'Geist Mono', ui-monospace, Consolas, monospace" letter-spacing="0.14em">TRUSTED</text>
+        <rect x="680" y="184" width="240" height="268" rx="8" fill="#f5f5f5" stroke="#0b302c" stroke-width="1" stroke-dasharray="6,4"/>
+        <text x="696" y="201" fill="#0b302c" font-size="8" font-weight="500" font-family="'Geist Mono', ui-monospace, Consolas, monospace" letter-spacing="0.14em">TAIGA INSTALLATION</text>
+        <text x="696" y="213" fill="#555555" font-size="8" font-weight="400" font-family="'Geist Mono', ui-monospace, Consolas, monospace" letter-spacing="0.14em">HOLDS YOUR DATA</text>
+
+        <!-- Connectors first, so they sit behind the nodes -->
+        <!-- config-server -->
+        <path d="M280,124 H456 Q464,124 464,132 V232" fill="none" stroke="#006557" stroke-width="1.8" marker-end="url(#arrow-accent)"/>
+        <!-- server-api -->
+        <path d="M544,264 H700" fill="none" stroke="#006557" stroke-width="1.8" marker-end="url(#arrow-accent)"/>
+        <!-- people-api -->
+        <path d="M828,136 V232" fill="none" stroke="#b85c33" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#arrow-link)"/>
+        <!-- api-server -->
+        <path d="M700,296 H544" fill="none" stroke="#b85c33" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#arrow-link)"/>
+        <!-- server-client -->
+        <path d="M384,308 H280" fill="none" stroke="#b85c33" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#arrow-link)"/>
+        <!-- client-server -->
+        <path d="M280,284 H384" fill="none" stroke="#414147" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <!-- server-media -->
+        <path d="M544,328 H628 Q636,328 636,336 V392 Q636,400 644,400 H700" fill="none" stroke="#414147" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <!-- server-disk -->
+        <path d="M440,360 V436 Q440,444 432,444 H280" fill="none" stroke="#414147" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <!-- disk-server -->
+        <path d="M280,468 H480 Q488,468 488,460 V360" fill="none" stroke="#414147" stroke-width="1.2" marker-end="url(#arrow)"/>
+
+        <!-- Connector labels, each on an opaque mask clear of its line -->
+        <rect x="332" y="104" width="72" height="12" rx="2" fill="#f5f5f5"/><text x="368" y="113" fill="#006557" font-size="8" font-family="'Geist Mono', ui-monospace, Consolas, monospace" text-anchor="middle" letter-spacing="0.06em">ENV VARIABLE</text>
+        <rect x="580" y="244" width="80" height="12" rx="2" fill="#e6f6f4"/><text x="620" y="253" fill="#006557" font-size="8" font-family="'Geist Mono', ui-monospace, Consolas, monospace" text-anchor="middle" letter-spacing="0.06em">AUTHORIZATION</text>
+        <rect x="736" y="154" width="84" height="12" rx="2" fill="#e6f6f4"/><text x="778" y="163" fill="#b85c33" font-size="8" font-family="'Geist Mono', ui-monospace, Consolas, monospace" text-anchor="middle" letter-spacing="0.06em">TEXT AND FILES</text>
+        <rect x="578" y="276" width="84" height="12" rx="2" fill="#e6f6f4"/><text x="620" y="285" fill="#b85c33" font-size="8" font-family="'Geist Mono', ui-monospace, Consolas, monospace" text-anchor="middle" letter-spacing="0.06em">UNTRUSTED TEXT</text>
+        <rect x="296" y="316" width="72" height="12" rx="2" fill="#f5f5f5"/><text x="332" y="325" fill="#b85c33" font-size="8" font-family="'Geist Mono', ui-monospace, Consolas, monospace" text-anchor="middle" letter-spacing="0.06em">TOOL RESULTS</text>
+        <rect x="290" y="264" width="84" height="12" rx="2" fill="#f5f5f5"/><text x="332" y="273" fill="#414147" font-size="8" font-family="'Geist Mono', ui-monospace, Consolas, monospace" text-anchor="middle" letter-spacing="0.06em">APPROVED CALLS</text>
+        <rect x="576" y="358" width="52" height="12" rx="2" fill="#e6f6f4"/><text x="602" y="367" fill="#212121" font-size="8" font-weight="500" font-family="'Geist Mono', ui-monospace, Consolas, monospace" text-anchor="middle" letter-spacing="0.06em">NO TOKEN</text>
+        <rect x="324" y="424" width="64" height="12" rx="2" fill="#f5f5f5"/><text x="356" y="433" fill="#414147" font-size="8" font-family="'Geist Mono', ui-monospace, Consolas, monospace" text-anchor="middle" letter-spacing="0.06em">DOWNLOADED</text>
+        <rect x="352" y="476" width="56" height="12" rx="2" fill="#f5f5f5"/><text x="380" y="485" fill="#414147" font-size="8" font-family="'Geist Mono', ui-monospace, Consolas, monospace" text-anchor="middle" letter-spacing="0.06em">FILE SENT</text>
+
+        <!-- Nodes -->
+        <!-- Client config -->
+        <rect x="56" y="92" width="224" height="64" rx="6" fill="#ffffff" stroke="#212121" stroke-width="1"/>
+        <text x="168" y="120" fill="#212121" font-size="12" font-weight="500" font-family="'Ubuntu', 'Segoe UI', sans-serif" text-anchor="middle">Client config</text>
+        <text x="168" y="136" fill="#555555" font-size="9" font-family="'Geist Mono', ui-monospace, Consolas, monospace" text-anchor="middle">holds TAIGA_TOKEN</text>
+        <!-- MCP client and model -->
+        <rect x="56" y="260" width="224" height="72" rx="6" fill="#ffffff" stroke="#212121" stroke-width="1"/>
+        <text x="168" y="300" fill="#212121" font-size="12" font-weight="500" font-family="'Ubuntu', 'Segoe UI', sans-serif" text-anchor="middle">MCP client and model</text>
+        <!-- Local files and temp folder -->
+        <rect x="56" y="424" width="224" height="64" rx="6" fill="#ffffff" stroke="#212121" stroke-width="1"/>
+        <text x="168" y="452" fill="#212121" font-size="12" font-weight="500" font-family="'Ubuntu', 'Segoe UI', sans-serif" text-anchor="middle">Local files and temp folder</text>
+        <text x="168" y="468" fill="#555555" font-size="9" font-family="'Geist Mono', ui-monospace, Consolas, monospace" text-anchor="middle">file sent by taiga_attachments_add</text>
+        <!-- taiga-mcp process -->
+        <rect x="384" y="232" width="160" height="128" rx="6" fill="#ffffff" stroke="#212121" stroke-width="1"/>
+        <text x="464" y="300" fill="#212121" font-size="12" font-weight="500" font-family="'Ubuntu', 'Segoe UI', sans-serif" text-anchor="middle">taiga-mcp process</text>
+        <!-- REST API -->
+        <rect x="700" y="232" width="200" height="96" rx="6" fill="#ffffff" stroke="#212121" stroke-width="1"/>
+        <text x="800" y="284" fill="#212121" font-size="12" font-weight="500" font-family="'Ubuntu', 'Segoe UI', sans-serif" text-anchor="middle">REST API</text>
+        <!-- Attachment files -->
+        <rect x="700" y="368" width="200" height="64" rx="6" fill="#ffffff" stroke="#212121" stroke-width="1"/>
+        <text x="800" y="396" fill="#212121" font-size="12" font-weight="500" font-family="'Ubuntu', 'Segoe UI', sans-serif" text-anchor="middle">Attachment files</text>
+        <text x="800" y="412" fill="#555555" font-size="9" font-family="'Geist Mono', ui-monospace, Consolas, monospace" text-anchor="middle">the address carries its own key</text>
+        <!-- Other project members -->
+        <rect x="736" y="48" width="184" height="88" rx="6" fill="#ffffff" stroke="#b85c33" stroke-width="1" stroke-dasharray="5,4"/>
+        <rect x="744" y="56" width="60" height="12" rx="2" fill="none" stroke="#b85c33" stroke-opacity="0.5" stroke-width="0.8"/>
+        <text x="774" y="65" fill="#b85c33" font-size="8" font-family="'Geist Mono', ui-monospace, Consolas, monospace" text-anchor="middle" letter-spacing="0.08em">UNTRUSTED</text>
+        <text x="828" y="90" fill="#212121" font-size="12" font-weight="500" font-family="'Ubuntu', 'Segoe UI', sans-serif" text-anchor="middle">Other project members</text>
+        <text x="828" y="106" fill="#555555" font-size="9" font-family="'Geist Mono', ui-monospace, Consolas, monospace" text-anchor="middle">descriptions, comments,</text>
+        <text x="828" y="119" fill="#555555" font-size="9" font-family="'Geist Mono', ui-monospace, Consolas, monospace" text-anchor="middle">file names, files</text>
+
+        <!-- Legend: bottom strip -->
+        <line x1="40" y1="544" x2="920" y2="544" stroke="rgba(0,0,0,0.12)" stroke-width="1"/>
+        <text x="40" y="572" fill="#555555" font-size="8" font-family="'Geist Mono', ui-monospace, Consolas, monospace" letter-spacing="0.18em">LEGEND</text>
+        <line x1="108" y1="568" x2="136" y2="568" stroke="#006557" stroke-width="1.8" marker-end="url(#arrow-accent)"/>
+        <text x="144" y="572" fill="#414147" font-size="9" font-family="'Ubuntu', 'Segoe UI', sans-serif">Where the token travels</text>
+        <line x1="280" y1="568" x2="308" y2="568" stroke="#b85c33" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#arrow-link)"/>
+        <text x="316" y="572" fill="#414147" font-size="9" font-family="'Ubuntu', 'Segoe UI', sans-serif">Third-party text, untrusted</text>
+        <line x1="472" y1="568" x2="500" y2="568" stroke="#414147" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <text x="508" y="572" fill="#414147" font-size="9" font-family="'Ubuntu', 'Segoe UI', sans-serif">Call or local file</text>
+      </svg>
+    </div>
+  </div>
+</body>
+</html>

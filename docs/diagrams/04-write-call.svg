@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 960 1028" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="d-04-write-call-title d-04-write-call-desc" id="d-04-write-call-root">
+        <title id="d-04-write-call-title">Write call: taiga_tasks_update with permission</title>
+        <desc id="d-04-write-call-desc">Sequence of a write call: the MCP client asks the user for permission because the tool is not read-only; if the user denies, nothing reaches the server; if allowed, taiga-mcp reads the task to learn its version, sends PATCH /tasks/200 with that version and only the fields given, and answers with the task and its URL, or with isError true and a readable message when Taiga refuses.</desc>
+        <defs>
+      <style>#d-04-write-call-root { --color-paper:   #e6f6f4;
+      --color-ink:     #212121;
+      --color-muted:   #414147;
+      --color-accent:  #006557;
+      --font-sans:     sans-serif;
+      --font-serif:    serif;
+      --font-mono:     monospace; }
+      #d-04-write-call-root { font-family: var(--font-sans); color: var(--color-ink); }
+      #d-04-write-call-root .diagram-container { width: 100%; overflow-x: auto; }
+      #d-04-write-call-root .diagram-container { overflow-x: visible; }</style>
+          <marker id="d-04-write-call-arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#414147"/></marker>
+          <marker id="d-04-write-call-arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#006557"/></marker>
+          <marker id="d-04-write-call-arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#b85c33"/></marker>
+        </defs>
+
+        <rect width="100%" height="100%" fill="#e6f6f4"/>
+
+        <!-- Combined fragments: frame, operator tab, guard -->
+        <rect x="180" y="248" width="324" height="84" rx="4" fill="#f5f5f5" stroke="#d3d3d3" stroke-width="1"/>
+        <rect x="180" y="248" width="40" height="16" rx="2" fill="#ffffff" stroke="#d3d3d3" stroke-width="1"/>
+        <text x="200" y="259" font-size="8" font-family="monospace" fill="#414147" text-anchor="middle" letter-spacing="0.12em">OPT</text>
+        <text x="192" y="278" font-size="8" font-family="monospace" fill="#414147" letter-spacing="0.04em">[user denies]</text>
+        <rect x="368" y="644" width="512" height="148" rx="4" fill="#f5f5f5" stroke="#d3d3d3" stroke-width="1"/>
+        <rect x="368" y="644" width="40" height="16" rx="2" fill="#ffffff" stroke="#d3d3d3" stroke-width="1"/>
+        <text x="388" y="655" font-size="8" font-family="monospace" fill="#414147" text-anchor="middle" letter-spacing="0.12em">OPT</text>
+        <text x="380" y="674" font-size="8" font-family="monospace" fill="#414147" letter-spacing="0.04em">[Taiga refuses]</text>
+
+        <!-- Lifelines -->
+        <line x1="104" y1="88" x2="104" y2="948" stroke="#000000" stroke-opacity="0.22" stroke-width="1" stroke-dasharray="3,3"/>
+        <line x1="292" y1="88" x2="292" y2="948" stroke="#000000" stroke-opacity="0.22" stroke-width="1" stroke-dasharray="3,3"/>
+        <line x1="480" y1="88" x2="480" y2="948" stroke="#000000" stroke-opacity="0.22" stroke-width="1" stroke-dasharray="3,3"/>
+        <line x1="668" y1="88" x2="668" y2="948" stroke="#000000" stroke-opacity="0.22" stroke-width="1" stroke-dasharray="3,3"/>
+        <line x1="856" y1="88" x2="856" y2="948" stroke="#000000" stroke-opacity="0.22" stroke-width="1" stroke-dasharray="3,3"/>
+
+        <!-- Activation bars -->
+        <rect x="100" y="188" width="8" height="188" fill="#ffffff" stroke="#414147" stroke-width="0.8"/>
+        <rect x="476" y="132" width="8" height="796" fill="#ffffff" stroke="#414147" stroke-width="0.8"/>
+        <rect x="664" y="416" width="8" height="464" fill="#ffffff" stroke="#414147" stroke-width="0.8"/>
+        <rect x="852" y="472" width="8" height="32" fill="#ffffff" stroke="#414147" stroke-width="0.8"/>
+        <rect x="852" y="568" width="8" height="268" fill="#ffffff" stroke="#414147" stroke-width="0.8"/>
+
+        <!-- Messages: time flows top to bottom -->
+        <line x1="292" y1="136" x2="476" y2="136" stroke="#414147" stroke-width="1.2" marker-end="url(#d-04-write-call-arrow)"/>
+        <line x1="476" y1="192" x2="108" y2="192" stroke="#006557" stroke-width="1.4" marker-end="url(#d-04-write-call-arrow-accent)"/>
+        <line x1="476" y1="292" x2="292" y2="292" stroke="#414147" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#d-04-write-call-arrow)"/>
+        <line x1="108" y1="372" x2="476" y2="372" stroke="#414147" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#d-04-write-call-arrow)"/>
+        <line x1="484" y1="420" x2="664" y2="420" stroke="#414147" stroke-width="1.2" marker-end="url(#d-04-write-call-arrow)"/>
+        <line x1="672" y1="476" x2="852" y2="476" stroke="#b85c33" stroke-width="1.2" marker-end="url(#d-04-write-call-arrow-link)"/>
+        <line x1="672" y1="572" x2="852" y2="572" stroke="#006557" stroke-width="1.4" marker-end="url(#d-04-write-call-arrow-accent)"/>
+        <line x1="852" y1="692" x2="672" y2="692" stroke="#414147" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#d-04-write-call-arrow)"/>
+        <line x1="664" y1="740" x2="484" y2="740" stroke="#414147" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#d-04-write-call-arrow)"/>
+        <line x1="852" y1="832" x2="672" y2="832" stroke="#414147" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#d-04-write-call-arrow)"/>
+        <line x1="664" y1="876" x2="484" y2="876" stroke="#414147" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#d-04-write-call-arrow)"/>
+        <line x1="476" y1="924" x2="292" y2="924" stroke="#414147" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#d-04-write-call-arrow)"/>
+
+        <!-- Message labels: each mask stops 8px short of its stroke -->
+        <rect x="350" y="116" width="72" height="12" rx="2" fill="#e6f6f4"/>
+        <text x="386" y="125" font-size="8" font-family="monospace" fill="#414147" text-anchor="middle" letter-spacing="0.08em">TOOL CALL</text>
+        <rect x="326" y="144" width="120" height="16" rx="2" fill="#e6f6f4"/>
+        <text x="386" y="154" font-size="9" font-family="monospace" fill="#555555" text-anchor="middle"><tspan fill="#212121" font-weight="600">taiga_tasks_update</tspan></text>
+        <rect x="154" y="172" width="88" height="12" rx="2" fill="#e6f6f4"/>
+        <text x="198" y="181" font-size="8" font-family="monospace" fill="#006557" text-anchor="middle" letter-spacing="0.08em">ASK THE USER</text>
+        <rect x="114" y="200" width="168" height="32" rx="2" fill="#e6f6f4"/>
+        <text x="198" y="213" font-size="12" font-family="sans-serif" fill="#006557" font-weight="500" text-anchor="middle">Permission prompt</text>
+        <text x="198" y="227" font-size="9" font-family="monospace" fill="#555555" text-anchor="middle"><tspan fill="#555555">the tool is not read-only</tspan></text>
+        <rect x="342" y="272" width="88" height="12" rx="2" fill="#f5f5f5"/>
+        <text x="386" y="281" font-size="8" font-family="monospace" fill="#414147" text-anchor="middle" letter-spacing="0.08em">CALL REFUSED</text>
+        <rect x="302" y="300" width="168" height="16" rx="2" fill="#f5f5f5"/>
+        <text x="386" y="310" font-size="9" font-family="monospace" fill="#555555" text-anchor="middle"><tspan fill="#555555">nothing reaches the server</tspan></text>
+        <rect x="174" y="352" width="48" height="12" rx="2" fill="#e6f6f4"/>
+        <text x="198" y="361" font-size="8" font-family="monospace" fill="#414147" text-anchor="middle" letter-spacing="0.08em">ALLOW</text>
+        <rect x="538" y="400" width="72" height="12" rx="2" fill="#e6f6f4"/>
+        <text x="574" y="409" font-size="8" font-family="monospace" fill="#414147" text-anchor="middle" letter-spacing="0.08em">OVER STDIO</text>
+        <rect x="538" y="428" width="72" height="16" rx="2" fill="#e6f6f4"/>
+        <text x="574" y="438" font-size="9" font-family="monospace" fill="#555555" text-anchor="middle"><tspan fill="#212121">tools/call</tspan></text>
+        <rect x="718" y="456" width="88" height="12" rx="2" fill="#e6f6f4"/>
+        <text x="762" y="465" font-size="8" font-family="monospace" fill="#b85c33" text-anchor="middle" letter-spacing="0.08em">READ THE TASK</text>
+        <rect x="690" y="484" width="144" height="52" rx="2" fill="#e6f6f4"/>
+        <text x="762" y="494" font-size="9" font-family="monospace" fill="#555555" text-anchor="middle"><tspan fill="#212121">GET /projects/by_slug</tspan></text>
+        <text x="762" y="506" font-size="9" font-family="monospace" fill="#555555" text-anchor="middle"><tspan fill="#212121">GET /resolver</tspan></text>
+        <text x="762" y="518" font-size="9" font-family="monospace" fill="#555555" text-anchor="middle"><tspan fill="#212121">GET /tasks/200</tspan></text>
+        <text x="762" y="530" font-size="9" font-family="monospace" fill="#555555" text-anchor="middle"><tspan fill="#555555">← task with </tspan><tspan fill="#212121" font-weight="600">version 7</tspan></text>
+        <rect x="738" y="552" width="48" height="12" rx="2" fill="#e6f6f4"/>
+        <text x="762" y="561" font-size="8" font-family="monospace" fill="#006557" text-anchor="middle" letter-spacing="0.08em">WRITE</text>
+        <rect x="690" y="580" width="144" height="44" rx="2" fill="#e6f6f4"/>
+        <text x="762" y="593" font-size="12" font-family="monospace" fill="#006557" font-weight="600" text-anchor="middle">PATCH /tasks/200</text>
+        <text x="762" y="607" font-size="9" font-family="monospace" fill="#555555" text-anchor="middle"><tspan fill="#555555">with </tspan><tspan fill="#212121" font-weight="600">version 7</tspan><tspan fill="#555555"> and</tspan></text>
+        <text x="762" y="619" font-size="9" font-family="monospace" fill="#555555" text-anchor="middle"><tspan fill="#555555">only the fields given</tspan></text>
+        <rect x="734" y="672" width="56" height="12" rx="2" fill="#f5f5f5"/>
+        <text x="762" y="681" font-size="8" font-family="monospace" fill="#414147" text-anchor="middle" letter-spacing="0.08em">REFUSED</text>
+        <rect x="702" y="700" width="120" height="16" rx="2" fill="#f5f5f5"/>
+        <text x="762" y="710" font-size="9" font-family="monospace" fill="#555555" text-anchor="middle"><tspan fill="#212121">4xx</tspan><tspan fill="#555555"> and the reason</tspan></text>
+        <rect x="550" y="720" width="48" height="12" rx="2" fill="#f5f5f5"/>
+        <text x="574" y="729" font-size="8" font-family="monospace" fill="#414147" text-anchor="middle" letter-spacing="0.08em">ANSWER</text>
+        <rect x="502" y="748" width="144" height="28" rx="2" fill="#f5f5f5"/>
+        <text x="574" y="758" font-size="9" font-family="monospace" fill="#555555" text-anchor="middle"><tspan fill="#212121" font-weight="600">isError true</tspan></text>
+        <text x="574" y="770" font-size="9" font-family="monospace" fill="#555555" text-anchor="middle"><tspan fill="#555555">and a readable message</tspan></text>
+        <rect x="730" y="812" width="64" height="12" rx="2" fill="#e6f6f4"/>
+        <text x="762" y="821" font-size="8" font-family="monospace" fill="#414147" text-anchor="middle" letter-spacing="0.08em">ACCEPTED</text>
+        <rect x="706" y="840" width="112" height="28" rx="2" fill="#e6f6f4"/>
+        <text x="762" y="850" font-size="9" font-family="monospace" fill="#555555" text-anchor="middle"><tspan fill="#212121">200</tspan><tspan fill="#555555"> and the task</tspan></text>
+        <text x="762" y="862" font-size="9" font-family="monospace" fill="#555555" text-anchor="middle"><tspan fill="#555555">as it was left</tspan></text>
+        <rect x="550" y="856" width="48" height="12" rx="2" fill="#e6f6f4"/>
+        <text x="574" y="865" font-size="8" font-family="monospace" fill="#414147" text-anchor="middle" letter-spacing="0.08em">ANSWER</text>
+        <rect x="510" y="884" width="128" height="28" rx="2" fill="#e6f6f4"/>
+        <text x="574" y="894" font-size="9" font-family="monospace" fill="#555555" text-anchor="middle"><tspan fill="#555555">summary of the task</tspan></text>
+        <text x="574" y="906" font-size="9" font-family="monospace" fill="#555555" text-anchor="middle"><tspan fill="#555555">and its URL</tspan></text>
+        <rect x="346" y="904" width="80" height="12" rx="2" fill="#e6f6f4"/>
+        <text x="386" y="913" font-size="8" font-family="monospace" fill="#414147" text-anchor="middle" letter-spacing="0.08em">TOOL RESULT</text>
+
+        <!-- Actors and focal step, drawn after the arrows -->
+        <rect x="40" y="40" width="128" height="48" rx="6" fill="#e6f6f4"/>
+        <rect x="40" y="40" width="128" height="48" rx="6" fill="#ffffff" stroke="#212121" stroke-width="1"/>
+        <text x="104" y="68" font-size="12" font-family="sans-serif" fill="#212121" font-weight="500" text-anchor="middle">User</text>
+        <rect x="228" y="40" width="128" height="48" rx="6" fill="#e6f6f4"/>
+        <rect x="228" y="40" width="128" height="48" rx="6" fill="#ffffff" stroke="#212121" stroke-width="1"/>
+        <text x="292" y="68" font-size="12" font-family="sans-serif" fill="#212121" font-weight="500" text-anchor="middle">Model</text>
+        <rect x="416" y="40" width="128" height="48" rx="6" fill="#e6f6f4"/>
+        <rect x="416" y="40" width="128" height="48" rx="6" fill="#ffffff" stroke="#212121" stroke-width="1"/>
+        <text x="480" y="68" font-size="12" font-family="sans-serif" fill="#212121" font-weight="500" text-anchor="middle">MCP client</text>
+        <rect x="604" y="40" width="128" height="48" rx="6" fill="#e6f6f4"/>
+        <rect x="604" y="40" width="128" height="48" rx="6" fill="#ffffff" stroke="#212121" stroke-width="1"/>
+        <text x="668" y="68" font-size="12" font-family="sans-serif" fill="#212121" font-weight="500" text-anchor="middle">taiga-mcp</text>
+        <rect x="792" y="40" width="128" height="48" rx="6" fill="#e6f6f4"/>
+        <rect x="792" y="40" width="128" height="48" rx="6" fill="#ffffff" stroke="#212121" stroke-width="1"/>
+        <text x="856" y="68" font-size="12" font-family="sans-serif" fill="#212121" font-weight="500" text-anchor="middle">Taiga API</text>
+
+        <!-- Legend strip -->
+        <line x1="40" y1="972" x2="920" y2="972" stroke="#000000" stroke-opacity="0.12" stroke-width="1"/>
+        <text x="40" y="1000" font-size="8" font-family="monospace" fill="#555555" letter-spacing="0.18em">LEGEND</text>
+        <line x1="112" y1="996" x2="140" y2="996" stroke="#414147" stroke-width="1.2" marker-end="url(#d-04-write-call-arrow)"/>
+        <text x="148" y="1000" font-size="9" font-family="sans-serif" fill="#414147">Call</text>
+        <line x1="196" y1="996" x2="224" y2="996" stroke="#b85c33" stroke-width="1.2" marker-end="url(#d-04-write-call-arrow-link)"/>
+        <text x="232" y="1000" font-size="9" font-family="sans-serif" fill="#414147">HTTP call</text>
+        <line x1="308" y1="996" x2="336" y2="996" stroke="#414147" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#d-04-write-call-arrow)"/>
+        <text x="344" y="1000" font-size="9" font-family="sans-serif" fill="#414147">Return</text>
+        <line x1="404" y1="996" x2="432" y2="996" stroke="#006557" stroke-width="1.4" marker-end="url(#d-04-write-call-arrow-accent)"/>
+        <text x="440" y="1000" font-size="9" font-family="sans-serif" fill="#414147">Focal message</text>
+        <rect x="536" y="989" width="28" height="14" rx="2" fill="#f5f5f5" stroke="#d3d3d3" stroke-width="1"/>
+        <text x="550" y="998.5" font-size="7" font-family="monospace" fill="#414147" text-anchor="middle" letter-spacing="0.08em">OPT</text>
+        <text x="572" y="1000" font-size="9" font-family="sans-serif" fill="#414147">Only if the guard holds</text>
+        <rect x="724" y="988" width="8" height="16" fill="#ffffff" stroke="#414147" stroke-width="0.8"/>
+        <text x="740" y="1000" font-size="9" font-family="sans-serif" fill="#414147">Active</text>
+        </svg>
