@@ -1,8 +1,8 @@
 # Taiga MCP Server
 
 [![CI](https://github.com/CamposCodes/taiga-r2da-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/CamposCodes/taiga-r2da-mcp/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Node 20+](https://img.shields.io/badge/node-%3E%3D20-brightgreen.svg)](package.json)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](../LICENSE)
+[![Node 20+](https://img.shields.io/badge/node-%3E%3D20-brightgreen.svg)](../package.json)
 
 [Português (Brasil)](readme.pt-br.md)
 
