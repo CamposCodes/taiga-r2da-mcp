@@ -1,0 +1,11 @@
+node_modules/
+dist/
+*.log
+.env
+.env.*
+!.env.example
+# Notes that belong to one installation and are not published.
+docs/internal/
+# Client configurations written while trying the server here: they can hold a real token.
+.mcp.json
+.codex/

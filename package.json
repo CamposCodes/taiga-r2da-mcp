@@ -1,0 +1,61 @@
+{
+  "name": "taiga-mcp",
+  "version": "0.3.0",
+  "description": "MCP server for a Taiga 6 installation: lets AI models read projects, user stories, tasks, issues, sprints and attachments, and optionally create, edit, move and delete user stories, tasks and issues and attach files to them",
+  "keywords": [
+    "mcp",
+    "mcp-server",
+    "model-context-protocol",
+    "taiga",
+    "project-management",
+    "kanban",
+    "scrum",
+    "claude",
+    "codex",
+    "ai-agents"
+  ],
+  "homepage": "https://github.com/CamposCodes/taiga-r2da-mcp#readme",
+  "bugs": {
+    "url": "https://github.com/CamposCodes/taiga-r2da-mcp/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CamposCodes/taiga-r2da-mcp.git"
+  },
+  "license": "MIT",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "taiga-mcp": "dist/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "README.pt-BR.md",
+    "CHANGELOG.md",
+    "SECURITY.md",
+    "docs/*.md",
+    "docs/clients",
+    "docs/diagrams/*.svg"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc",
+    "check": "tsc --noEmit",
+    "start": "node dist/index.js",
+    "test": "node test/smoke.mjs dist/index.js",
+    "coverage": "node test/coverage.mjs dist/index.js",
+    "test:live": "node test/live.mjs dist/index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/server": "^2.3.1",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "typescript": "^5.9.3"
+  }
+}
