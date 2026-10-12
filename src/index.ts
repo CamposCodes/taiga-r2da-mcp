@@ -934,6 +934,112 @@ function registerWriting(server: McpServer, client: TaigaClient, remove: boolean
       return written(client, p, kind, await client.send("PATCH", `/${KINDS[kind].path}/${id}`, { version, ...fields }));
     });
 
+  server.registerTool(
+    "taiga_userstories_create",
+    {
+      title: "Create a user story",
+      description:
+        "Creates a user story. Without a status it gets the default one of the project, and without a sprint it is " +
+        "in no sprint (on a kanban it shows in the column of its status). The answer has the number of the new story " +
+        "and its address; tasks are added to it with taiga_tasks_create.",
+      inputSchema: z.object({ project, subject: z.string().min(1).describe("Title of the user story"), ...storyChanges }),
+      outputSchema: changed,
+      annotations: WRITE,
+    },
+    create("us"),
+  );
+
+  server.registerTool(
+    "taiga_userstories_update",
+    {
+      title: "Edit or move a user story",
+      description:
+        "Changes a user story: only the fields given, and a description or the tags are replaced whole. Moving it on " +
+        'the kanban is giving the new status; moving it to another sprint, or out of every sprint with "backlog", is ' +
+        "giving the sprint. A comment can go alone or with the changes.",
+      inputSchema: z.object({
+        project,
+        ref: storyRef,
+        subject: z.string().min(1).optional().describe("New title of the user story"),
+        ...storyChanges,
+        ...edits("us"),
+      }),
+      outputSchema: changed,
+      annotations: { ...WRITE, destructiveHint: true },
+    },
+    update("us"),
+  );
+
+  server.registerTool(
+    "taiga_tasks_create",
+    {
+      title: "Create a task",
+      description:
+        "Creates a task in a user story or, with no story, in a sprint: one of the two is required. Without a status " +
+        "it gets the default one of the project. The answer has the number of the new task and its address.",
+      inputSchema: z.object({ project, subject: z.string().min(1).describe("Title of the task"), ...taskChanges }),
+      outputSchema: changed,
+      annotations: WRITE,
+    },
+    create("task"),
+  );
+
+  server.registerTool(
+    "taiga_tasks_update",
+    {
+      title: "Edit or move a task",
+      description:
+        "Changes a task: only the fields given, and a description or the tags are replaced whole. Moving it on the " +
+        "board is giving the new status; moving it to another user story or sprint is giving that story or sprint. " +
+        "A comment can go alone or with the changes.",
+      inputSchema: z.object({
+        project,
+        ref: taskRef,
+        subject: z.string().min(1).optional().describe("New title of the task"),
+        ...taskChanges,
+        ...edits("task"),
+      }),
+      outputSchema: changed,
+      annotations: { ...WRITE, destructiveHint: true },
+    },
+    update("task"),
+  );
+
+  server.registerTool(
+    "taiga_issues_create",
+    {
+      title: "Create an issue",
+      description:
+        "Creates an issue (a bug, a question, an improvement). Without a status, type, severity or priority it gets " +
+        "the default ones of the project. The answer has the number of the new issue and its address.",
+      inputSchema: z.object({ project, subject: z.string().min(1).describe("Title of the issue"), ...issueChanges }),
+      outputSchema: changed,
+      annotations: WRITE,
+    },
+    create("issue"),
+  );
+
+  server.registerTool(
+    "taiga_issues_update",
+    {
+      title: "Edit or move an issue",
+      description:
+        "Changes an issue: only the fields given, and a description or the tags are replaced whole. Moving it is " +
+        'giving the new status, or the sprint it goes to ("backlog" for none). A comment can go alone or with the ' +
+        "changes.",
+      inputSchema: z.object({
+        project,
+        ref: issueRef,
+        subject: z.string().min(1).optional().describe("New title of the issue"),
+        ...issueChanges,
+        ...edits("issue"),
+      }),
+      outputSchema: changed,
+      annotations: { ...WRITE, destructiveHint: true },
+    },
+    update("issue"),
+  );
+
   if (!remove) {
     return;
   }
