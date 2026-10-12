@@ -31,14 +31,14 @@
           "name": "TAIGA_TOKEN"
         },
         {
-          "description": "1 registers the tools that create and edit user stories, tasks and issues",
+          "description": "1 or true registers the tools that create and edit user stories, tasks and issues",
           "isRequired": false,
           "format": "string",
           "isSecret": false,
           "name": "TAIGA_WRITE"
         },
         {
-          "description": "1 registers the tool that deletes; it needs TAIGA_WRITE=1",
+          "description": "1 or true registers the tool that deletes; it needs TAIGA_WRITE on",
           "isRequired": false,
           "format": "string",
           "isSecret": false,
