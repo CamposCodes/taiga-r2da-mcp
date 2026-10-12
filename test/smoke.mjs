@@ -815,9 +815,9 @@ await scenario('Every link between the documents leads to a file and a heading t
   for (const page of pages) {
     // What is inside a code block or a code span is an example, not a link.
     const prose = readFileSync(page, 'utf8').replace(/```[^]*?```/g, '').replace(/`[^`\n]*`/g, '')
-    // Every "](target)", which also finds a link whose text is an image, as a badge is, and every src="target"
-    // of a picture written in HTML.
-    for (const target of [...prose.matchAll(/\]\(([^)\s]+)\)|\bsrc="([^"]+)"/g)].map((found) => found[1] ?? found[2])) {
+    // Every "](target)", which also finds a link whose text is an image, as a badge is, and every target of a
+    // link or of a picture written in HTML.
+    for (const target of [...prose.matchAll(/\]\(([^)\s]+)\)|\b(?:src|srcset|href)="([^"]+)"/g)].map((found) => found[1] ?? found[2])) {
       if (/^(https?:|mailto:)/.test(target)) continue
       const [path, anchor] = target.split('#')
       const aimed = path ? posix.normalize(posix.join(posix.dirname(page), path)).replace(/\/$/, '') : page
