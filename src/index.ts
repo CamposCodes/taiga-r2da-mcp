@@ -1081,6 +1081,57 @@ function registerWriting(server: McpServer, client: TaigaClient, remove: boolean
   if (!remove) {
     return;
   }
+
+  server.registerTool(
+    "taiga_items_delete",
+    {
+      title: "Delete an item",
+      description:
+        "Deletes a user story, a task or an issue with its comments and attachments, for good: Taiga keeps no trash. " +
+        "Deleting a user story deletes its tasks with it. It takes two calls. The first, without confirm, deletes " +
+        "nothing: it shows what would go and gives a code. Show that to the user, ask whether it is really to be " +
+        "deleted, and only after a yes call again with the code in confirm.",
+      inputSchema: z.object({
+        project,
+        ref: itemRef,
+        confirm: z.string().optional().describe("The code the first call gave. Leave it out on the first call: nothing is deleted without it"),
+      }),
+      outputSchema: z.object({
+        deleted: z.boolean(),
+        item: line,
+        tasksDeletedWithIt: z.array(z.string()).optional().describe("User stories only: the tasks that go with it"),
+        confirm: z.string().optional().describe("The code that deletes this item, to be sent only after the user said yes"),
+        next: z.string().optional().describe("What to do before calling again"),
+      }),
+      annotations: { ...WRITE, destructiveHint: true },
+    },
+    ({ project, ref, confirm }) =>
+      run(async () => {
+        const p = await loadProject(client, project);
+        const { kind, id } = await resolve(client, p, ref);
+        allow(p, "delete", kind);
+        const item = await client.get(`/${KINDS[kind].path}/${id}`);
+        const shown = {
+          item: summary(p, kind, item),
+          ...(kind === "us" ? { tasksDeletedWithIt: (await tasksOf(client, p, id)).map((task) => `#${task.ref} ${task.subject}`) } : {}),
+        };
+        // The code names the item and the version that was shown: one that changed since asks for a new look.
+        const code = `${kind}-${ref}-v${item.version}`;
+        if (confirm !== code) {
+          return {
+            deleted: false,
+            ...shown,
+            confirm: code,
+            next:
+              (confirm === undefined ? "" : "That code is not the one of this item as it is now. ") +
+              "Nothing was deleted. Show this to the user and ask whether it is really to be deleted. Only after a " +
+              "yes, call again with this code in confirm.",
+          };
+        }
+        await client.send("DELETE", `/${KINDS[kind].path}/${id}`);
+        return { deleted: true, ...shown };
+      }),
+  );
 }
 
 function required(name: string): string {
