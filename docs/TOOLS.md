@@ -989,8 +989,16 @@ The server sends `DELETE /userstories/100` and answers with `"deleted": true`, t
   shows the item again with a new code, and `next` starts with
   `That code does not stand for this item as it is now`.
 - `tasksDeletedWithIt` comes only with a user story.
-- The second call is still made by the model. What keeps a person in the loop is the permission prompt of the MCP
-  client, which the annotation `destructiveHint: true` feeds. See [SECURITY.md](../SECURITY.md).
+- On the second call, a client that has declared that it can put a question from a server to its user (the
+  `elicitation` capability of MCP) is made to ask it:
+  `Delete the user story #12 "História" of my-project, with its tasks #13? Taiga keeps no trash: this cannot be undone.`
+  Only a yes given there deletes. With a no, a cancel or an answer without the yes, nothing is deleted, the code
+  is spent, and the answer is `"deleted": false` with
+  `"next": "The user did not approve the deletion: nothing was deleted. Do not ask again unless the user brings it up."`
+  The model cannot answer that question: the client carries it to the person.
+- In a client that did not declare that capability, the second call deletes. Both calls are then made by the
+  model, and what keeps a person in the loop is the permission prompt of the client, which the annotation
+  `destructiveHint: true` feeds. See [SECURITY.md](../SECURITY.md).
 
 Errors:
 

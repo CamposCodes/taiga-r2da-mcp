@@ -30,6 +30,13 @@ What to look at when upgrading from 0.2.0:
   file is sent only after the user copies it to another place under another name.
 - Two error messages changed. `#13 is not a user story: it is a task.` was `#13 is not a user story.`, and
   `#12 is not a task: it is a user story.` ended with `only tasks can be changed.`
+- An edit that gives `description` or `tags` must give `version`, the version of the item as `taiga_items_get`
+  answers it, because both replace what is there. This applies to `taiga_tasks_update`, which 0.2.0 had, and to
+  the two new tools that edit. Without the version the call is refused with
+  `A description or the tags replace what #13 has now: read it with taiga_items_get and give its version, so that a change somebody made in the meantime is not lost.`
+  With a version that is not the current one it is refused with
+  `#13 changed since version 6: it is at version 7 now. Read it again with taiga_items_get, look at what changed and send the edit with the new version.`
+  Nothing is changed in either case. A move, an assignee, a due date, a block or a comment needs no version.
 
 ### Added
 
@@ -39,9 +46,25 @@ What to look at when upgrading from 0.2.0:
 - `taiga_attachments_add` sends a file to a user story, a task or an issue. It took only tasks.
 - Deleting, only with `TAIGA_DELETE=1` on top of `TAIGA_WRITE=1`: `taiga_items_delete` deletes a user story, a
   task or an issue, in two calls. The first, without `confirm`, deletes nothing: it shows the item (and, for a
-  user story, the tasks that go with it) and gives a random code. Only a second call with that code
-  deletes, and the code of an item that changed since is refused. `TAIGA_DELETE=1` without `TAIGA_WRITE=1` stops
-  the server at start.
+  user story, the tasks that go with it) and gives a random code. Only a second call with that code can delete,
+  and the code of an item that changed since is refused. `TAIGA_DELETE=1` without `TAIGA_WRITE=1` stops the
+  server at start.
+- A question to the user before a deletion. On the second call of `taiga_items_delete`, when the client has
+  declared that it can put a question from a server to its user (the `elicitation` capability of MCP), the server
+  asks through the client, for example
+  `Delete the user story #12 "História" of my-project, with its tasks #13? Taiga keeps no trash: this cannot be undone.`
+  Only a yes deletes. A no, a cancel or an answer without the yes deletes nothing, spends the code, and the tool
+  answers `deleted: false`. It works as a request from the server before revision `2026-07-28` and as an
+  `input_required` answer on it. In a client that did not declare the capability nothing changes.
+- `taiga_items_get` answers `version`. The three tools that edit take a `version` parameter and answer with the
+  version the write left.
+- A Claude Desktop extension can be built: `npm run pack:mcpb`, after `npm ci` and `npm run build`, writes
+  `build/taiga-mcp-0.3.0.mcpb` from the built server, the three packages it needs to run and `manifest.json`. Its
+  form asks for the address, the token (marked sensitive) and two switches, writing and deleting, both off by
+  default. The packaging tool validated the manifest; the extension was not installed in a real Claude Desktop.
+  The file is not committed and not published.
+- `server.json`, which describes the server for the MCP Registry, and `mcpName` in `package.json`. The server is
+  not published to the registry yet.
 - A check of permissions: before it creates, changes or deletes an item, the server looks for the permission in
   the list Taiga gives for the project (`myPermissions` of `taiga_projects_get`). When it is missing, nothing is
   sent and the error lists what that role may do instead, and tells the model to report the refusal, offer the
@@ -61,12 +84,13 @@ What to look at when upgrading from 0.2.0:
   Desktop and Codex, security policy, compliance audit and contribution guide. Diagrams in Mermaid and SVG.
 - CI on Linux, macOS and Windows, with Node 20 and Node 24. It runs `npm ci`, `npm run check`, `npm run build` and
   `npm run coverage`.
-- Tests: exit when the input closes, wrong argument types, the cut notice, the call limit, and a check that
-  `docs/TOOLS.md` lists the tools and parameters of `tools/list`.
-- `npm test` runs 63 scenarios against a simulated Taiga, and fails when `docs/TESTING.md` does not list exactly
-  those scenarios. `npm run coverage` measures how much of the built server they run: 1042 of 1045 lines in full
-  (99.7%), on Windows with Node 24. `npm run test:live` runs against a real Taiga, in one project: by hand, never
-  in CI.
+- Tests: exit when the input closes, wrong argument types, the cut notice, the call limit, a check that
+  `docs/TOOLS.md` lists the tools and parameters of `tools/list`, and a check that `package.json`, `server.json`
+  and `manifest.json` name the same version and the same variables.
+- `npm test` runs 69 scenarios against a simulated Taiga, and fails when `docs/TESTING.md` does not list exactly
+  those scenarios. `npm run coverage` measures how much of the built server they run: the figure of the last run
+  is in [docs/TESTING.md](docs/TESTING.md). `npm run test:live` runs against a real Taiga, in one project: by
+  hand, never in CI.
 
 ### Changed
 
@@ -85,8 +109,13 @@ What to look at when upgrading from 0.2.0:
 - `taiga_me` and `taiga_projects_list` declare a schema that accepts only an empty object.
 - Examples in parameter descriptions use neutral names (`"my-project"`, `"In progress"`, `"New"`).
 - The server instructions no longer say which language the texts are in.
-- `package.json` has keywords, repository links and the list of published files. The package stays private: it is
-  not published to npm.
+- The package is named `@camposcodes/taiga-r2da-mcp`. It was `taiga-mcp`, a name that belongs to another project
+  on npm. The command of the server is still `taiga-mcp`, and the server still calls itself `taiga-mcp`.
+- `package.json` has keywords, repository links and the list of published files, and is no longer marked private.
+  The package is not published yet, neither to npm nor to the MCP Registry: installation is still `git clone`,
+  `npm ci` and `npm run build`.
+- `TAIGA_WRITE` and `TAIGA_DELETE` are on with `1` or with `true`, and with nothing else: `yes`, `on`, `TRUE` and
+  `0` leave them off.
 - The nine SVG files of `docs/diagrams/` name only generic font families and no longer fetch web fonts.
   `07-tool-map.svg` shows the three groups of tools: 10, 7 and 1.
 
@@ -103,20 +132,26 @@ What to look at when upgrading from 0.2.0:
   random characters) and made again if it is deleted meanwhile, in place of the fixed folder `taiga-mcp` of the
   temp folder. On a machine shared by several users, a fixed name in a shared temp folder could be read, or
   prepared in advance, by another of them.
-- The second call of `taiga_items_delete` is still made by the model: what keeps a person in the loop is the
-  permission prompt of the MCP client, fed by `destructiveHint: true`. Taiga keeps no trash, and deleting a user
-  story deletes its tasks.
-- The code that confirms a deletion is random, kept by the server with the item it stands for, good once and for
-  ten minutes. A guess, a code of another item or of another project, or the code of an item that changed since it
-  was shown deletes nothing.
+- Where the client can put a question from a server to its user, a deletion needs the yes the person gives
+  there: the model cannot answer in the person's place. In a client that cannot, the second call of
+  `taiga_items_delete` is still made by the model, and what keeps a person in the loop is the permission prompt
+  of the MCP client, fed by `destructiveHint: true`. Taiga keeps no trash, and deleting a user story deletes its
+  tasks.
+- The code that confirms a deletion is random, kept by the server with the item it stands for, good once, for
+  ten minutes and only for the last item shown. A guess, a code of another item or of another project, or the
+  code of an item that changed since it was shown deletes nothing.
+- An edit of a description or of the tags is refused when the item changed since it was read, so that the edit
+  of somebody else is not overwritten without a word.
+- The tool that packs the Claude Desktop extension, `@anthropic-ai/mcpb` 2.1.2, is fetched with `npx` when the
+  extension is built and is not a dependency of the project: its own dependencies carry open security advisories.
 - `taiga_attachments_add` also refuses a network path (`\\host\share`), before the disk is touched, and, on
   Linux, the files under `/proc`, `/sys`, `/dev` and `/run`: `/proc/self/environ` holds the token.
 - A token with a space or a line break in it stops the server at start, without being shown. Node used to name
   the whole token in its error.
 - A person is looked up by id, then by username, then by full name, and a full name two members share is refused.
   Before, a member who chose the username of a colleague as full name could be taken for that colleague.
-- A trail on stderr: one line for every change sent to Taiga, with the status it answered, and one for every tool
-  error.
+- A trail on stderr: one line for every change sent to Taiga, with the status it answered, one for every tool
+  error, and one for a deletion the user did not approve.
 - The two actions of the CI are pinned by commit SHA, and `.github/dependabot.yml` proposes their updates.
 - `.gitignore` covers `.mcp.json` and `.codex/`, where a client configuration with a real token can end up.
 - The client guides say that a token typed in a registration command stays in the history of the shell.

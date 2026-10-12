@@ -64,10 +64,28 @@ Passo a passo, por cliente:
 | Claude Desktop | [docs/clients/claude-desktop.md](docs/clients/claude-desktop.md) |
 | Codex (CLI, extensão de IDE, aplicativo) | [docs/clients/codex.md](docs/clients/codex.md) |
 
+O Claude Desktop também aceita o servidor como extensão, um arquivo `.mcpb` que você gera a partir deste
+repositório com `npm run pack:mcpb`. Ela ainda não foi instalada em um Claude Desktop real: veja
+[Install as an extension](docs/clients/claude-desktop.md#install-as-an-extension).
+
 Qualquer outro cliente que inicie um servidor MCP por stdio funciona do mesmo jeito: o comando é `node`, o
 argumento é o caminho absoluto de `dist/index.js`, e as variáveis abaixo vão no ambiente do servidor.
 
 **4. Pergunte.** "Quais projetos eu tenho no Taiga?" Não é preciso citar o nome de uma tool.
+
+### Pelo npm, quando for publicado
+
+O pacote se chama `@camposcodes/taiga-r2da-mcp`. **Ele ainda não está publicado**, nem no npm nem no MCP
+Registry, então o comando abaixo não funciona hoje: instale a partir deste repositório, como acima. Quando o
+pacote for publicado, o passo 1 deixará de ser necessário, e o registro do passo 3 iniciará o servidor com `npx`
+no lugar de `node` e do caminho:
+
+```bash
+claude mcp add --env TAIGA_URL=https://taiga.example.com --env "TAIGA_TOKEN=<YOUR_TOKEN>" --transport stdio --scope local taiga -- npx -y @camposcodes/taiga-r2da-mcp
+```
+
+Só o nome do pacote é novo: o comando que ele instala continua sendo `taiga-mcp`, e o servidor continua se
+identificando como `taiga-mcp`.
 
 ## Tools
 
@@ -82,7 +100,7 @@ Leitura, sempre presentes:
 | `taiga_userstories_list` | Histórias de usuário, uma linha por história, com filtros |
 | `taiga_tasks_list` | Tarefas, cada uma com a história a que pertence, com filtros |
 | `taiga_issues_list` | Problemas, com filtros por tipo, gravidade e prioridade |
-| `taiga_items_get` | Um item pelo número, de qualquer tipo, com a descrição e a lista de anexos; comentários e histórico quando pedidos |
+| `taiga_items_get` | Um item pelo número, de qualquer tipo, com a versão, a descrição e a lista de anexos; comentários e histórico quando pedidos |
 | `taiga_search` | Busca por palavras em histórias, tarefas, problemas e páginas da wiki |
 | `taiga_attachments_get` | O conteúdo de um anexo: uma imagem, um texto ou o caminho de um arquivo gravado. Ela pode gravar um arquivo na máquina, por isso não é marcada como somente leitura |
 
@@ -91,18 +109,23 @@ Escrita, só com `TAIGA_WRITE=1`:
 | Tool | O que faz |
 | --- | --- |
 | `taiga_userstories_create` | Cria uma história de usuário |
-| `taiga_userstories_update` | Edita ou move uma história de usuário, e comenta nela. Só muda os campos informados |
+| `taiga_userstories_update` | Edita ou move uma história de usuário, e comenta nela. Só muda os campos informados. Uma descrição nova ou tags novas precisam da `version` que `taiga_items_get` devolveu |
 | `taiga_tasks_create` | Cria uma tarefa em uma história ou em uma sprint |
-| `taiga_tasks_update` | Edita ou move uma tarefa, e comenta nela. Só muda os campos informados |
+| `taiga_tasks_update` | Edita ou move uma tarefa, e comenta nela. Só muda os campos informados. Uma descrição nova ou tags novas precisam da `version` que `taiga_items_get` devolveu |
 | `taiga_issues_create` | Cria um problema |
-| `taiga_issues_update` | Edita ou move um problema, e comenta nele. Só muda os campos informados |
+| `taiga_issues_update` | Edita ou move um problema, e comenta nele. Só muda os campos informados. Uma descrição nova ou tags novas precisam da `version` que `taiga_items_get` devolveu |
 | `taiga_attachments_add` | Envia um arquivo da máquina para uma história, uma tarefa ou um problema. Um arquivo que parece credencial é recusado |
 
 Exclusão, só com `TAIGA_DELETE=1` além de `TAIGA_WRITE=1`:
 
 | Tool | O que faz |
 | --- | --- |
-| `taiga_items_delete` | Exclui de vez uma história, uma tarefa ou um problema, em duas chamadas: a primeira não exclui nada, mostra o item e dá um código; a segunda, com esse código, exclui |
+| `taiga_items_delete` | Exclui de vez uma história, uma tarefa ou um problema, em duas chamadas: a primeira não exclui nada, mostra o item e dá um código; a segunda, com esse código, exclui. Onde o cliente consegue levar ao usuário uma pergunta feita por um servidor, o servidor pergunta a você nessa segunda chamada e só exclui com o seu sim |
+
+A descrição e as tags são substituídas por inteiro. Por isso, uma edição de qualquer uma das duas precisa informar
+a `version` do item que `taiga_items_get` devolveu: sem ela, ou quando alguém alterou o item nesse intervalo, nada
+é alterado e o modelo é orientado a ler o item de novo. Mover, trocar o responsável, definir o prazo, bloquear ou
+comentar não precisa de versão.
 
 Antes de criar, alterar ou excluir um item, o servidor confere o que o Taiga diz que o usuário pode fazer no
 projeto (`myPermissions` de `taiga_projects_get`). Quando falta a permissão, nada é enviado e o erro diz ao modelo
@@ -119,8 +142,8 @@ pedidos de exemplo: [docs/USAGE.md](docs/USAGE.md).
 | --- | --- | --- |
 | `TAIGA_URL` | sim | Endereço do Taiga, com ou sem `/api/v1` no fim. Precisa começar com `https://`: só esta máquina (`localhost`, `127.0.0.1`, `[::1]`) pode ser acessada por `http://`. Um endereço com usuário ou senha é recusado |
 | `TAIGA_TOKEN` | sim | Token de sessão do Taiga 6, copiado do navegador |
-| `TAIGA_WRITE` | não | `1` registra as sete tools de escrita. Qualquer outro valor, ou a falta dela, deixa o servidor somente leitura |
-| `TAIGA_DELETE` | não | `1` registra `taiga_items_delete`, a tool que exclui. Precisa de `TAIGA_WRITE=1`: sem ela o servidor não inicia |
+| `TAIGA_WRITE` | não | `1` ou `true` registra as sete tools de escrita. Qualquer outro valor (`yes`, `on`, `TRUE`, `0`), ou a falta dela, deixa o servidor somente leitura |
+| `TAIGA_DELETE` | não | `1` ou `true` registra `taiga_items_delete`, a tool que exclui. Precisa de `TAIGA_WRITE` também ligada: sem ela o servidor não inicia |
 
 O servidor lê essas variáveis do próprio ambiente e de nenhum outro lugar. O arquivo
 [`.env.example`](.env.example) lista todas elas.
@@ -137,12 +160,14 @@ O token **é a sua sessão no Taiga**: quem tem o token lê tudo o que você lê
   servidor recusa um endereço assim, exceto o desta máquina.
 - O texto de uma tarefa, de um comentário ou de um anexo é escrito por outras pessoas e pode trazer instruções
   para o modelo.
-- Com `TAIGA_WRITE=1`, o que o modelo cria ou edita sai no seu nome. O servidor não pede confirmação por conta
-  própria: quem pede é o cliente. Leia o que o modelo propõe antes de permitir.
+- Com `TAIGA_WRITE=1`, o que o modelo cria ou edita sai no seu nome. O servidor não pede, por conta própria, que
+  você confirme uma criação ou uma edição: quem pede é o cliente. Leia o que o modelo propõe antes de permitir.
 - Com `TAIGA_DELETE=1`, o que é excluído não volta: o Taiga não tem lixeira, e excluir uma história exclui as
   tarefas dela. A primeira chamada de `taiga_items_delete` só mostra o que seria excluído e devolve um código
-  aleatório, que vale uma vez e só para aquele item, como foi mostrado. A segunda chamada ainda é feita pelo
-  modelo: o que mantém você no controle é o pedido de permissão do seu cliente.
+  aleatório, que vale uma vez, por dez minutos e só para aquele item, como foi mostrado. Na segunda chamada, onde
+  o seu cliente consegue levar a você uma pergunta feita por um servidor, o servidor pergunta a você por meio dele
+  e só exclui com o seu sim: o modelo não pode responder no seu lugar. Em um cliente que não consegue, a segunda
+  chamada ainda é feita pelo modelo, e o que mantém você no controle é o pedido de permissão do seu cliente.
 - `taiga_attachments_add` recusa um arquivo que parece credencial: um nome que começa com ponto em qualquer parte
   do caminho, a pasta onde os programas guardam os dados do usuário, um arquivo de chave, um arquivo do sistema ou
   um caminho de rede. É uma lista de bloqueio, não um sandbox: qualquer outro arquivo que o seu usuário lê pode ser
@@ -159,7 +184,7 @@ O modelo de ameaças, o que o servidor alcança e como reportar uma falha: [SECU
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Componentes, partida, uma chamada de leitura e uma de escrita, com diagramas |
 | [docs/USAGE.md](docs/USAGE.md) | Fluxos de uso, pedidos de exemplo, limites e solução de problemas |
 | [docs/TOOLS.md](docs/TOOLS.md) | Cada tool: parâmetros, exemplo de chamada, exemplo de resposta, erros |
-| [docs/clients/](docs/clients/) | Instalação no Claude Code, no Claude Desktop e no Codex |
+| [docs/clients/](docs/clients/) | Instalação no Claude Code, no Claude Desktop e no Codex, e como gerar a extensão do Claude Desktop |
 | [SECURITY.md](SECURITY.md) | Modelo de ameaças e como reportar uma falha |
 | [docs/COMPLIANCE.md](docs/COMPLIANCE.md) | Auditoria contra a especificação do MCP e as orientações da Anthropic, com as fontes, e o que foi feito a respeito de cada achado |
 | [docs/TESTING.md](docs/TESTING.md) | Como o servidor é testado, a lista de todos os cenários e o relatório da última execução |
@@ -177,8 +202,9 @@ O modelo de ameaças, o que o servidor alcança e como reportar uma falha: [SECU
 - No máximo 120 chamadas de tool por minuto, e 120 segundos para cada chamada ao Taiga.
 - O filtro de responsável das histórias só encontra o responsável principal.
 - O token é renovado à mão.
-- O pacote não está publicado no npm, onde o nome `taiga-mcp` pertence a outro projeto: instale a partir deste
-  repositório, como no [Início rápido](#início-rápido).
+- O pacote se chama `@camposcodes/taiga-r2da-mcp`, porque o nome `taiga-mcp` pertence a outro projeto no npm. Ele
+  ainda não está publicado, nem no npm nem no MCP Registry: instale a partir deste repositório, como no
+  [Início rápido](#início-rápido). O comando do servidor continua sendo `taiga-mcp`.
 - Fora do que existe hoje: conteúdo das páginas da wiki, épicos, linha do tempo, notificações, estatísticas e
   campos personalizados.
 

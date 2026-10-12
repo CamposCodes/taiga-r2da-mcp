@@ -138,15 +138,15 @@ Run on 2026-10-12, on Windows 11 with Node 24.15.0, version 0.3.0 of the server.
 | --- | --- |
 | `npm run check` | exit 0 |
 | `npm run build` | exit 0 |
-| `npm test` | exit 0: `ok: 63 scenarios, 10 tools read-only, 7 more with TAIGA_WRITE=1, 1 more with TAIGA_DELETE=1` |
+| `npm test` | exit 0: `ok: 69 scenarios, 10 tools read-only, 7 more with TAIGA_WRITE=1, 1 more with TAIGA_DELETE=1` |
 | `npm run coverage` | exit 0 |
 
 ```text
-coverage: 1042 of 1045 lines of dist/index.js run in full (99.7%), over 16 server processes
+coverage: 1097 of 1100 lines of dist/index.js run in full (99.7%), over 26 server processes
 not run in full:
-  78: const text = error instanceof Error ? error.message : String(error);
-  473: const under = async (folder) => `${real}${sep}`.toLowerCase().startsWith(`${await realpath(folder).catch(() => folder)}${sep}`.toLowerCase());
-  1043: console.error("taiga-mcp:", error instanceof Error ? error.message : error);
+  77: const text = error instanceof Error ? error.message : String(error);
+  478: const under = async (folder) => `${real}${sep}`.toLowerCase().startsWith(`${await realpath(folder).catch(() => folder)}${sep}`.toLowerCase());
+  1098: console.error("taiga-mcp:", error instanceof Error ? error.message : error);
 ```
 
 A line counts as run only when every character of it was run, so a branch that is never taken shows up as a line.
@@ -181,7 +181,9 @@ Its rules, enforced in `test/live.mjs` on every call:
 3. It **changes only the items it creates itself**: a user story, a task in it and an issue, each with a subject
    that starts with the label of the test. An edit or a deletion of any other number stops the run.
 4. It **deletes what it created** at the end, when the role of the token may delete. Before the one irreversible
-   call it checks once more that the subject of the item starts with the label.
+   call it checks once more that the subject of the item starts with the label. The test client says it can be
+   asked, so the server puts its question to it: the test answers in the place of the user, and says yes only when
+   the question names an item with the label.
 5. It **prints nothing that comes from Taiga**: only the title of each step. The details (the user, the
    permissions, the counts, the numbers of the items left behind) go to `docs/internal/live-test.json`, which git
    ignores.
@@ -209,11 +211,12 @@ are created and deleted.
 ### Result
 
 Run on 2026-10-12, on Windows 11 with Node 24.15.0, version 0.3.0 of the server, against a Taiga 6 installation,
-in one project. The role of the token may create, edit and delete user stories, tasks and issues there.
+in one project. The role of the token may create, edit and delete user stories, tasks and issues there. The run
+was repeated after each change to the server made that day; this is the last one.
 
 | Result | Count |
 | --- | --- |
-| Steps that passed | 15 of 15 |
+| Steps that passed | 16 of 16 |
 | Steps with a refusal for lack of permission | 0 |
 | Steps skipped | 0 |
 | Test items left in the project | 0 |
@@ -230,20 +233,29 @@ The steps:
 | L06 | taiga_userstories_update moves it to another status, blocks it, unblocks it and comments |
 | L07 | taiga_tasks_create creates a task in that user story |
 | L08 | taiga_tasks_update moves the task, assigns it, sets and clears a due date, and comments |
-| L09 | taiga_issues_create and taiga_issues_update create an issue and move it |
-| L10 | taiga_attachments_add sends a file to each item, and taiga_attachments_get reads it back |
-| L11 | taiga_attachments_add refuses a file that looks like a credential, before anything is sent |
-| L12 | taiga_items_get shows what the test wrote: the comment, the attachment, the task of the story |
-| L13 | A wrong kind, an unknown name and an edit of nothing are refused by the server |
-| L14 | taiga_items_delete shows first and deletes only with the code: every item of the test is removed |
-| L15 | The token is in nothing the server wrote |
+| L09 | An edit of a description needs the version that was read, and one made on an old version is refused |
+| L10 | taiga_issues_create and taiga_issues_update create an issue and move it |
+| L11 | taiga_attachments_add sends a file to each item, and taiga_attachments_get reads it back |
+| L12 | taiga_attachments_add refuses a file that looks like a credential, before anything is sent |
+| L13 | taiga_items_get shows what the test wrote: the comment, the attachment, the task of the story |
+| L14 | A wrong kind, an unknown name and an edit of nothing are refused by the server |
+| L15 | taiga_items_delete shows first, asks the user, and deletes only with the code and the yes: every item of the test is removed |
+| L16 | The token is in nothing the server wrote |
 
-What this run did not show:
+In L15 the test client says it can be asked, and stands in for the user: for each item it first answers no, and
+checks that nothing was deleted, then yes.
 
-- **A refusal for lack of permission.** The role had every permission the steps needed, so the refusals and their
-  alternatives are proven only by the scenarios against the simulated Taiga.
-- **Other projects.** The test works in one project by design.
+One more check was made on the same installation, by hand, in a second project where the role of the token may
+not create a user story. `taiga_userstories_create` was refused by the server with the alternatives that role
+has there (create only a task, register an issue, ask an admin), and the trail on stderr showed the refusal and
+no request sent to Taiga.
+
+What these runs did not show:
+
+- **A refusal that comes from Taiga itself** (403). The server refused first, from the list of permissions.
 - **A sprint.** The project has none, so a task without a user story, which needs a sprint, was not created.
+- **A client of a person.** The question before a deletion was answered by the test, not by somebody reading it
+  in an MCP client.
 
 ## Requests to try with a model
 

@@ -191,10 +191,12 @@ Start the server with `TAIGA_WRITE=1` to get the seven write tools. How to set i
   `userStory`.
 - `assignee: "none"` removes the assignee, `dueDate: "none"` removes the due date, `blocked: "<reason>"` blocks
   and `blocked: "none"` unblocks.
-- `description` and `tags` replace what was there. To add to them, the model reads the item first and sends the
-  complete text.
+- `description` and `tags` replace what was there, so an edit of either needs the `version` of the item: the
+  model reads the item first with `taiga_items_get`, which answers `version`, and sends the complete new text or
+  list with it. See [Edit a description or the tags](#edit-a-description-or-the-tags).
 - Descriptions, comments and block reasons are Markdown.
-- The answer has the item as Taiga left it and its address, to check on the screen.
+- The answer has the item as Taiga left it and its address, to check on the screen. The answer of an edit also
+  has `version`, the one the write left.
 - Each kind of item has its own tool to edit it. When the model picks the wrong one, the error says what the
   number is, for example `#12 is not a task: it is a user story.`, and the model calls the right tool.
 - Attaching is giving the item and the full path of a file on the machine where the server runs. To show an
@@ -227,15 +229,41 @@ Taiga.
 
 | Request | Arguments of `taiga_userstories_update` |
 | --- | --- |
-| "Move user story #12 of my-project to 'Concluído', take it out of the sprint, leave only the tag 'pronto' and comment 'entregue'." | `{ "project": "my-project", "ref": 12, "status": "Concluído", "sprint": "backlog", "tags": ["pronto"], "comment": "entregue" }` |
+| "Move user story #12 of my-project to 'Concluído', take it out of the sprint, leave only the tag 'pronto' and comment 'entregue'." | `{ "project": "my-project", "ref": 12, "status": "Concluído", "sprint": "backlog", "tags": ["pronto"], "comment": "entregue", "version": 4 }` |
 | "Rename user story #12 to 'Export report as PDF', give it to ana and set it due on 2026-10-20." | `{ "project": "my-project", "ref": 12, "subject": "Export report as PDF", "assignee": "ana", "dueDate": "2026-10-20" }` |
 | "Block user story #12: waiting for the customer." | `{ "project": "my-project", "ref": 12, "blocked": "waiting for the customer" }` |
 | "Comment on user story #12 that the report is ready for review." | `{ "project": "my-project", "ref": 12, "comment": "The report is ready for review." }` |
 
-For the first request the server reads the user story, then sends `PATCH /userstories/100` with
+The first request replaces the tags, so the call gives `version`: the model read the user story with
+`taiga_items_get`, which answered `"version": 4`. The server reads the user story again, finds it still at
+version 4 and sends `PATCH /userstories/100` with
 `{ "version": 4, "status": 2, "milestone": null, "tags": ["pronto"], "comment": "entregue" }`: names became ids,
-and what was not asked is not sent. The answer is the user story as Taiga left it, with its address,
-`https://taiga.example.com/project/my-project/us/12`.
+and what was not asked is not sent. The answer is the user story as Taiga left it, with `"version": 5` and its
+address, `https://taiga.example.com/project/my-project/us/12`. The other three requests replace neither a
+description nor the tags, so they need no `version`.
+
+### Edit a description or the tags
+
+`description` and `tags` are replaced whole, so the three tools that edit ask for the `version` of the item when
+a call gives either of them. `taiga_items_get` answers it. Example request: "Rewrite the description of task #13
+of my-project as 'novo texto' and leave only the tag 'novo'." The model reads the task, which is at version 7,
+and calls `taiga_tasks_update`:
+
+```json
+{ "project": "my-project", "ref": 13, "description": "novo texto", "tags": ["novo"], "version": 7 }
+```
+
+The server reads the task again, finds it still at version 7 and sends `PATCH /tasks/200` with
+`{ "version": 7, "description": "novo texto", "tags": ["novo"] }`. The answer has `"version": 8`, the one this
+write left, for the next edit.
+
+- Without `version` nothing is changed, and the error tells the model to read the item first:
+  `A description or the tags replace what #13 has now: read it with taiga_items_get and give its version, so that a change somebody made in the meantime is not lost.`
+- With a version that is not the current one, because somebody changed the task after it was read, nothing is
+  changed either:
+  `#13 changed since version 6: it is at version 7 now. Read it again with taiga_items_get, look at what changed and send the edit with the new version.`
+- A move, an assignee, a due date, a block or a comment loses nothing, so it needs no `version`.
+- To add to a description, the model sends the complete text: what it read plus what is new.
 
 ### Create and move an issue
 
@@ -262,12 +290,16 @@ Start the server with `TAIGA_DELETE=1` next to `TAIGA_WRITE=1` to get `taiga_ite
 `TAIGA_DELETE=1` stops the server at start. Taiga keeps no trash: what is deleted is gone, with its comments and
 attachments, and a user story takes its tasks with it.
 
-A deletion takes two calls, with a question to you between them:
+A deletion takes two calls, with a question to you between them and, where your client can carry it, a second
+question from the server itself:
 
 1. The model calls `taiga_items_delete` without `confirm`. Nothing is deleted. The answer shows the item, the
    tasks that would go with a user story, and a code.
 2. The model shows you that and asks whether it is really to be deleted.
-3. Only after your yes, the model calls again with the code in `confirm`, and the item is deleted.
+3. Only after your yes, the model calls again with the code in `confirm`.
+4. When your client has declared that it can put a question from a server to its user, the server now asks you
+   through the client, and only your yes there deletes the item. In a client that did not declare it, the item
+   is deleted on the call of step 3.
 
 Example request: "Delete user story #12 of my-project." The first call:
 
@@ -308,15 +340,31 @@ for good. Delete them?" After your yes, the second call:
 { "project": "my-project", "ref": 12, "confirm": "0d9c6f3a-52b7-4e1c-9a4f-7b1e2c8d5a60" }
 ```
 
-It answers with `"deleted": true`, the same `item` and the same `tasksDeletedWithIt`.
+Where the client can carry it, the server then asks you, with one yes/no field:
+
+```text
+Delete the user story #12 "História" of my-project, with its tasks #13? Taiga keeps no trash: this cannot be undone.
+```
+
+With your yes, or at once in a client that cannot be asked, the call answers with `"deleted": true`, the same
+`item` and the same `tasksDeletedWithIt`. With a no, a cancel or an answer without the yes, nothing is deleted
+and the code is spent. The call then answers with `"deleted": false`, the same `item` and
+`tasksDeletedWithIt`, and this in `next`:
+
+```text
+The user did not approve the deletion: nothing was deleted. Do not ask again unless the user brings it up.
+```
 
 - The code is random, and the one above is only an example. It is good once, for ten minutes, and only for the
   last item shown, as it was shown. If someone changed the item in the meantime, or added a task to the user
   story, nothing is deleted: the item is shown again as it is now, with a new code, and the model asks you again.
-- Two different parts can ask you. The model asks in the conversation, between the two calls. Your client may
-  ask for permission before each call: the tool is marked as destructive. The second call is made by the model,
-  not by you, so what keeps a person in the loop is the permission prompt of the client. Read
-  [SECURITY.md](../SECURITY.md) before allowing this tool without a prompt.
+- Up to three parts can ask you. The model asks in the conversation, between the two calls. Your client may
+  ask for permission before each call: the tool is marked as destructive. And the server asks through the client
+  on the second call, when the client has declared that it can put a question from a server to its user. The
+  model cannot answer that last question: it is the client that carries it to you.
+- In a client that did not declare it, the second call is made by the model, not by you, so what keeps a person
+  in the loop is the permission prompt of the client. Read [SECURITY.md](../SECURITY.md) before allowing this
+  tool without a prompt.
 - When your role may not delete the item, the first call already says so, with what the role may do instead, for
   example close the item by moving it to a closed status or leave a comment asking for the deletion.
 - With `TAIGA_WRITE=1` alone the tool does not exist, and the instructions of the server tell the model that
@@ -394,7 +442,10 @@ can be a task with no user story, in the row of a sprint: `taiga_tasks_create` w
 | `You do not have permission to ...: your role lacks the Taiga permission ...`, or `Taiga refused ...: the current user does not have the permission for it.` | Your role cannot do that in that project | Choose one of the alternatives the message lists, or ask a project admin. `taiga_projects_get` shows `myPermissions` |
 | `#12 is not a task: it is a user story.` | The tool that was called is for another kind of item | Nothing: the model calls the tool of the right kind |
 | `A task needs a user story or a sprint` | A task was asked for with neither | Say which user story or sprint it goes to |
+| `A description or the tags replace what #13 has now: ...` | The model sent a new description or new tags without the version of the item | Nothing: the model reads the item with `taiga_items_get` and sends the edit again with its `version` |
+| `#13 changed since version 6: it is at version 7 now. ...` | Somebody changed the item after the model read it | The model reads the item again. Check that the new text keeps what the other person changed |
 | A version error from Taiga on an edit | Someone changed the item at the same moment | Ask again: the server reads the item again on every edit |
+| `"deleted": false` with `The user did not approve the deletion: ...` | You answered no to the question before a deletion, or closed it | Nothing was deleted. Ask for the deletion again if you want it |
 | `... is not sent: it looks like a credential or a configuration file ...` | The path is on the deny list of `taiga_attachments_add` | If the file really is to be sent, copy it to another place under another name, as the message says |
 | `403` or `404 ... on the file of the attachment` | The address of the file expired, or files are not served without a login | Ask again. If it repeats, your Taiga serves files in a way this server does not handle: open an issue |
 | `Too many calls: ...` | More than 120 tool calls in a minute | Wait the seconds the message says |

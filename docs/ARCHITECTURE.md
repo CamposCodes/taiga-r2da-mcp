@@ -37,8 +37,8 @@ flowchart LR
 
 | Component | What it is | Notes |
 | --- | --- | --- |
-| MCP client | Claude Code, Claude Desktop, Codex or any client that starts a stdio server | Starts the server as a child process and decides when to ask the user for permission |
-| `taiga-mcp` | One Node process, `node dist/index.js` | Holds the token in memory. Keeps no cache of Taiga. Between calls it remembers only the number of calls of the current minute and the folder where it saves files |
+| MCP client | Claude Code, Claude Desktop, Codex or any client that starts a stdio server | Starts the server as a child process and decides when to ask the user for permission. A client that declared it can also carries to the user the question the server asks before a deletion |
+| `taiga-mcp` | One Node process, `node dist/index.js` | Holds the token in memory. Keeps no cache of Taiga. Between calls it remembers only the number of calls of the current minute, the folder where it saves files and the code of the last deletion it showed |
 | Taiga REST API | `<TAIGA_URL>/api/v1` | Every request carries `Authorization: Bearer <token>` and has a time limit of 120 seconds |
 | Attachment file server | The address Taiga lists for each attachment | Read without the session token: where files are protected, the address carries its own short-lived key |
 | Temp folder | One folder per run of the server, `taiga-mcp-` and six random characters, inside the temp folder of the system | Receives the attachments that are neither a text nor an image of up to 3.5 MB. Made by `mkdtemp` on the first file saved, so on Linux and macOS only the user of the process opens it. Made again if it is deleted while the server runs |
@@ -64,7 +64,7 @@ flowchart TD
     url{"TAIGA_URL set?"}
     address{"An https address, or this machine, with no user or password?"}
     token{"TAIGA_TOKEN set?"}
-    pair{"TAIGA_DELETE is 1 and TAIGA_WRITE is not?"}
+    pair{"TAIGA_DELETE is on and TAIGA_WRITE is not?"}
     missing["Exit 1: Missing environment variable"]
     unsafe["Exit 1: TAIGA_URL refused"]
     alone["Exit 1: TAIGA_DELETE=1 needs TAIGA_WRITE=1"]
@@ -74,9 +74,9 @@ flowchart TD
     listen["serveStdio: listen on the stdio connection"]
     ready(["Ready: one status line on stderr"])
     read["Register the 10 read tools"]
-    gate{"TAIGA_WRITE is 1?"}
+    gate{"TAIGA_WRITE is 1 or true?"}
     write["Register the 7 write tools"]
-    dgate{"TAIGA_DELETE is 1?"}
+    dgate{"TAIGA_DELETE is 1 or true?"}
     del["Register the 1 delete tool"]
     serving(["The connection is served"])
     start --> url
@@ -110,9 +110,11 @@ flowchart TD
 - `TAIGA_URL` must start with `https://`: over plain `http://` the token would travel in clear text. Only this
   machine (`localhost`, `127.0.0.1`, `[::1]`) may be reached over `http://`. An address with a user or a password
   in it is refused too. The address is checked before any request is made.
-- `TAIGA_WRITE` and `TAIGA_DELETE` are read once, at start, and only the exact value `1` counts. `TAIGA_WRITE=1`
-  registers the 7 write tools. `TAIGA_DELETE=1` on top of it registers `taiga_items_delete`; alone, it stops the
-  server with `TAIGA_DELETE=1 needs TAIGA_WRITE=1: deleting is a kind of writing.`
+- `TAIGA_WRITE` and `TAIGA_DELETE` are read once, at start. Each is on with `1` or with `true`, so that a client
+  that builds the environment from a form can write a ticked box as `true`, and with nothing else: `yes`, `on`,
+  `TRUE` and `0` leave it off. `TAIGA_WRITE=1` registers the 7 write tools. `TAIGA_DELETE=1` on top of it
+  registers `taiga_items_delete`; alone, it stops the server with
+  `TAIGA_DELETE=1 needs TAIGA_WRITE=1: deleting is a kind of writing.`
 - The tools behind a closed gate are not hidden or disabled: they do not exist, so `tools/list` never shows them
   and a call to one is a protocol error.
 - The tools are registered when the client opens the connection. `serveStdio` takes a function that builds the
@@ -171,7 +173,8 @@ sequenceDiagram
 ## A write call
 
 The diagram shows a write call, with the places where it can stop: the permission prompt of the client, the
-permission check of the server and a refusal from Taiga. The drawing shows the first and the last.
+permission check and the version check of the server, and a refusal from Taiga. The drawing shows the first and
+the last.
 
 ![Sequence of a write call: permission prompt, version read, PATCH and the error path](diagrams/04-write-call.svg)
 
@@ -196,12 +199,14 @@ sequenceDiagram
         S->>T: GET /projects/by_slug and GET /resolver
         T-->>S: project and the id of the task
         Note over S: modify_task is in the permissions of the project, or the call stops here with an error
+        Note over S: a description or tags come with a version, or the call stops here with an error
         S->>T: GET /tasks/200
         T-->>S: task with version 7
+        Note over S: a version given in the call is 7, or the call stops here with an error
         S->>T: PATCH /tasks/200 with version 7 and only the fields given
         alt Taiga accepts
             T-->>S: 200 and the task as it was left
-            S-->>C: summary of the task and its URL
+            S-->>C: summary of the task, its new version and its URL
         else Taiga refuses
             T-->>S: 4xx and the reason
             S-->>C: isError true and a readable message
@@ -212,14 +217,24 @@ sequenceDiagram
 
 </details>
 
-- The server does not ask for confirmation by itself. It declares each write tool as not read-only
-  (`readOnlyHint: false`), and the three tools that edit and the one that deletes as destructive
+- The server does not ask for confirmation of a create or an edit by itself. It declares each write tool as not
+  read-only (`readOnlyHint: false`), and the three tools that edit and the one that deletes as destructive
   (`destructiveHint: true`), and the client decides to ask. Whether and when a client asks is a property of the
-  client: see the guide of yours in [`docs/clients/`](clients/).
+  client: see the guide of yours in [`docs/clients/`](clients/). A deletion is the one write the server asks
+  about itself, where the client can carry the question: see [Deleting in two calls](#deleting-in-two-calls).
 - Before anything is sent, the server looks for the permission the write needs in the list Taiga gives for the
   project: see [The permission check](#the-permission-check).
-- Taiga refuses an edit that does not say which version of the item it was made on. The server reads the version
-  immediately before the `PATCH` and sends it along.
+- Taiga refuses an edit that does not say which version of the item it was made on. The server reads the item
+  immediately before the `PATCH` and sends the version it has just read. For a move, an assignee, a due date, a
+  block or a comment that is all: such an edit loses nothing, so it goes on the version of now.
+- An edit that gives `description` or `tags` replaces what is there, so the call must give `version`, the one
+  `taiga_items_get` answered for the item. Without it the call stops before the item is read:
+  `A description or the tags replace what #13 has now: read it with taiga_items_get and give its version, so that a change somebody made in the meantime is not lost.`
+  With a version that is not the one the server has just read, the `PATCH` is not sent:
+  `#13 changed since version 6: it is at version 7 now. Read it again with taiga_items_get, look at what changed and send the edit with the new version.`
+  The `version` parameter is optional in the three tools that edit, and required only in this case.
+- The answer of an edit has `version`, the one the write left, to give back in the next edit of the description
+  or the tags.
 - Only the fields given in the call are sent. `"none"` empties a field (assignee, due date, block), and
   `"backlog"` takes a user story or an issue out of every sprint.
 - Every write goes through one function, `TaigaClient.send`. Without `TAIGA_DELETE=1` the only methods it uses are
@@ -228,7 +243,8 @@ sequenceDiagram
 
 ## What 0.3.0 added to the design
 
-Three things are new in how a call is handled: a permission check before a write, a deletion in two calls, and
+New in how a call is handled: a permission check before a write, a version on the edits that replace a text (see
+[A write call](#a-write-call)), a deletion in two calls with a question to the user, a trail on stderr, and
 answers that are data as well as text.
 
 ### The permission check
@@ -249,7 +265,8 @@ answers that are data as well as text.
 
 ### Deleting in two calls
 
-The diagram shows the two calls of a deletion, with the question to the user between them.
+The first diagram shows the first call of a deletion, which deletes nothing, and the question the model then puts
+to the user in the conversation.
 
 ```mermaid
 sequenceDiagram
@@ -268,6 +285,19 @@ sequenceDiagram
     C-->>M: tool result
     M->>U: shows what would go and asks whether to delete it
     U-->>M: yes
+```
+
+The second diagram shows the second call: the server checks the code and then either asks the user through the
+client, when the client declared that it can carry such a question, or asks nobody, and the permission prompt of
+the client was the only check.
+
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant M as Model
+    participant C as MCP client
+    participant S as taiga-mcp
+    participant T as Taiga API
     M->>C: taiga_items_delete with ref 12 and that code in confirm
     C->>U: permission prompt, the tool is marked as destructive
     U-->>C: allow
@@ -275,6 +305,14 @@ sequenceDiagram
     S->>T: GET the project, the user story and its tasks again
     T-->>S: user story 12, still at version 4
     Note over S: the code is the one kept, for this item as it is now
+    alt the client declared that it can ask its user
+        S->>C: question, delete user story 12 with its task 13
+        C->>U: the question of the server, yes or no
+        U-->>C: yes
+        C-->>S: accepted, with the yes
+    else the client did not declare it
+        Note over S: asks nobody, the prompt of the client was the only check
+    end
     S->>T: DELETE /userstories/100
     T-->>S: 204
     S-->>C: deleted true, the item and its tasks
@@ -287,15 +325,31 @@ sequenceDiagram
   before calling again: show this to the user and ask.
 - The code is random. The server keeps the last one it gave, in memory, with what it stands for: the project, the
   item, the version Taiga had of it and, for a user story, its tasks. On the second call it reads the item again
-  and deletes only when the code is the one kept, is at most ten minutes old, and still stands for the item as it
-  is now. Either way the code is spent. So a deletion cannot be done in one call, a code of one project does not
-  work in another, and an item that changed since it was shown is shown again.
+  and goes on only when the code is the one kept, is at most ten minutes old, and still stands for the item as it
+  is now. A code is spent by the deletion, by a no of the user and by a call with a wrong code. So a deletion
+  cannot be done in one call, a code of one project does not work in another, and an item that changed since it
+  was shown is shown again.
 - It is the only state the server keeps between two calls, with the count of calls in the minute and the folder
   of saved files. It is one code, not a list: showing another item replaces it.
-- The second call is made by the model. The code proves that the item was shown, not that a person said yes.
-  The person in the loop is the permission prompt of the client, which the annotation `destructiveHint: true`
-  feeds. Whether and when a client asks is a property of the client. The diagram shows the prompt before the call
-  that deletes; the first call is a call of the same tool, so a client may ask before it as well.
+- On the second call, once the code is accepted, the server looks at what the client declared. When the client
+  declared that it can put a question from a server to its user (the `elicitation` capability of MCP), the server
+  asks through the client:
+  `Delete the user story #12 "História" of my-project, with its tasks #13? Taiga keeps no trash: this cannot be undone.`
+  The question has one yes/no field, `delete`, and only a yes deletes. The model cannot answer it: it is the
+  client that carries it to the person. A call with a code that is not accepted is never put to the user.
+- A no, a cancel or an answer without the yes deletes nothing and spends the code. It leaves a line on stderr,
+  and the tool answers `deleted: false` with this in `next`:
+  `The user did not approve the deletion: nothing was deleted. Do not ask again unless the user brings it up.`
+- The question works on both generations of the protocol. What the client can do comes with the handshake before
+  revision `2026-07-28`, and with each request on it. Before `2026-07-28` the question is a request the server
+  sends to the client (`elicitation/create`) while the tool call waits. On `2026-07-28` the tool call is answered
+  with `input_required` and the question, and the client makes the call again with the answer.
+- In a client that did not declare the capability nothing changed: the two calls with the code, both made by the
+  model. The code proves that the item was shown, not that a person said yes. The person in the loop there is the
+  permission prompt of the client, which the annotation `destructiveHint: true` feeds. Whether and when a client
+  asks is a property of the client. The second diagram shows the prompt before the call that deletes; the first
+  call is a call of the same tool, so a client may ask before it as well. Which clients declare the capability
+  was not checked.
 - The permission to delete is checked on both calls, before the item is shown.
 - Taiga keeps no trash. A user story goes with its tasks, and every item with its comments and attachments.
 
@@ -304,8 +358,10 @@ sequenceDiagram
 Every change the server sends to Taiga leaves a line on stderr with the time, the method, the path and the status
 Taiga answered, for example `taiga-mcp: 2026-10-12T15:03:02.776Z DELETE /tasks/200 204`. Every tool error leaves
 one with its message, cut at 300 characters: a refusal for lack of permission, a file that is not sent, a call
-above the limit. A read leaves no line. The token is never in a line, and neither is the content of an item. The
-client keeps stderr in its log of the server, so the trail lasts as long as that log.
+above the limit. A deletion the user did not approve leaves one too, for example
+`taiga-mcp: 2026-10-12T15:03:02.776Z deletion of us #12 in my-project not approved by the user (decline)`. A read
+leaves no line. The token is never in a line, and neither is the content of an item. The client keeps stderr in
+its log of the server, so the trail lasts as long as that log.
 
 ### Structured answers
 
@@ -349,7 +405,8 @@ client keeps stderr in its log of the server, so the trail lasts as long as that
   handshake and can ask `server/discover` what the server supports. A client of an older revision starts with the
   `initialize` handshake. Both get the same tools, built by the same function.
 - Capabilities declared: `tools`. The server has no resources, no prompts and uses no sampling, roots or protocol
-  logging.
+  logging. It uses one capability of the client, when the client declares it: `elicitation`, for the question
+  before a deletion.
 - A call to a tool that does not exist is a protocol error, `-32602`. An argument of the wrong type comes back as
   a tool error, and so does every failure inside a tool.
 
@@ -361,7 +418,13 @@ client keeps stderr in its log of the server, so the trail lasts as long as that
   request to the API is a `GET`. Without `TAIGA_DELETE=1` on top of it no `DELETE` is sent. A configuration made
   for reading stays read-only after an update of the server, and one made for writing does not start deleting.
 - **Confirmation by the client.** The write tools describe themselves through annotations and the client asks.
-  Deleting adds a step of its own, a first call that only shows, but the second call is still made by the model.
+  Deleting adds steps of its own: a first call that only shows and, where the client can put a question from a
+  server to its user, a question the server asks through the client before it deletes. In a client that cannot,
+  the second call is still made by the model.
+- **An edit that replaces a text says which version it read.** A description and the tags are replaced whole. If
+  two people, or a person and the model, edit the same item, the later edit would erase the earlier one without a
+  word. So the call gives the version it read and the server refuses when the item is at another one. A move or a
+  comment loses nothing and needs no version.
 - **A refusal comes with the way out.** When the role of the user lacks a permission, the error lists what that
   role may do instead and leaves the choice to the user.
 - **A task is always on a board.** The API accepts a task with no user story and no sprint, which no screen shows.
@@ -383,12 +446,16 @@ client keeps stderr in its log of the server, so the trail lasts as long as that
 
 ```
 taiga-mcp/
-├── src/index.ts        API client, name conversion, permission check, tools and start sequence
-├── test/smoke.mjs      scenarios against a simulated Taiga
-├── test/coverage.mjs   runs the scenarios and measures how much of the built server they run
-├── test/live.mjs       the same server against a real Taiga, run by hand
-├── docs/               this documentation
-├── dist/               build output (not in git)
+├── src/index.ts            API client, name conversion, permission check, tools and start sequence
+├── test/smoke.mjs          scenarios against a simulated Taiga
+├── test/coverage.mjs       runs the scenarios and measures how much of the built server they run
+├── test/live.mjs           the same server against a real Taiga, run by hand
+├── scripts/pack-mcpb.mjs   builds the Claude Desktop extension into build/
+├── docs/                   this documentation
+├── dist/                   build output (not in git)
+├── build/                  the Claude Desktop extension and the folder it is packed from (not in git)
+├── manifest.json           manifest of the Claude Desktop extension
+├── server.json             description of the server for the MCP Registry
 ├── package.json
 └── tsconfig.json
 ```

@@ -60,10 +60,28 @@ Step by step, for each client:
 | Claude Desktop | [docs/clients/claude-desktop.md](docs/clients/claude-desktop.md) |
 | Codex (CLI, IDE extension, desktop app) | [docs/clients/codex.md](docs/clients/codex.md) |
 
+Claude Desktop can also take the server as an extension, a `.mcpb` file that you build from this repository with
+`npm run pack:mcpb`. It was not installed in a real Claude Desktop yet: see
+[Install as an extension](docs/clients/claude-desktop.md#install-as-an-extension).
+
 Any other client that starts an MCP server over stdio works the same way: the command is `node`, the argument is
 the absolute path of `dist/index.js`, and the variables below go in the environment of the server.
 
 **4. Ask.** "Which projects do I have in Taiga?" You never have to name a tool.
+
+### From npm, once it is published
+
+The package is named `@camposcodes/taiga-r2da-mcp`. **It is not published yet**, neither to npm nor to the MCP
+Registry, so the command below does not work today: install from this repository, as above. Once the package is
+published, step 1 will not be needed, and the registration of step 3 will start the server with `npx` in place of
+`node` and the path:
+
+```bash
+claude mcp add --env TAIGA_URL=https://taiga.example.com --env "TAIGA_TOKEN=<YOUR_TOKEN>" --transport stdio --scope local taiga -- npx -y @camposcodes/taiga-r2da-mcp
+```
+
+Only the name of the package is new: the command it installs is still `taiga-mcp`, and the server still calls
+itself `taiga-mcp`.
 
 ## Tools
 
@@ -78,7 +96,7 @@ Read, always present:
 | `taiga_userstories_list` | User stories, one line each, with filters |
 | `taiga_tasks_list` | Tasks, each with the user story it belongs to, with filters |
 | `taiga_issues_list` | Issues, with filters by type, severity and priority |
-| `taiga_items_get` | One item by its number, of any kind, with description and attachment list; comments and history on request |
+| `taiga_items_get` | One item by its number, of any kind, with its version, description and attachment list; comments and history on request |
 | `taiga_search` | Search by words in user stories, tasks, issues and wiki pages |
 | `taiga_attachments_get` | The content of an attachment: an image, a text, or the path of a saved file. It can save a file on the machine, so it is not marked read-only |
 
@@ -87,18 +105,22 @@ Write, only with `TAIGA_WRITE=1`:
 | Tool | What it does |
 | --- | --- |
 | `taiga_userstories_create` | Creates a user story |
-| `taiga_userstories_update` | Edits or moves a user story, and comments on it. Changes only the fields given |
+| `taiga_userstories_update` | Edits or moves a user story, and comments on it. Changes only the fields given. A new description or new tags need the `version` that `taiga_items_get` gave |
 | `taiga_tasks_create` | Creates a task in a user story or in a sprint |
-| `taiga_tasks_update` | Edits or moves a task, and comments on it. Changes only the fields given |
+| `taiga_tasks_update` | Edits or moves a task, and comments on it. Changes only the fields given. A new description or new tags need the `version` that `taiga_items_get` gave |
 | `taiga_issues_create` | Creates an issue |
-| `taiga_issues_update` | Edits or moves an issue, and comments on it. Changes only the fields given |
+| `taiga_issues_update` | Edits or moves an issue, and comments on it. Changes only the fields given. A new description or new tags need the `version` that `taiga_items_get` gave |
 | `taiga_attachments_add` | Sends a file of the machine to a user story, a task or an issue. A file that looks like a credential is refused |
 
 Delete, only with `TAIGA_DELETE=1` on top of `TAIGA_WRITE=1`:
 
 | Tool | What it does |
 | --- | --- |
-| `taiga_items_delete` | Deletes a user story, a task or an issue for good, in two calls: the first deletes nothing, shows the item and gives a code; the second, with that code, deletes |
+| `taiga_items_delete` | Deletes a user story, a task or an issue for good, in two calls: the first deletes nothing, shows the item and gives a code; the second, with that code, deletes. Where the client can put a question from a server to its user, the server asks you on that second call and deletes only on your yes |
+
+A description and the tags are replaced whole. So an edit of either must give the `version` of the item that
+`taiga_items_get` answered: without it, or when somebody changed the item since, nothing is changed and the model
+is told to read the item again. A move, an assignee, a due date, a block or a comment needs no version.
 
 Before it creates, changes or deletes an item, the server checks what Taiga says the user may do in the project
 (`myPermissions` of `taiga_projects_get`). When the permission is missing, nothing is sent and the error tells the
@@ -115,8 +137,8 @@ requests: [docs/USAGE.md](docs/USAGE.md).
 | --- | --- | --- |
 | `TAIGA_URL` | yes | Address of the Taiga site, with or without `/api/v1` at the end. It must start with `https://`: only this machine (`localhost`, `127.0.0.1`, `[::1]`) may be reached over `http://`. An address with a user or a password in it is refused |
 | `TAIGA_TOKEN` | yes | Session token of Taiga 6, copied from the browser |
-| `TAIGA_WRITE` | no | `1` registers the seven write tools. Any other value, or none, keeps the server read-only |
-| `TAIGA_DELETE` | no | `1` registers `taiga_items_delete`, the tool that deletes. It needs `TAIGA_WRITE=1`: without it the server stops at start |
+| `TAIGA_WRITE` | no | `1` or `true` registers the seven write tools. Any other value (`yes`, `on`, `TRUE`, `0`), or none, keeps the server read-only |
+| `TAIGA_DELETE` | no | `1` or `true` registers `taiga_items_delete`, the tool that deletes. It needs `TAIGA_WRITE` on as well: without it the server stops at start |
 
 The server reads these from its environment and from nowhere else. [`.env.example`](.env.example) lists them.
 
@@ -131,12 +153,14 @@ The token **is your session in Taiga**: whoever has it reads everything you read
 - `TAIGA_URL` must start with `https://`: over plain `http://` the token would travel in clear text, so the server
   refuses such an address, except for this machine.
 - Text in a task, a comment or an attachment is written by other people and may carry instructions for the model.
-- With `TAIGA_WRITE=1`, what the model creates or edits goes out in your name. The server does not ask for
-  confirmation by itself: the client does. Read what the model proposes before allowing it.
+- With `TAIGA_WRITE=1`, what the model creates or edits goes out in your name. The server does not ask you to
+  confirm a create or an edit by itself: the client does. Read what the model proposes before allowing it.
 - With `TAIGA_DELETE=1`, what is deleted is gone: Taiga keeps no trash, and deleting a user story deletes its
   tasks. The first call of `taiga_items_delete` only shows what would go and gives a random code that is good
-  once, for that item as it was shown. The second call is still made by the model: what keeps you in the loop is
-  the permission prompt of your client.
+  once, for ten minutes, for that item as it was shown. On the second call, where your client can put a question
+  from a server to you, the server asks you through it and deletes only on your yes: the model cannot answer in
+  your place. In a client that cannot, the second call is still made by the model, and what keeps you in the loop
+  is the permission prompt of your client.
 - `taiga_attachments_add` refuses a file that looks like a credential: a name that starts with a dot anywhere in
   the path, the folder where programs keep the data of the user, a key file, a file of the system or a network
   path. It is a deny list, not a sandbox: any other file your user can read can be sent. Check the path before
@@ -153,7 +177,7 @@ The threat model, what the server can touch and how to report a vulnerability: [
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Components, start sequence, a read call and a write call, with diagrams |
 | [docs/USAGE.md](docs/USAGE.md) | Workflows, example requests, limits and troubleshooting |
 | [docs/TOOLS.md](docs/TOOLS.md) | Every tool: parameters, example call, example answer, errors |
-| [docs/clients/](docs/clients/) | Installation in Claude Code, Claude Desktop and Codex |
+| [docs/clients/](docs/clients/) | Installation in Claude Code, Claude Desktop and Codex, and how to build the Claude Desktop extension |
 | [SECURITY.md](SECURITY.md) | Threat model and how to report a vulnerability |
 | [docs/COMPLIANCE.md](docs/COMPLIANCE.md) | Audit against the MCP specification and Anthropic's guidance, with sources, and what was done about each finding |
 | [docs/TESTING.md](docs/TESTING.md) | How the server is tested, the list of every scenario and the report of the last run |
@@ -171,8 +195,9 @@ The threat model, what the server can touch and how to report a vulnerability: [
 - At most 120 tool calls a minute, and 120 seconds for each request to Taiga.
 - The assignee filter of user stories finds only the main assignee.
 - The token is renewed by hand.
-- The package is not published to npm, where the name `taiga-mcp` belongs to another project: install it from
-  this repository, as in [Quick start](#quick-start).
+- The package is named `@camposcodes/taiga-r2da-mcp`, because the name `taiga-mcp` belongs to another project on
+  npm. It is not published yet, neither to npm nor to the MCP Registry: install it from this repository, as in
+  [Quick start](#quick-start). The command of the server is still `taiga-mcp`.
 - Not covered: content of wiki pages, epics, timelines, notifications, statistics and custom fields.
 
 ## Development
