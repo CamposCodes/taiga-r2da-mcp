@@ -41,6 +41,11 @@ Node 20 and Node 24. It never runs `npm run test:live`.
 runs. Do not add that tool to `package.json`: its own dependencies carry open security advisories, and nobody who
 only builds or tests the server needs it. `build/` is ignored by git.
 
+`npm run docs:tools`, after the build, writes the list of tools of `README.md` and `README.pt-BR.md` from what the
+server answers to `tools/list`. Run it after changing a tool, a parameter or a description: `npm test` fails when
+a README and the server differ. The Portuguese README says everything in Portuguese, so each new text of a tool
+needs its translation in `scripts/readme-tools.pt-BR.json`, and the script stops when one is missing.
+
 ## Rules for a change
 
 1. **Read-only by default stays.** Without `TAIGA_WRITE=1` no request other than `GET` may leave the server. A
