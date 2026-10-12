@@ -804,6 +804,59 @@ function registerTools(server: McpServer, client: TaigaClient) {
         };
       }),
   );
+
+  server.registerTool(
+    "taiga_attachments_get",
+    {
+      title: "Open an attachment",
+      description:
+        "The content of a file attached to a user story, task or issue. An image comes as an image and a text file " +
+        "as text. Any other kind (PDF, spreadsheet, ...) is saved to a temporary folder of this machine and the " +
+        "answer is its path, to be read with a file tool.",
+      inputSchema: z.object({
+        project,
+        ref: itemRef,
+        attachment: z.string().describe("Id or file name of the attachment, as listed by taiga_items_get"),
+      }),
+      annotations: SAVES,
+    },
+    ({ project, ref, attachment }) =>
+      show(async () => {
+        const p = await loadProject(client, project);
+        const { kind, id } = await resolve(client, p, ref);
+        const files = await attachmentsOf(client, p, kind, id);
+        const chosen = byName(files, attachment, "attachment");
+        const file = files.find((entry) => entry.id === chosen);
+        if (file.size > MAX_FILE) {
+          throw new Error(`${file.name} has ${file.size} bytes: more than the ${MAX_FILE} this server opens.`);
+        }
+        const bytes = await client.download(file.url);
+        const extension = String(file.name).split(".").pop()!.toLowerCase();
+        if (IMAGES[extension] && bytes.length <= MAX_IMAGE) {
+          return {
+            content: [
+              { type: "text", text: file.name },
+              { type: "image", data: bytes.toString("base64"), mimeType: IMAGES[extension] },
+            ],
+          };
+        }
+        if (TEXTS.test(extension)) {
+          // Files exported by older Windows programs are not UTF-8: read those byte by byte instead of garbling them.
+          let text: string;
+          try {
+            text = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+          } catch {
+            text = bytes.toString("latin1");
+          }
+          return { content: [{ type: "text", text: clip(text, MAX_TEXT) }] };
+        }
+        // The name comes from whoever uploaded the file: only letters, digits, dot, dash and underscore reach the disk.
+        const saved = join(await savingFolder(), `${p.slug}-${ref}-${file.id}-${file.name}`.replace(/[^\p{L}\p{N}._-]+/gu, "_"));
+        await writeFile(saved, bytes);
+        const answer = { name: file.name, size: bytes.length, savedTo: saved, note: "Not shown here: read this file with a file tool." };
+        return { content: [{ type: "text", text: JSON.stringify(answer, null, 2) }] };
+      }),
+  );
 }
 
 const modulesOf = (p: any) => ({
