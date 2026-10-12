@@ -22,7 +22,7 @@ const project = {
   milestones: [{ id: 3, name: 'Sprint 12', slug: 'sprint-12', closed: false }],
 }
 // A role that may create tasks and comment, and little else.
-const locked = { ...project, id: 33, slug: 'locked-project', name: 'Locked', my_permissions: ['view_us', 'view_tasks', 'view_issues', 'add_task', 'comment_us', 'comment_task', 'modify_issue'], members: [...project.members, { id: 10, username: 'bia', full_name: 'Bia Lima', role_name: 'Guest' }], milestones: [] }
+const locked = { ...project, id: 33, slug: 'locked-project', name: 'Locked', my_permissions: ['view_us', 'view_tasks', 'view_issues', 'add_task', 'comment_us', 'comment_task', 'modify_issue'], members: [{ id: 66, username: 'zeca', full_name_display: 'ana', role_name: 'Guest' }, ...project.members, { id: 10, username: 'bia', full_name: 'Bia Lima', role_name: 'Guest' }, { id: 67, username: 'bia2', full_name: 'Bia Lima', role_name: 'Guest' }], milestones: [] }
 // A project that leaves out everything it may leave out, the list of permissions included.
 const bare = { id: 34, slug: 'bare-project', name: 'Bare', members: [] }
 const projects = { 'my-project': project, 'locked-project': locked, 'bare-project': bare }
@@ -280,7 +280,7 @@ await scenario('A project that leaves values out is still answered', async () =>
   assert.equal((await s.call('taiga_tasks_list', { project: 'bare-project' })).items[0].userStory, null)
   assert.deepEqual(await s.call('taiga_sprints_list', { project: 'locked-project' }), { sprints: [{ name: 'Sprint vazio', closed: true, userStoriesOpen: 0, userStoriesClosed: 0 }] })
   const lockedDetail = await s.call('taiga_projects_get', { project: 'locked-project' })
-  assert.deepEqual([lockedDetail.members[1], lockedDetail.sprints], [{ username: 'bia', fullName: 'Bia Lima', role: 'Guest' }, []])
+  assert.deepEqual([lockedDetail.members[2], lockedDetail.sprints], [{ username: 'bia', fullName: 'Bia Lima', role: 'Guest' }, []])
   assert.deepEqual(await s.call('taiga_search', { project: 'locked-project', text: 'nada' }), { count: 0, items: [], wikiPages: [] })
   assert.deepEqual(loose.items[0], { type: 'us', ref: 20, subject: 'Solta', status: null, closed: false, sprint: null, assignees: ['user 77'], points: null, tags: ['x'], dueDate: null, blocked: true, comments: null, createdAt: null, modifiedAt: null, finishedAt: null })
 })
@@ -309,6 +309,16 @@ await scenario('A name that does not exist is refused with the names that do', a
   assert.match((await s.call('taiga_tasks_list', { project: 'my-project', assignee: 'bia' })).error, /"bia" is not a member of this project\. Members: ana/)
   assert.match((await s.call('taiga_tasks_list', { project: 'my-project', sprint: 'Sprint 99' })).error, /Unknown sprint "Sprint 99"\. Sprints: Sprint 12\. Use "backlog" for no sprint\./)
   assert.match((await s.call('taiga_userstories_list', { project: 'locked-project', sprint: 'Sprint 1' })).error, /Sprints: \(no sprints\)/)
+})
+await scenario('A person is found by username before any full name, and a full name two people share is refused', async () => {
+  // In this project somebody listed first chose "ana", the username of a colleague, as full name.
+  await s.call('taiga_tasks_list', { project: 'locked-project', assignee: 'ana' })
+  assert.equal(seen.at(-1).query.assigned_to, '9')
+  await s.call('taiga_tasks_list', { project: 'locked-project', assignee: 'Ana Rocha' })
+  assert.equal(seen.at(-1).query.assigned_to, '9')
+  assert.match((await s.call('taiga_tasks_list', { project: 'locked-project', assignee: 'Bia Lima' })).error, /^"Bia Lima" is the full name of 2 members of this project: give the username of one \(bia, bia2\)\.$/)
+  await s.call('taiga_tasks_list', { project: 'locked-project', assignee: 'bia2' })
+  assert.equal(seen.at(-1).query.assigned_to, '67')
 })
 await scenario('taiga_issues_list filters by type, severity and priority', async () => {
   const issues = await s.call('taiga_issues_list', { project: 'my-project', issueType: 'bug', severity: 'Normal', priority: 'alta' })

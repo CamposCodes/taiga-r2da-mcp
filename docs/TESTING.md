@@ -72,47 +72,48 @@ Node 20 or newer. `npm run coverage` runs the scenarios itself, so in a hurry it
 | S18 | taiga_userstories_list turns names into the filters Taiga expects | Reading |
 | S19 | taiga_tasks_list filters by user story, by nobody and by sprint | Reading |
 | S20 | A name that does not exist is refused with the names that do | Reading |
-| S21 | taiga_issues_list filters by type, severity and priority | Reading |
-| S22 | taiga_items_get gives a user story with its tasks, comments and history | Reading |
-| S23 | taiga_items_get gives a task with what is attached to it | Reading |
-| S24 | taiga_items_get gives an issue, and says who wrote each entry when Taiga knows | Reading |
-| S25 | A text that is cut says so, with its real length | Reading |
-| S26 | A number that is no item of the project is refused | Reading |
-| S27 | taiga_search finds items and wiki pages | Reading |
-| S28 | taiga_attachments_get shows an image as an image and a text as text | Attachments |
-| S29 | A text that is not UTF-8 keeps its accents | Attachments |
-| S30 | Any other file is saved under a name that cannot leave the folder | Attachments |
-| S31 | The folder of saved files is new, only of this user, one for the run, and made again if deleted | Attachments |
-| S32 | An attachment that cannot be opened says why | Attachments |
-| S33 | The token goes to the API and nowhere else | Attachments |
-| S34 | What Taiga refuses comes back as it said it, or as the status when it said nothing | Errors |
-| S35 | A token that expires in the middle of a run says how to renew it | Errors |
-| S36 | Without TAIGA_WRITE nothing but GET leaves the server, and it stops when its input closes | Errors |
-| S37 | TAIGA_WRITE=1 adds 7 tools that write, and none that deletes | Writing |
-| S38 | A task that would be on no board is refused before anything is sent | Writing |
-| S39 | taiga_tasks_create sends names as ids and answers with the number and the address | Writing |
-| S40 | taiga_tasks_update moves and edits: what is not said is not sent, and "none" empties | Writing |
-| S41 | taiga_userstories_create takes the statuses of user stories, and "backlog" is a place for it | Writing |
-| S42 | taiga_userstories_update moves a user story on the kanban and between sprints | Writing |
-| S43 | taiga_issues_create and taiga_issues_update take type, severity and priority by name | Writing |
-| S44 | An edit of the wrong kind, of nothing or of an unknown name is refused before anything is sent | Writing |
-| S45 | What Taiga refuses in a write comes back with the fields at fault | Writing |
-| S46 | taiga_attachments_add sends a file to a task, a user story or an issue, as a form | Writing |
-| S47 | taiga_attachments_add refuses what is not a file | Writing |
-| S48 | taiga_attachments_add refuses a file that looks like a credential | Writing |
-| S49 | A change the role does not allow is refused before anything is sent, with what the role allows instead | Permissions |
-| S50 | What the role does allow goes through: a task, an edit it may make, a comment alone | Permissions |
-| S51 | A refusal that comes from Taiga itself asks the same of the model | Permissions |
-| S52 | The token is in nothing the writing server says | Permissions |
-| S53 | TAIGA_DELETE=1 adds the one tool that deletes, marked as destructive | Deleting |
-| S54 | docs/TOOLS.md describes exactly the tools and the parameters that tools/list gives, in the same order | Deleting |
-| S55 | The first call of taiga_items_delete deletes nothing: it shows the item and gives a code | Deleting |
-| S56 | A code that is not the one of the item as it is now deletes nothing | Deleting |
-| S57 | With the code of the first call the item is deleted, whatever its kind | Deleting |
-| S58 | A role that may not delete is told so on the first call, with what it may do instead | Deleting |
-| S59 | A burst of calls is cut at the limit, and the refusal says how long to wait | Limits and documents |
-| S60 | Every answer that is data said the same as text and as structured content | Limits and documents |
-| S61 | docs/TESTING.md lists exactly these scenarios, in this order | Limits and documents |
+| S21 | A person is found by username before any full name, and a full name two people share is refused | Reading |
+| S22 | taiga_issues_list filters by type, severity and priority | Reading |
+| S23 | taiga_items_get gives a user story with its tasks, comments and history | Reading |
+| S24 | taiga_items_get gives a task with what is attached to it | Reading |
+| S25 | taiga_items_get gives an issue, and says who wrote each entry when Taiga knows | Reading |
+| S26 | A text that is cut says so, with its real length | Reading |
+| S27 | A number that is no item of the project is refused | Reading |
+| S28 | taiga_search finds items and wiki pages | Reading |
+| S29 | taiga_attachments_get shows an image as an image and a text as text | Attachments |
+| S30 | A text that is not UTF-8 keeps its accents | Attachments |
+| S31 | Any other file is saved under a name that cannot leave the folder | Attachments |
+| S32 | The folder of saved files is new, only of this user, one for the run, and made again if deleted | Attachments |
+| S33 | An attachment that cannot be opened says why | Attachments |
+| S34 | The token goes to the API and nowhere else | Attachments |
+| S35 | What Taiga refuses comes back as it said it, or as the status when it said nothing | Errors |
+| S36 | A token that expires in the middle of a run says how to renew it | Errors |
+| S37 | Without TAIGA_WRITE nothing but GET leaves the server, and it stops when its input closes | Errors |
+| S38 | TAIGA_WRITE=1 adds 7 tools that write, and none that deletes | Writing |
+| S39 | A task that would be on no board is refused before anything is sent | Writing |
+| S40 | taiga_tasks_create sends names as ids and answers with the number and the address | Writing |
+| S41 | taiga_tasks_update moves and edits: what is not said is not sent, and "none" empties | Writing |
+| S42 | taiga_userstories_create takes the statuses of user stories, and "backlog" is a place for it | Writing |
+| S43 | taiga_userstories_update moves a user story on the kanban and between sprints | Writing |
+| S44 | taiga_issues_create and taiga_issues_update take type, severity and priority by name | Writing |
+| S45 | An edit of the wrong kind, of nothing or of an unknown name is refused before anything is sent | Writing |
+| S46 | What Taiga refuses in a write comes back with the fields at fault | Writing |
+| S47 | taiga_attachments_add sends a file to a task, a user story or an issue, as a form | Writing |
+| S48 | taiga_attachments_add refuses what is not a file | Writing |
+| S49 | taiga_attachments_add refuses a file that looks like a credential | Writing |
+| S50 | A change the role does not allow is refused before anything is sent, with what the role allows instead | Permissions |
+| S51 | What the role does allow goes through: a task, an edit it may make, a comment alone | Permissions |
+| S52 | A refusal that comes from Taiga itself asks the same of the model | Permissions |
+| S53 | The token is in nothing the writing server says | Permissions |
+| S54 | TAIGA_DELETE=1 adds the one tool that deletes, marked as destructive | Deleting |
+| S55 | docs/TOOLS.md describes exactly the tools and the parameters that tools/list gives, in the same order | Deleting |
+| S56 | The first call of taiga_items_delete deletes nothing: it shows the item and gives a code | Deleting |
+| S57 | A code that is not the one of the item as it is now deletes nothing | Deleting |
+| S58 | With the code of the first call the item is deleted, whatever its kind | Deleting |
+| S59 | A role that may not delete is told so on the first call, with what it may do instead | Deleting |
+| S60 | A burst of calls is cut at the limit, and the refusal says how long to wait | Limits and documents |
+| S61 | Every answer that is data said the same as text and as structured content | Limits and documents |
+| S62 | docs/TESTING.md lists exactly these scenarios, in this order | Limits and documents |
 
 What the scenarios use, in the simulated Taiga:
 

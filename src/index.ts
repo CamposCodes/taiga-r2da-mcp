@@ -216,16 +216,22 @@ function byName(list: any[], value: string, what: string): number {
   return found.id;
 }
 
-/** Username, full name or id of a project member; "none" asks for what has nobody. */
+/** Id, username or full name of a project member, tried in that order; "none" asks for what has nobody. */
 function memberFilter(project: any, value: string): number | "null" {
   if (same(value, "none")) {
     return "null";
   }
-  const found =
-    project.members.find((m: any) => String(m.id) === value.trim()) ??
-    project.members.find((m: any) => same(m.username, value) || same(m.full_name, value) || same(m.full_name_display, value));
+  const members: any[] = project.members;
+  const usernames = (list: any[]) => list.map((m) => m.username).join(", ");
+  // An id or a username names one person. A full name comes last and must be of one member only: people choose
+  // their full name, and one of them can choose the username of another.
+  const named = members.filter((m) => same(m.full_name, value) || same(m.full_name_display, value));
+  const found = members.find((m) => String(m.id) === value.trim()) ?? members.find((m) => same(m.username, value)) ?? named[0];
   if (!found) {
-    throw new Error(`"${value}" is not a member of this project. Members: ${project.members.map((m: any) => m.username).join(", ")}`);
+    throw new Error(`"${value}" is not a member of this project. Members: ${usernames(members)}`);
+  }
+  if (found === named[0] && named.length > 1) {
+    throw new Error(`"${value}" is the full name of ${named.length} members of this project: give the username of one (${usernames(named)}).`);
   }
   return found.id;
 }
