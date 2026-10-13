@@ -61,7 +61,7 @@ const routes = {
   'GET /tasks/attachments': () => [attached(501, 'tela.png', '/media/tela.png', { description: 'print' }), attached(502, 'notas.txt', '/media/notas.txt'), attached(503, 'antigo.csv', '/media/antigo.csv'), attached(504, 'laudo final.pdf', '/media/laudo.pdf', { is_deprecated: true })],
   'GET /issues/attachments': () => [
     { ...attached(601, 'proibido.txt', '/media/notas.txt'), url: `${base}/media/notas.txt` },
-    { ...attached(602, 'fora.txt', '/media/notas.txt'), url: 'http://127.0.0.1:1/fora.txt' },
+    { ...attached(602, 'fora.txt', '/media/notas.txt'), url: `http://127.0.0.1:${closed}/fora.txt` },
     attached(603, 'enorme.bin', '/media/laudo.pdf', { size: 26 * 1024 * 1024 }),
     attached(604, 'grande.png', '/media/grande.png'),
     attached(605, 'longo.txt', '/media/longo.txt'),
@@ -119,6 +119,7 @@ const fake = createServer(async (req, res) => {
 fake.keepAliveTimeout = 10 * 60_000
 await new Promise((r) => fake.listen(0, '127.0.0.1', r))
 const base = `http://127.0.0.1:${fake.address().port}`
+const closed = await new Promise((r) => { const spare = createServer(); spare.listen(0, '127.0.0.1', () => { const { port } = spare.address(); spare.close(() => r(port)) }) })
 const sent = (from = 0) => seen.slice(from).filter((r) => r.method !== 'GET')
 
 let structured = 0
@@ -211,7 +212,7 @@ await scenario('A token with a line break or a space in it is refused at start, 
   }
 })
 await scenario('A Taiga that does not answer stops the server at start', async () => {
-  assert.equal(await refused({ TAIGA_URL: 'http://127.0.0.1:1' }, /Taiga API unreachable at http:\/\/127\.0\.0\.1:1\/api\/v1/), 0)
+  assert.equal(await refused({ TAIGA_URL: `http://127.0.0.1:${closed}` }, new RegExp(`Taiga API unreachable at http://127\\.0\\.0\\.1:${closed}/api/v1: fetch failed: `)), 0)
 })
 await scenario('TAIGA_DELETE=1 without TAIGA_WRITE=1 stops the server at start', async () => {
   assert.equal(await refused({ TAIGA_DELETE: '1' }, /TAIGA_DELETE=1 needs TAIGA_WRITE=1/), 0)
