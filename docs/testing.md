@@ -178,17 +178,24 @@ What the scenarios do not prove:
 
 ### The same scenarios on other systems
 
-The CI runs `npm run coverage` on every push. Its first run, on 2026-10-12, at commit `a38806d`:
-<https://github.com/CamposCodes/taiga-r2da-mcp/actions/runs/38279171114>.
+The CI runs `npm run coverage` on every push, on three systems, each with Node 20, 22, 24 and 26. Its run on
+the commit that was published as version 0.3.0, `f9325f6`, on 2026-10-13, was the first with Node 22 and 26 and
+with the server built by TypeScript 7: <https://github.com/CamposCodes/taiga-r2da-mcp/actions/runs/38340095969>.
 
 | System | Node | Scenarios | Lines of dist/index.js run in full |
 | --- | --- | --- | --- |
-| Linux (ubuntu-latest) | 20 | 69 passed | 1096 of 1100 (99.6%) |
-| Linux (ubuntu-latest) | 24 | 69 passed | 1096 of 1100 (99.6%) |
-| macOS (macos-latest) | 20 | 69 passed | 1097 of 1100 (99.7%) |
-| macOS (macos-latest) | 24 | 69 passed | 1097 of 1100 (99.7%) |
-| Windows (windows-latest) | 20 | 69 passed | 1097 of 1100 (99.7%) |
-| Windows (windows-latest) | 24 | 69 passed | 1097 of 1100 (99.7%) |
+| Linux (ubuntu-latest) | 20 | 74 passed | 1117 of 1122 (99.6%) |
+| Linux (ubuntu-latest) | 22 | 74 passed | 1117 of 1122 (99.6%) |
+| Linux (ubuntu-latest) | 24 | 74 passed | 1117 of 1122 (99.6%) |
+| Linux (ubuntu-latest) | 26 | 74 passed | 1117 of 1122 (99.6%) |
+| macOS (macos-latest) | 20 | 74 passed | 1118 of 1122 (99.6%) |
+| macOS (macos-latest) | 22 | 74 passed | 1118 of 1122 (99.6%) |
+| macOS (macos-latest) | 24 | 74 passed | 1118 of 1122 (99.6%) |
+| macOS (macos-latest) | 26 | 74 passed | 1118 of 1122 (99.6%) |
+| Windows (windows-latest) | 20 | 74 passed | 1118 of 1122 (99.6%) |
+| Windows (windows-latest) | 22 | 74 passed | 1118 of 1122 (99.6%) |
+| Windows (windows-latest) | 24 | 74 passed | 1118 of 1122 (99.6%) |
+| Windows (windows-latest) | 26 | 74 passed | 1118 of 1122 (99.6%) |
 
 Linux runs one line less in full: the check of the profile folder, which exists only on Windows and macOS.
 

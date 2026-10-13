@@ -182,7 +182,8 @@ What to look at when upgrading from 0.2.0:
   Before, a member who chose the username of a colleague as full name could be taken for that colleague.
 - A trail on stderr: one line for every change sent to Taiga, with the status it answered, one for every tool
   error, and one for a deletion the user did not approve.
-- The two actions of the CI are pinned by commit SHA, and `.github/dependabot.yml` proposes their updates.
+- The two actions of the CI are pinned by commit SHA, and `.github/dependabot.yml` proposes their updates. Its
+  first two proposals were merged after the release: `actions/checkout` 7.0.1 and `actions/setup-node` 7.1.0.
 - `.gitignore` covers `.mcp.json` and `.codex/`, where a client configuration with a real token can end up.
 - The client guides say that a token typed in a registration command stays in the history of the shell.
 - A test that the token is in nothing the server writes: answers, errors and stderr.
