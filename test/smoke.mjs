@@ -2,7 +2,7 @@
 // Each scenario below is a row of docs/testing.md. Usage, after "npm run build": npm test
 import assert from 'node:assert/strict'
 import { spawn } from 'node:child_process'
-import { mkdirSync, readdirSync, readFileSync, rmSync, statSync, symlinkSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, symlinkSync, writeFileSync } from 'node:fs'
 import { createServer } from 'node:http'
 import { homedir, tmpdir } from 'node:os'
 import { basename, dirname, join, posix } from 'node:path'
@@ -126,6 +126,10 @@ const sent = (from = 0) => seen.slice(from).filter((r) => r.method !== 'GET')
 let structured = 0
 // "can" is what the client says it can do, and "answers" what its user will say to each question of the server.
 function start(token, extra = {}, can = {}) {
+// This side keeps an idle connection for ten minutes, longer than a run takes. By default it would close it after
+// five seconds, and a server that the machine held up for longer than that then writes its next request into the
+// closed connection: the call fails with "fetch failed: other side closed", in whatever scenario happens to be running.
+fake.keepAliveTimeout = 10 * 60_000
   const asked = []
   const answers = []
   const env = { ...process.env, TAIGA_WRITE: null, TAIGA_DELETE: null, TAIGA_URL: base, TAIGA_TOKEN: token, ...extra }
@@ -537,7 +541,8 @@ await scenario('What Taiga refuses in a write comes back with the fields at faul
   assert.match((await w.call('taiga_tasks_create', { project: 'my-project', subject: 'boom', userStory: 12 })).error, /^400 Bad Request on POST \/tasks: \{"subject":\["This field is wrong\."\]\}$/)
 })
 
-const smoke = join(tmpdir(), 'taiga-mcp-smoke')
+// A folder of this run alone: two runs at the same time must not remove the files of each other.
+const smoke = mkdtempSync(join(tmpdir(), 'taiga-mcp-smoke-'))
 mkdirSync(join(smoke, '.ssh'), { recursive: true })
 const sending = join(smoke, 'envio.txt')
 writeFileSync(sending, 'conteúdo')
