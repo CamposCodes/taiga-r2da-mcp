@@ -147,12 +147,12 @@ Run on 2026-10-12, on Windows 11 with Node 24.15.0, version 0.3.0 of the server.
 | `npm run coverage` | exit 0 |
 
 ```text
-coverage: 1118 of 1122 lines of dist/index.js run in full (99.6%), over 26 server processes
+coverage: 997 of 1001 lines of dist/index.js run in full (99.6%), over 26 server processes
 not run in full:
-  77: const text = error instanceof Error ? error.message : String(error);
-  205: ? ""
-  500: const under = async (folder) => `${real}${sep}`.toLowerCase().startsWith(`${await realpath(folder).catch(() => folder)}${sep}`.toLowerCase());
-  1120: console.error("taiga-mcp:", error instanceof Error ? error.message : error);
+  47: const text = error instanceof Error ? error.message : String(error);
+  157: ? ""
+  409: const under = async (folder) => `${real}${sep}`.toLowerCase().startsWith(`${await realpath(folder).catch(() => folder)}${sep}`.toLowerCase());
+  999: console.error("taiga-mcp:", error instanceof Error ? error.message : error);
 ```
 
 A line counts as run only when every character of it was run, so a branch that is never taken shows up as a line.
@@ -210,7 +210,7 @@ delivers it. It was published on 2026-10-13, and the registry gives its SHA-1 as
 | --- | --- |
 | `npm install` of the package, from the registry, in an empty project | It brought `@modelcontextprotocol/server` 2.3.1, `@modelcontextprotocol/core` 2.3.1 and `zod` 4.6.5, the versions the repository tests with |
 | The scenarios pointed at the installed `dist/index.js` | 74 scenarios passed |
-| The built file in the package | The same, byte for byte, as the one built from this repository. Its first line is `#!/usr/bin/env node`, and every file has Unix line endings |
+| The built file in the package | The same, byte for byte, as the one built from the tag `v0.3.0` of this repository. Its first line is `#!/usr/bin/env node`, and every file has Unix line endings |
 | The scenarios on other lines of Node, each `node.exe` taken from nodejs.org and checked against its SHA-256 | 74 passed on 20.0.0, the lowest version `engines` allows, on 22.23.3 and on 26.11.1. They pass on 18.18.0 too, which is below what the package and the SDK declare and is not supported |
 | `npx` started with no shell, as some programs start a command | `spawn npx ENOENT`: on Windows `npx` is a `.cmd` file |
 | `cmd /c npx -y @campos-codes/taiga-r2da-mcp`, spoken to over stdio | Answered `initialize` as `taiga-mcp 0.3.0`, and `tools/list` with 10 tools |

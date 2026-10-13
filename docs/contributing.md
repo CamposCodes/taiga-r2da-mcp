@@ -123,5 +123,5 @@ this order:
 
 ## Style
 
-Match the code around your change: its naming, its comment density, its idiom. Comments say why, in plain
-sentences.
+Match the code around your change: its naming and its idiom. The code carries no comments, in `src/`, `test/` and
+`scripts/`: what a piece does goes in its name, and why it is so goes in the commit message and in these documents.

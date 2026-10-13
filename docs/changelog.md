@@ -5,6 +5,8 @@ and the versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## Unreleased
 
+- The source, the tests and the scripts carry no comments. The built server does the same: compiled without
+  comments, it is the same file, byte for byte, before and after.
 - The READMEs open with an Install section that names the npm package and its command, and the other documents
   say `npx -y @campos-codes/taiga-r2da-mcp` where they said `node dist/index.js`.
 - The READMEs name the standard configuration as such and have a block for VS Code and one for Cursor, each from
