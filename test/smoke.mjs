@@ -35,6 +35,7 @@ const media = {
   '/media/laudo.pdf': Buffer.from('%PDF-1.4 fake'),
   '/media/grande.png': Buffer.alloc(3.7 * 1024 * 1024, 1),
   '/media/longo.txt': Buffer.from('a'.repeat(50_001)),
+  '/media/mentiroso.pdf': Buffer.alloc(25 * 1024 * 1024 + 1, 2),
 }
 const attached = (id, name, file, extra = {}) => ({ id, name, size: media[file]?.length ?? 1, url: `${base}${file}?token=k#_taiga-refresh=task:${id}`, description: '', is_deprecated: false, created_date: '2026-10-01T12:00:00Z', ...extra })
 const answer = (status, body, headers = {}) => ({ answer: true, status, body, headers })
@@ -64,6 +65,8 @@ const routes = {
     attached(603, 'enorme.bin', '/media/laudo.pdf', { size: 26 * 1024 * 1024 }),
     attached(604, 'grande.png', '/media/grande.png'),
     attached(605, 'longo.txt', '/media/longo.txt'),
+    attached(606, 'mentiroso.pdf', '/media/mentiroso.pdf', { size: 100 }),
+    { ...attached(607, 'esquema.txt', '/media/notas.txt'), url: 'ftp://127.0.0.1/esquema.txt' },
   ],
   'GET /history/userstory/100': () => [{ created_at: '2026-10-09T15:30:00Z', user: { username: 'ana' }, comment: 'oi', delete_comment_date: null, values_diff: { status: ['a', 'b'] } }, { created_at: '2026-10-09T15:31:00Z', user: { username: 'ana' }, comment: 'apagado', delete_comment_date: 'x', values_diff: {} }],
   'GET /history/task/200': () => [{ created_at: '2026-10-09T15:30:00Z', user: { username: 'ana' }, comment: 'x'.repeat(2100), delete_comment_date: null, values_diff: {} }],
@@ -394,10 +397,12 @@ await scenario('An attachment that cannot be opened says why', async () => {
   assert.match((await open('enorme.bin')).error, /enorme\.bin has 27262976 bytes: more than the 26214400 this server opens\./)
   assert.match((await open('proibido.txt')).error, /403 Forbidden on the file of the attachment/)
   assert.match((await open('fora.txt')).error, /Attachment unreachable: /)
+  assert.match((await open('mentiroso.pdf')).error, /^The file of the attachment is larger than the 26214400 bytes this server accepts\.$/)
+  assert.match((await open('esquema.txt')).error, /^The address of the attachment is not an http\(s\) one \(ftp:\): it was not opened\.$/)
 })
 await scenario('The token goes to the API and nowhere else', async () => {
   const files = seen.slice(mediaFrom).filter((r) => r.path.startsWith('/media/'))
-  assert.equal(files.length, 7)
+  assert.equal(files.length, 8)
   assert.ok(files.every((r) => r.auth === undefined))
   assert.ok(seen.filter((r) => r.path.startsWith('/api/')).every((r) => ['Bearer good', 'Bearer plain', 'Bearer bad'].includes(r.auth)))
   assert.ok(!s.wrote().includes('good'))

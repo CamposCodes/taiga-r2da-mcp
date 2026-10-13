@@ -72,6 +72,8 @@ create tool twice creates two items, and a repeated edit with a `comment` leaves
 - `Taiga API unreachable at https://taiga.example.com/api/v1: fetch failed: <cause>. The request was sent once and not repeated, because it may have reached Taiga: read the item before sending the change again. Tell the user that this server cannot reach Taiga right now, so its tools will not work until it can: Taiga may be down, or the network or the VPN of this machine may be off. Once the address opens in the browser, ask again; if it still fails, start this server again in the client.`,
   when a write does not get through. A write is never sent a second time by the server.
 - `Too many calls: this server runs at most 120 tools a minute. Wait <N> seconds and call again.`
+- `The answer to <method> <path> is larger than the 33554432 bytes this server accepts.`, when an answer of the
+  API passes 32 MB: the bytes are counted as they arrive, and the request is dropped at that point.
 - `Taiga API unreachable at https://taiga.example.com/api/v1: The operation was aborted due to timeout. Tell the user that this server cannot reach Taiga right now, so its tools will not work until it can: Taiga may be down, or the network or the VPN of this machine may be off. Once the address opens in the browser, ask again; if it still fails, start this server again in the client.`,
   when Taiga takes more than 120 seconds to answer. A request whose time ran out is not sent again; when it was a
   write, the sentence about the request sent once comes before `Tell the user`.
@@ -540,6 +542,9 @@ Errors:
 - `<file name> has <N> bytes: more than the 26214400 this server opens.`
 - `Attachment unreachable: fetch failed: <cause>. A second try failed too. Tell the user that this server cannot reach Taiga right now, so its tools will not work until it can: Taiga may be down, or the network or the VPN of this machine may be off. Once the address opens in the browser, ask again; if it still fails, start this server again in the client.`
 - `<status> <status text> on the file of the attachment`
+- `The address of the attachment is not an http(s) one (<protocol>): it was not opened.`
+- `The file of the attachment is larger than the 26214400 bytes this server accepts.`, when the bytes that arrive
+  pass 25 MB, whatever size Taiga declared for the file
 
 ## Write tools
 

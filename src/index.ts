@@ -32,6 +32,7 @@ const MAX_FILE = 25 * 1024 * 1024;
 const MAX_IMAGE = 3.5 * 1024 * 1024;
 const MAX_TEXT = 50_000;
 const TIMEOUT = 120_000;
+const MAX_ANSWER = 32 * 1024 * 1024;
 const MAX_CALLS_PER_MINUTE = 120;
 const DELETE_WINDOW = 10 * 60_000;
 
@@ -104,11 +105,15 @@ class TaigaClient {
   }
 
   async download(address: string): Promise<Buffer> {
-    const response = await reach(true, "Attachment unreachable", () => fetch(new URL(address, this.site), { signal: AbortSignal.timeout(TIMEOUT) }));
+    const url = new URL(address, this.site);
+    if (url.protocol !== "https:" && url.protocol !== "http:") {
+      throw new Error(`The address of the attachment is not an http(s) one (${url.protocol}): it was not opened.`);
+    }
+    const response = await reach(true, "Attachment unreachable", () => fetch(url, { signal: AbortSignal.timeout(TIMEOUT) }));
     if (!response.ok) {
       throw new Error(`${response.status} ${response.statusText} on the file of the attachment`);
     }
-    return Buffer.from(await response.arrayBuffer());
+    return limited(response, MAX_FILE, "The file of the attachment");
   }
 
   private async request(method: string, path: string, query: Record<string, unknown>, payload?: unknown): Promise<Response> {
@@ -134,7 +139,7 @@ class TaigaClient {
   }
 
   private async body(response: Response, what: string): Promise<any> {
-    const text = await response.text();
+    const text = (await limited(response, MAX_ANSWER, `The answer to ${what}`)).toString("utf8");
     let data: any = null;
     try {
       data = text ? JSON.parse(text) : null;
@@ -188,6 +193,23 @@ async function reach(read: boolean, what: string, send: () => Promise<Response>)
         : "The request was sent once and not repeated, because it may have reached Taiga: read the item before sending the change again. ";
     throw new Error(`${what}: ${reason(error)}. ${tried}${OFFLINE}`);
   }
+}
+
+async function limited(response: Response, max: number, what: string): Promise<Buffer> {
+  const reader = response.body?.getReader();
+  const parts: Buffer[] = [];
+  let size = 0;
+  while (reader) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    size += value.length;
+    if (size > max) {
+      await reader.cancel().catch(() => undefined);
+      throw new Error(`${what} is larger than the ${max} bytes this server accepts.`);
+    }
+    parts.push(Buffer.from(value));
+  }
+  return Buffer.concat(parts);
 }
 
 const same = (a: unknown, b: unknown) => String(a).trim().toLowerCase() === String(b).trim().toLowerCase();

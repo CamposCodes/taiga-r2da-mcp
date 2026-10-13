@@ -174,7 +174,8 @@ flowchart TD
   the folder (`taiga-mcp-` and six random characters, inside the temp folder of the system) on the first file it
   saves and uses it until it stops. The files stay there until someone deletes them. The model then reads the
   file with the file tool of the client, if the client has one that reads that kind of file.
-- A file above 25 MB is neither opened nor sent.
+- A file above 25 MB is neither opened nor sent, and a download that grows past 25 MB is stopped, whatever size
+  Taiga declared for it. An attachment address that is not `http` or `https` is not opened.
 - Files are read from user stories, tasks and issues, and sent to any of the three.
 - `taiga_attachments_add` refuses a file that looks like a credential: a folder or a file whose name starts with
   a dot anywhere in the path (`.ssh`, `.env`), the folder where programs keep the data of the user (`AppData` on
