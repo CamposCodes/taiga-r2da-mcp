@@ -64,12 +64,17 @@ create tool twice creates two items, and a repeated edit with a `comment` leaves
 
 ## Errors every tool can return
 
-- `Taiga refused the token: it expired or is wrong. Log in to Taiga in the browser, copy the value of "token" from Local Storage and set TAIGA_TOKEN again.`
-- `Taiga API unreachable at https://taiga.example.com/api/v1: fetch failed: <cause>`, where the cause is what Node
-  reports: a name that does not resolve, a refused or closed connection, a certificate that is not accepted.
+- `Taiga refused the token: it expired or is wrong. Log in to Taiga in the browser, copy the value of "token" from Local Storage and set TAIGA_TOKEN again. Tell the user that no tool of this server works until then: the new token goes in the configuration of this server in the client, which has to start the server again.`
+- `Taiga API unreachable at https://taiga.example.com/api/v1: fetch failed: <cause>. A second try failed too. Tell the user that this server cannot reach Taiga right now, so its tools will not work until it can: Taiga may be down, or the network or the VPN of this machine may be off. Once the address opens in the browser, ask again; if it still fails, start this server again in the client.`,
+  when a read does not get through. The cause is what Node reports: a name that does not resolve, a refused or
+  closed connection, a certificate that is not accepted. A read is sent a second time before this is returned,
+  because a connection that stayed idle may have been closed by the other side.
+- `Taiga API unreachable at https://taiga.example.com/api/v1: fetch failed: <cause>. The request was sent once and not repeated, because it may have reached Taiga: read the item before sending the change again. Tell the user that this server cannot reach Taiga right now, so its tools will not work until it can: Taiga may be down, or the network or the VPN of this machine may be off. Once the address opens in the browser, ask again; if it still fails, start this server again in the client.`,
+  when a write does not get through. A write is never sent a second time by the server.
 - `Too many calls: this server runs at most 120 tools a minute. Wait <N> seconds and call again.`
-- `Taiga API unreachable at https://taiga.example.com/api/v1: The operation was aborted due to timeout`, when Taiga
-  takes more than 120 seconds to answer.
+- `Taiga API unreachable at https://taiga.example.com/api/v1: The operation was aborted due to timeout. Tell the user that this server cannot reach Taiga right now, so its tools will not work until it can: Taiga may be down, or the network or the VPN of this machine may be off. Once the address opens in the browser, ask again; if it still fails, start this server again in the client.`,
+  when Taiga takes more than 120 seconds to answer. A request whose time ran out is not sent again; when it was a
+  write, the sentence about the request sent once comes before `Tell the user`.
 - A refusal from Taiga, in Taiga's own words when it gives them, or as
   `<status> <status text> on <method> <path>: <fields at fault>`.
 - `Taiga refused <method> <path>: the current user does not have the permission for it. Nothing was changed. taiga_projects_get shows what the user may do in a project (myPermissions). Do not work around this on your own: tell the user what was refused, offer the alternatives and wait for the choice.`,
@@ -532,7 +537,7 @@ Errors:
 
 - `Unknown attachment "x.png". Valid: tela.png, notas.txt, antigo.csv, laudo final.pdf`
 - `<file name> has <N> bytes: more than the 26214400 this server opens.`
-- `Attachment unreachable: fetch failed: <cause>`
+- `Attachment unreachable: fetch failed: <cause>. A second try failed too. Tell the user that this server cannot reach Taiga right now, so its tools will not work until it can: Taiga may be down, or the network or the VPN of this machine may be off. Once the address opens in the browser, ask again; if it still fails, start this server again in the client.`
 - `<status> <status text> on the file of the attachment`
 
 ## Write tools

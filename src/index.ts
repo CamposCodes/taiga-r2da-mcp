@@ -144,12 +144,7 @@ class TaigaClient {
    * are protected, the address carries its own short-lived key), so the session token is not sent to it.
    */
   async download(address: string): Promise<Buffer> {
-    let response: Response;
-    try {
-      response = await fetch(new URL(address, this.site), { signal: AbortSignal.timeout(TIMEOUT) });
-    } catch (error) {
-      throw new Error(`Attachment unreachable: ${reason(error)}`);
-    }
+    const response = await reach(true, "Attachment unreachable", () => fetch(new URL(address, this.site), { signal: AbortSignal.timeout(TIMEOUT) }));
     if (!response.ok) {
       throw new Error(`${response.status} ${response.statusText} on the file of the attachment`);
     }
@@ -165,8 +160,8 @@ class TaigaClient {
     }
     // A form says its own content type, with the boundary between its parts.
     const form = payload instanceof FormData;
-    try {
-      return await fetch(url, {
+    return reach(method === "GET", `Taiga API unreachable at ${this.baseUrl}`, () =>
+      fetch(url, {
         method,
         headers: {
           Authorization: `Bearer ${this.token}`,
@@ -175,10 +170,8 @@ class TaigaClient {
         },
         body: payload === undefined ? undefined : form ? payload : JSON.stringify(payload),
         signal: AbortSignal.timeout(TIMEOUT),
-      });
-    } catch (error) {
-      throw new Error(`Taiga API unreachable at ${this.baseUrl}: ${reason(error)}`);
-    }
+      }),
+    );
   }
 
   private async body(response: Response, what: string): Promise<any> {
@@ -192,7 +185,9 @@ class TaigaClient {
     if (response.status === 401) {
       throw new Error(
         "Taiga refused the token: it expired or is wrong. Log in to Taiga in the browser, copy the value of " +
-          '"token" from Local Storage and set TAIGA_TOKEN again.',
+          '"token" from Local Storage and set TAIGA_TOKEN again. Tell the user that no tool of this server works ' +
+          "until then: the new token goes in the configuration of this server in the client, which has to start " +
+          "the server again.",
       );
     }
     if (response.status === 403) {
@@ -212,6 +207,37 @@ class TaigaClient {
 
 /** Why a request did not get through. Node says only "fetch failed" and keeps the reason (DNS, TLS, a closed connection) in the cause. */
 const reason = (error: unknown) => [(error as Error).message, ((error as Error).cause as Error | undefined)?.message].filter(Boolean).join(": ");
+
+/** What the model has to tell the user when Taiga cannot be reached: the next calls would fail the same way. */
+const OFFLINE =
+  "Tell the user that this server cannot reach Taiga right now, so its tools will not work until it can: Taiga may " +
+  "be down, or the network or the VPN of this machine may be off. Once the address opens in the browser, ask " +
+  "again; if it still fails, start this server again in the client.";
+
+/**
+ * Sends one request. A read that does not get through is sent a second time: a connection that stayed idle may
+ * have been closed by the other side, and reading twice changes nothing. A write is sent once, because the first
+ * try may have reached Taiga, and so is a request whose time ran out, because the wait was long already.
+ */
+async function reach(read: boolean, what: string, send: () => Promise<Response>): Promise<Response> {
+  let again = false;
+  try {
+    try {
+      return await send();
+    } catch (error) {
+      if (!read || (error as Error).name === "TimeoutError") throw error;
+      again = true;
+      return await send();
+    }
+  } catch (error) {
+    const tried = again
+      ? "A second try failed too. "
+      : read
+        ? ""
+        : "The request was sent once and not repeated, because it may have reached Taiga: read the item before sending the change again. ";
+    throw new Error(`${what}: ${reason(error)}. ${tried}${OFFLINE}`);
+  }
+}
 
 const same = (a: unknown, b: unknown) => String(a).trim().toLowerCase() === String(b).trim().toLowerCase();
 /** A text that is cut says so, with its real length: the model must know that something is missing. */

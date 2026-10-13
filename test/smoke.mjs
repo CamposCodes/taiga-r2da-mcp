@@ -93,7 +93,14 @@ const routes = {
   'DELETE /tasks/200': () => answer(204, ''),
   'DELETE /issues/300': () => answer(204, ''),
 }
+// How many of the next requests of each method this side drops without an answer: what a connection that the
+// other side closed looks like to the server.
+const drop = { GET: 0, POST: 0, PATCH: 0, DELETE: 0 }
 const fake = createServer(async (req, res) => {
+  if (drop[req.method] > 0) {
+    drop[req.method]--
+    return req.socket.destroy()
+  }
   const url = new URL(req.url, 'http://x')
   let sent = ''
   for await (const chunk of req) sent += chunk
@@ -119,6 +126,10 @@ const fake = createServer(async (req, res) => {
   const data = route ? route(req.method === 'GET' ? url.searchParams : body, req) : answer(404, { _error_message: 'not found' })
   reply(data?.answer ? data : answer(200, data))
 })
+// This side keeps an idle connection for ten minutes, longer than a run takes. By default it would close it after
+// five seconds, and a server that the machine held up for longer than that then writes its next request into the
+// closed connection: the call fails with "fetch failed: other side closed", in whatever scenario happens to be running.
+fake.keepAliveTimeout = 10 * 60_000
 await new Promise((r) => fake.listen(0, '127.0.0.1', r))
 const base = `http://127.0.0.1:${fake.address().port}`
 const sent = (from = 0) => seen.slice(from).filter((r) => r.method !== 'GET')
@@ -126,10 +137,6 @@ const sent = (from = 0) => seen.slice(from).filter((r) => r.method !== 'GET')
 let structured = 0
 // "can" is what the client says it can do, and "answers" what its user will say to each question of the server.
 function start(token, extra = {}, can = {}) {
-// This side keeps an idle connection for ten minutes, longer than a run takes. By default it would close it after
-// five seconds, and a server that the machine held up for longer than that then writes its next request into the
-// closed connection: the call fails with "fetch failed: other side closed", in whatever scenario happens to be running.
-fake.keepAliveTimeout = 10 * 60_000
   const asked = []
   const answers = []
   const env = { ...process.env, TAIGA_WRITE: null, TAIGA_DELETE: null, TAIGA_URL: base, TAIGA_TOKEN: token, ...extra }
@@ -439,7 +446,20 @@ await scenario('What Taiga refuses comes back as it said it, or as the status wh
   assert.match((await s.call('taiga_sprints_list', { project: 'bare-project' })).error, /^502 Bad Gateway on GET \/milestones$/)
 })
 await scenario('A token that expires in the middle of a run says how to renew it', async () => {
-  assert.match((await s.call('taiga_projects_get', { project: 'expired' })).error, /Taiga refused the token: it expired or is wrong\..*set TAIGA_TOKEN again/)
+  assert.match((await s.call('taiga_projects_get', { project: 'expired' })).error, /^Taiga refused the token: it expired or is wrong\..*set TAIGA_TOKEN again\. Tell the user that no tool of this server works until then: .*has to start the server again\.$/)
+})
+await scenario('A read that does not get through is sent once more, and answers as if nothing had happened', async () => {
+  drop.GET = 1
+  assert.equal((await s.call('taiga_projects_get', { project: 'my-project' })).slug, 'my-project')
+  assert.equal(drop.GET, 0)
+})
+await scenario('When the second try fails too, the error says that Taiga cannot be reached and what to tell the user', async () => {
+  drop.GET = 2
+  assert.match((await s.call('taiga_projects_get', { project: 'my-project' })).error, /^Taiga API unreachable at http:\/\/127\.0\.0\.1:\d+\/api\/v1: fetch failed: .+\. A second try failed too\. Tell the user that this server cannot reach Taiga right now, so its tools will not work until it can: .+ start this server again in the client\.$/)
+  assert.equal(drop.GET, 0)
+  // The refusal is in the trail, and the server is still there: the next call is answered.
+  assert.match(s.stderr(), /Z tool error: Taiga API unreachable at /)
+  assert.equal((await s.call('taiga_projects_get', { project: 'my-project' })).slug, 'my-project')
 })
 await scenario('Without TAIGA_WRITE nothing but GET leaves the server, and it stops when its input closes', async () => {
   assert.deepEqual(sent(), [])
@@ -481,6 +501,14 @@ await scenario('taiga_tasks_create sends names as ids and answers with the numbe
   // With no user story, a task goes to the row of a sprint.
   await w.call('taiga_tasks_create', { project: 'my-project', subject: 'Sem história', sprint: 'Sprint 12' })
   assert.deepEqual(seen.at(-1).body, { project: 32, subject: 'Sem história', milestone: 3 })
+})
+await scenario('A write that does not get through is not sent again, and the error says to read the item first', async () => {
+  drop.PATCH = 1
+  const before = seen.length
+  const { error } = await w.call('taiga_tasks_update', { project: 'my-project', ref: 13, comment: 'de novo' })
+  assert.match(error, /^Taiga API unreachable at .+: fetch failed: .+\. The request was sent once and not repeated, because it may have reached Taiga: read the item before sending the change again\. Tell the user that this server cannot reach Taiga right now/)
+  // The one PATCH was dropped, and no second one came.
+  assert.deepEqual([drop.PATCH, sent(before)], [0, []])
 })
 await scenario('taiga_tasks_update moves and edits: what is not said is not sent, and "none" empties', async () => {
   const moved = await w.call('taiga_tasks_update', { project: 'my-project', ref: 13, status: 'a fazer', assignee: 'none', dueDate: 'none', blocked: 'none', comment: 'feito' })

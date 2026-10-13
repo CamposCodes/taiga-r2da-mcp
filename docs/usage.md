@@ -428,12 +428,12 @@ can be a task with no user story, in the row of a sprint: `taiga_tasks_create` w
 
 | Symptom | Likely cause | What to do |
 | --- | --- | --- |
-| `Taiga refused the token: it expired or is wrong.` | The token expired, is incomplete, or another key was copied | Copy the `token` key again and set `TAIGA_TOKEN` again |
+| `Taiga refused the token: it expired or is wrong.` | The token expired, is incomplete, or another key was copied. No tool works until it is replaced, and the error tells the model to say so | Copy the `token` key again, set `TAIGA_TOKEN` again in the configuration of the server and have the client start the server again |
 | `Missing environment variable TAIGA_URL` (or `TAIGA_TOKEN`) | The client configuration lacks the variable | Add it to the configuration of the server in your client |
 | `TAIGA_URL must start with https://: ...` | The address is a plain `http://` one, over which the token would travel in clear text | Use the `https://` address. Only this machine (`localhost`, `127.0.0.1`) may be reached over `http://` |
 | `TAIGA_URL must not carry a user or a password: ...` | The address has `user:password@` in it | Remove it: the token goes in `TAIGA_TOKEN` |
 | `TAIGA_DELETE=1 needs TAIGA_WRITE=1: ...` | Deleting was turned on without writing | Set both variables, or neither |
-| `Taiga API unreachable at ...: fetch failed` | No network, wrong address, or a network that replaces TLS certificates | Open the address in the browser. On a network with TLS inspection, point `NODE_EXTRA_CA_CERTS` to the `.pem` file of its authority |
+| `Taiga API unreachable at ...: fetch failed: ...` | No network, a VPN that is off, Taiga down, a wrong address, or a network that replaces TLS certificates. A read was already tried twice; a write was sent once, and the error says to read the item before sending it again. The error tells the model to say that the server cannot reach Taiga | Open the address in the browser. When it opens, ask again; if it still fails, start the server again in the client. On a network with TLS inspection, point `NODE_EXTRA_CA_CERTS` to the `.pem` file of its authority |
 | `Taiga API unreachable at ...: The operation was aborted due to timeout` | Taiga took more than 120 seconds to answer | Ask again. If it repeats, check the network and your Taiga |
 | `Unknown ... status "X". Valid: ...` | A name that does not exist in that project | Use one of the names in the message |
 | `"X" is not a member of this project` | A person outside the project, or another spelling | The message lists the valid usernames |
