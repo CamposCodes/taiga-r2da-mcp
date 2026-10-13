@@ -379,6 +379,7 @@ await scenario('Any other file is saved under a name that cannot leave the folde
   assert.deepEqual(readFileSync(pdf.savedTo), media['/media/laudo.pdf'])
   assert.deepEqual([pdf.name, pdf.size], ['laudo final.pdf', 13])
   folder = dirname(pdf.savedTo)
+  assert.match(s.stderr(), /Z saved attachment 504 of task #13 in my-project to .+my-project-13-504-laudo_final\.pdf$/m)
 })
 await scenario('The folder of saved files is new, only of this user, one for the run, and made again if deleted', async () => {
   assert.match(basename(folder), /^taiga-mcp-.{6,}$/)
@@ -604,6 +605,7 @@ await scenario('Every change that reached Taiga and every tool error leaves a li
   has(/^taiga-mcp: \d{4}-\d\d-\d\dT[\d:.]+Z POST \/tasks 200$/)
   has(/Z PATCH \/userstories\/100 200$/)
   has(/Z POST \/issues\/attachments 200$/)
+  has(/Z sent envio\.txt \(9 bytes\) as an attachment of task #13 in my-project$/)
   has(/Z POST \/tasks 400$/)
   has(/Z POST \/userstories 403$/)
   has(/Z tool error: You do not have permission to create a user story in locked-project: your role lacks the Taiga permission add_us\./)

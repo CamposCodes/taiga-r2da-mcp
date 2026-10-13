@@ -852,6 +852,7 @@ function registerTools(server: McpServer, client: TaigaClient) {
         }
         const saved = join(await savingFolder(), `${p.slug}-${ref}-${file.id}-${file.name}`.replace(/[^\p{L}\p{N}._-]+/gu, "_"));
         await writeFile(saved, bytes);
+        trail(`saved attachment ${file.id} of ${kind} #${ref} in ${p.slug} to ${saved}`);
         const answer = { name: file.name, size: bytes.length, savedTo: saved, note: "Not shown here: read this file with a file tool." };
         return { content: [{ type: "text", text: JSON.stringify(answer, null, 2) }] };
       }),
@@ -1083,8 +1084,10 @@ function registerWriting(server: McpServer, client: TaigaClient, remove: boolean
         if (description) {
           form.set("description", description);
         }
-        form.set("attached_file", new Blob([await readFile(real)]), basename(path));
+        const bytes = await readFile(real);
+        form.set("attached_file", new Blob([bytes]), basename(path));
         const file = await client.send("POST", `/${KINDS[kind].path}/attachments`, form);
+        trail(`sent ${basename(path)} (${bytes.length} bytes) as an attachment of ${kind} #${ref} in ${p.slug}`);
         return { id: file.id, name: file.name, size: file.size, url: file.url };
       }),
   );

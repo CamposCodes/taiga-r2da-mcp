@@ -22,8 +22,9 @@ The 10 read tools are always registered. The 7 write tools are registered only w
   refused: `"<name>" is the full name of <N> members of this project: give the username of one (<usernames>).`
 - **Trail**: every change sent to Taiga leaves a line on stderr with the method, the path and the status Taiga
   answered, and every tool error leaves one with its message, for example
-  `taiga-mcp: 2026-10-12T15:03:02.776Z DELETE /tasks/200 204`. The client keeps stderr in its log of the server.
-  A read leaves no line.
+  `taiga-mcp: 2026-10-12T15:03:02.776Z DELETE /tasks/200 204`. A file sent by `taiga_attachments_add` leaves a
+  line with its name and size, and a file saved by `taiga_attachments_get` one with the path it went to. The
+  client keeps stderr in its log of the server. A read leaves no line.
 - **Answers**: data, given twice: as `structuredContent`, in the shape the `outputSchema` of the tool declares,
   and as the same JSON in a single `text` content block, for the clients that read only text. The examples below
   show that JSON. `taiga_attachments_get` is the exception: it answers with content (an image, a text or the path

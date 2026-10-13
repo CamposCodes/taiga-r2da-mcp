@@ -22,6 +22,8 @@ and the versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   answer of the API that grows past 32 MB, are stopped as the bytes arrive, whatever size Taiga declared.
 - `taiga_sprints_list` sorts the sprints by start date, newest first, as its description promised; the order was
   the one of the API.
+- The trail on stderr names the file sent by `taiga_attachments_add`, with its size, and the path a file saved by
+  `taiga_attachments_get` went to.
 
 ## 0.3.0 - 2026-10-13
 
