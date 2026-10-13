@@ -277,7 +277,7 @@ Only the name of the package is long: the command it installs is `taiga-mcp`, an
 
 | Variable | Required | What it is for |
 | --- | --- | --- |
-| `TAIGA_URL` | yes | Address of the Taiga site, with or without `/api/v1` at the end. It must start with `https://`: only this machine (`localhost`, `127.0.0.1`, `[::1]`) may be reached over `http://`. An address with a user or a password in it is refused |
+| `TAIGA_URL` | yes | Address of the Taiga site, with or without `/api/v1` at the end. It must start with `https://`: only this machine (`localhost`, `127.0.0.1`, `[::1]`) may be reached over `http://`. An address with a user, a password, a query or a fragment in it is refused |
 | `TAIGA_TOKEN` | yes | Session token of Taiga 6, copied from the browser |
 | `TAIGA_WRITE` | no | `1` or `true` registers the seven write tools. Any other value (`yes`, `on`, `TRUE`, `0`), or none, keeps the server read-only |
 | `TAIGA_DELETE` | no | `1` or `true` registers `taiga_items_delete`, the tool that deletes. It needs `TAIGA_WRITE` on as well: without it the server stops at start |

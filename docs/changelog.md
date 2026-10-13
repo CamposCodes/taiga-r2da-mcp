@@ -27,6 +27,8 @@ and the versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - Every tool refuses an argument it does not declare (`Unrecognized key`), where only the two without parameters
   did: a misspelt field was dropped in silence. A saved attachment gets a name of at most 150 characters, and the
   names of attachments reach the model without control characters.
+- A `TAIGA_URL` with a query or a fragment is refused at start, and a warning is written at start when
+  `NODE_TLS_REJECT_UNAUTHORIZED=0` is in the environment of the server.
 
 ## 0.3.0 - 2026-10-13
 

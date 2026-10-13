@@ -194,6 +194,8 @@ await scenario('A missing TAIGA_URL or TAIGA_TOKEN stops the server at start', a
 await scenario('An address that would expose the token is refused before any request', async () => {
   assert.equal(await refused({ TAIGA_URL: 'taiga' }, /TAIGA_URL is not an address/), 0)
   assert.equal(await refused({ TAIGA_URL: 'http://taiga.example.com' }, /must start with https:\/\/: over http the token would travel in clear text/), 0)
+  assert.equal(await refused({ TAIGA_URL: `${base}/?key=abc` }, /must not carry a query or a fragment/), 0)
+  assert.equal(await refused({ TAIGA_URL: `${base}/#top` }, /must not carry a query or a fragment/), 0)
   const withPassword = start('good', { TAIGA_URL: base.replace('http://', 'http://ana:secret@') })
   assert.equal(await withPassword.exited, 1)
   assert.match(withPassword.stderr(), /must not carry a user or a password/)
@@ -213,6 +215,12 @@ await scenario('A Taiga that does not answer stops the server at start', async (
 })
 await scenario('TAIGA_DELETE=1 without TAIGA_WRITE=1 stops the server at start', async () => {
   assert.equal(await refused({ TAIGA_DELETE: '1' }, /TAIGA_DELETE=1 needs TAIGA_WRITE=1/), 0)
+})
+await scenario('A warning is written at start when TLS checks are off', async () => {
+  const unsafe = start('good', { NODE_TLS_REJECT_UNAUTHORIZED: '0' })
+  await unsafe.open()
+  assert.match(unsafe.stderr(), /^taiga-mcp: NODE_TLS_REJECT_UNAUTHORIZED=0 is set: certificates are not checked, so whoever intercepts the connection to Taiga can read the token\.$/m)
+  await unsafe.stop()
 })
 
 const s = start('"good"')

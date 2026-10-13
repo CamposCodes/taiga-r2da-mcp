@@ -1197,6 +1197,9 @@ function siteOf(url: string): string {
   if (address.username || address.password) {
     throw new Error("TAIGA_URL must not carry a user or a password: the token goes in TAIGA_TOKEN.");
   }
+  if (address.search || address.hash) {
+    throw new Error("TAIGA_URL must not carry a query or a fragment: give only the address of the site, like https://taiga.example.com");
+  }
   if (address.protocol !== "https:" && !["localhost", "127.0.0.1", "[::1]"].includes(address.hostname)) {
     throw new Error("TAIGA_URL must start with https://: over http the token would travel in clear text. Only this machine (localhost, 127.0.0.1) may be reached over http.");
   }
@@ -1210,6 +1213,9 @@ async function main() {
     throw new Error("TAIGA_TOKEN has a space, a line break or another character no token has: copy it again, in one piece.");
   }
   const client = new TaigaClient(url, token);
+  if (process.env.NODE_TLS_REJECT_UNAUTHORIZED === "0") {
+    console.error("taiga-mcp: NODE_TLS_REJECT_UNAUTHORIZED=0 is set: certificates are not checked, so whoever intercepts the connection to Taiga can read the token.");
+  }
   const on = (name: string) => ["1", "true"].includes(process.env[name] ?? "");
   const write = on("TAIGA_WRITE");
   const remove = on("TAIGA_DELETE");
