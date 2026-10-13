@@ -10,7 +10,7 @@
   "packages": [
     {
       "registryType": "npm",
-      "identifier": "@camposcodes/taiga-r2da-mcp",
+      "identifier": "@campos-codes/taiga-r2da-mcp",
       "version": "0.3.0",
       "transport": {
         "type": "stdio"
