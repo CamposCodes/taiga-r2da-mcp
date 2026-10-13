@@ -486,11 +486,11 @@ const wikiShape = z.object({
 });
 const wikiPage = (client: TaigaClient, p: any, page: any) => ({
   slug: page.slug,
-  content: page.content ?? "",
+  content: page.content,
   version: page.version,
-  createdAt: page.created_date ?? null,
-  modifiedAt: page.modified_date ?? null,
-  modifiedBy: who(p, page.last_modifier ?? page.owner),
+  createdAt: page.created_date,
+  modifiedAt: page.modified_date,
+  modifiedBy: who(p, page.last_modifier),
   url: `${client.site}/project/${p.slug}/wiki/${page.slug}`,
 });
 
@@ -499,18 +499,18 @@ const day = () => z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 const sprintShape = z.object({
   id: z.number(),
   name: z.string(),
-  slug: text,
-  start: text,
-  finish: text,
+  slug: z.string(),
+  start: z.string(),
+  finish: z.string(),
   closed: z.boolean(),
   url: z.string().describe("Where a person sees the taskboard of the sprint"),
 });
 const sprintOf = (client: TaigaClient, p: any, m: any) => ({
   id: m.id,
   name: m.name,
-  slug: m.slug ?? null,
-  start: m.estimated_start ?? null,
-  finish: m.estimated_finish ?? null,
+  slug: m.slug,
+  start: m.estimated_start,
+  finish: m.estimated_finish,
   closed: Boolean(m.closed),
   url: `${client.site}/project/${p.slug}/taskboard/${m.slug}`,
 });
@@ -890,12 +890,7 @@ function registerTools(server: McpServer, client: TaigaClient) {
         const p = await loadProject(client, project);
         const pages: any[] = await client.get("/wiki", { project: p.id });
         return {
-          pages: pages.map((page) => ({
-            slug: page.slug,
-            modifiedAt: page.modified_date ?? null,
-            modifiedBy: who(p, page.last_modifier ?? page.owner),
-            characters: String(page.content ?? "").length,
-          })),
+          pages: pages.map((page) => ({ slug: page.slug, modifiedAt: page.modified_date, modifiedBy: who(p, page.last_modifier), characters: page.content.length })),
         };
       }),
   );
@@ -1438,7 +1433,7 @@ function registerWriting(server: McpServer, client: TaigaClient, remove: boolean
         allow(p, "delete", "sprint");
         const id = sprintId(p, sprint);
         const m = await client.get(`/milestones/${id}`);
-        const stories: any[] = m.user_stories ?? [];
+        const stories: any[] = m.user_stories;
         return deletion(server, ctx, confirm, {
           state: `${p.id}/sprint/${id}/${m.modified_date}/${stories.map((us) => us.ref).join(",")}`,
           shown: { sprint: sprintOf(client, p, m), userStoriesInIt: stories.map((us) => `#${us.ref} ${us.subject}`) },
@@ -1475,15 +1470,7 @@ function registerWriting(server: McpServer, client: TaigaClient, remove: boolean
         const page = await wikiBySlug(client, p, slug);
         return deletion(server, ctx, confirm, {
           state: `${p.id}/wiki/${page.id}/v${page.version}`,
-          shown: {
-            page: {
-              slug: page.slug,
-              characters: String(page.content ?? "").length,
-              version: page.version,
-              modifiedAt: page.modified_date ?? null,
-              modifiedBy: who(p, page.last_modifier ?? page.owner),
-            },
-          },
+          shown: { page: { slug: page.slug, characters: page.content.length, version: page.version, modifiedAt: page.modified_date, modifiedBy: who(p, page.last_modifier) } },
           what: `wiki page "${clip(oneLine(slug), 200)}" of ${p.slug}`,
           withIt: "",
           log: `wiki page ${slug} in ${p.slug}`,
