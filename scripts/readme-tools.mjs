@@ -42,12 +42,12 @@ function translated(text) {
 
 const LANGUAGES = {
   'docs/readme.md': {
-    groups: ['Read tools: 10, always registered', 'Write tools: 7, only with TAIGA_WRITE on', 'Delete tool: 1, only with TAIGA_WRITE and TAIGA_DELETE on'],
+    groups: ['Read tools: 12, always registered', 'Write tools: 9, only with TAIGA_WRITE on', 'Delete tools: 2, only with TAIGA_WRITE and TAIGA_DELETE on'],
     title: 'Title', description: 'Description', parameters: 'Parameters', none: 'None', optional: 'optional', readOnly: 'Read-only', destructive: 'Destructive',
     list: 'list of', or: 'or', say: (text) => text,
   },
   'docs/readme.pt-br.md': {
-    groups: ['Tools de leitura: 10, sempre registradas', 'Tools de escrita: 7, só com TAIGA_WRITE ligada', 'Tool de exclusão: 1, só com TAIGA_WRITE e TAIGA_DELETE ligadas'],
+    groups: ['Tools de leitura: 12, sempre registradas', 'Tools de escrita: 9, só com TAIGA_WRITE ligada', 'Tools de exclusão: 2, só com TAIGA_WRITE e TAIGA_DELETE ligadas'],
     title: 'Título', description: 'Descrição', parameters: 'Parâmetros', none: 'nenhum', optional: 'opcional', readOnly: 'Somente leitura', destructive: 'Destrutiva',
     list: 'lista de', or: 'ou', say: translated,
   },

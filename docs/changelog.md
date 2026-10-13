@@ -33,6 +33,10 @@ and the versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   `none`, that `[::1]` may be reached over `http://` too, and that the `npx` form must be tried from outside the
   repository. The release steps commit and tag before `npm publish`. The Portuguese README has the item on
   having nothing to build.
+- Wiki pages: `taiga_wiki_list` and `taiga_wiki_get` read them; with `TAIGA_WRITE=1`, `taiga_wiki_create` makes
+  one and `taiga_wiki_update` replaces its whole text with the version that was read; with `TAIGA_DELETE=1`,
+  `taiga_wiki_delete` removes one in two calls, as `taiga_items_delete` does. The server checks `add_wiki_page`,
+  `modify_wiki_page` and `delete_wiki_page` before it sends anything. 23 tools: 12 read, 9 write, 2 delete.
 
 ## 0.3.0 - 2026-10-13
 

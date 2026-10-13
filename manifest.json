@@ -69,6 +69,8 @@
     { "name": "taiga_issues_list", "description": "Issues of a project, with filters" },
     { "name": "taiga_items_get", "description": "One user story, task or issue by its number, with its attachments" },
     { "name": "taiga_search", "description": "Search a project by words" },
+    { "name": "taiga_wiki_list", "description": "Wiki pages of a project" },
+    { "name": "taiga_wiki_get", "description": "One wiki page by its slug, with its text" },
     { "name": "taiga_attachments_get", "description": "The content of a file attached to an item" }
   ],
   "tools_generated": true,

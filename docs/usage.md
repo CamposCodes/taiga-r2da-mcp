@@ -8,8 +8,8 @@ The server is the npm package [`@campos-codes/taiga-r2da-mcp`](https://www.npmjs
 
 ## The tools at a glance
 
-The diagram shows the 18 tools in their three groups: the 10 that are always there, the 7 that exist only with
-`TAIGA_WRITE=1`, and the 1 that deletes, which exists only with `TAIGA_DELETE=1` on top of `TAIGA_WRITE=1`.
+The diagram shows the tools in their three groups: the 12 that are always there, the 9 that exist only with
+`TAIGA_WRITE=1`, and the 2 that delete, which exist only with `TAIGA_DELETE=1` on top of `TAIGA_WRITE=1`.
 
 ![Map of the tools: 10 read tools always registered, 7 write tools only with TAIGA_WRITE=1, 1 delete tool only with TAIGA_WRITE=1 and TAIGA_DELETE=1](diagrams/07-tool-map.svg)
 
@@ -29,6 +29,8 @@ flowchart LR
         issues["taiga_issues_list"]
         item["taiga_items_get"]
         search["taiga_search"]
+        wlist["taiga_wiki_list"]
+        wget["taiga_wiki_get"]
         aget["taiga_attachments_get"]
     end
     subgraph write["Write tools: only with TAIGA_WRITE=1"]
@@ -38,10 +40,13 @@ flowchart LR
         tupdate["taiga_tasks_update"]
         icreate["taiga_issues_create"]
         iupdate["taiga_issues_update"]
+        wcreate["taiga_wiki_create"]
+        wupdate["taiga_wiki_update"]
         aadd["taiga_attachments_add"]
     end
     subgraph remove["Delete tool: only with TAIGA_WRITE=1 and TAIGA_DELETE=1"]
         del["taiga_items_delete: two calls, show then delete"]
+        wdel["taiga_wiki_delete: two calls, show then delete"]
     end
     server --> read
     server -.->|"TAIGA_WRITE=1"| write
@@ -55,8 +60,9 @@ flowchart LR
 | Who and where | `taiga_me`, `taiga_projects_list`, `taiga_projects_get` | The user of the token, their projects, and the names each project accepts |
 | Boards | `taiga_sprints_list`, `taiga_userstories_list`, `taiga_tasks_list`, `taiga_issues_list` | Lists with filters, one summary line per item |
 | One item | `taiga_items_get`, `taiga_attachments_get`, `taiga_search` | Everything about an item, the content of its files, and search by words |
-| Writing | `taiga_userstories_create`, `taiga_userstories_update`, `taiga_tasks_create`, `taiga_tasks_update`, `taiga_issues_create`, `taiga_issues_update`, `taiga_attachments_add` | Create, edit and move a user story, a task or an issue, and attach a file to one |
-| Deleting | `taiga_items_delete` | Delete a user story, a task or an issue, in two calls |
+| Wiki | `taiga_wiki_list`, `taiga_wiki_get` | The pages of the wiki and the text of one |
+| Writing | `taiga_userstories_create`, `taiga_userstories_update`, `taiga_tasks_create`, `taiga_tasks_update`, `taiga_issues_create`, `taiga_issues_update`, `taiga_wiki_create`, `taiga_wiki_update`, `taiga_attachments_add` | Create, edit and move a user story, a task or an issue, attach a file to one, and create a wiki page or replace its text |
+| Deleting | `taiga_items_delete`, `taiga_wiki_delete` | Delete a user story, a task, an issue or a wiki page, in two calls |
 
 Parameters, example answers and errors of each tool are in [docs/tools.md](tools.md).
 
@@ -186,7 +192,7 @@ flowchart TD
 
 ### Write, with `TAIGA_WRITE=1`
 
-Start the server with `TAIGA_WRITE=1` to get the seven write tools. How to set it is in the guide of your client:
+Start the server with `TAIGA_WRITE=1` to get the nine write tools. How to set it is in the guide of your client:
 [Claude Code](clients/claude-code.md), [Claude Desktop](clients/claude-desktop.md), [Codex](clients/codex.md).
 
 - A new user story without `status` gets the default status of the project; without `sprint` it is in no sprint.
@@ -215,9 +221,25 @@ Example requests:
 - "Block #13: waiting for the customer."
 - "Attach /home/ana/error-login.png to task #13 and show the image in the description."
 
-What cannot be done through this server: editing sprints or wiki pages, setting the points of a user story,
-anything with epics, and deleting an attachment, including one sent by mistake. Deleting a user story, a task or
-an issue needs `TAIGA_DELETE=1` as well: see [Delete an item](#delete-an-item-with-taiga_delete1).
+What cannot be done through this server: editing sprints, setting the points of a user story, anything with
+epics, the links of the side menu of the wiki, and deleting an attachment, including one sent by mistake.
+Deleting a user story, a task, an issue or a wiki page needs `TAIGA_DELETE=1` as well: see
+[Delete an item](#delete-an-item-with-taiga_delete1).
+
+### Wiki pages
+
+`taiga_wiki_list` gives the pages of a project (slug, when and by whom each was last changed) and `taiga_wiki_get`
+the whole text of one, with its `version`. With `TAIGA_WRITE=1`, `taiga_wiki_create` makes a page from a slug and
+a text, and `taiga_wiki_update` replaces the whole text of a page: like a description, it needs the `version`
+that `taiga_wiki_get` answered, and the complete new text. With `TAIGA_DELETE=1`, `taiga_wiki_delete` removes a
+page in two calls, as `taiga_items_delete` does. A page made here is listed by `taiga_wiki_list` and reachable by
+its address, but gets no link in the side menu of the wiki.
+
+Example requests:
+
+- "What does the wiki page 'home' of my-project say?"
+- "Create the wiki page 'release-notes' in my-project with the list of what shipped this sprint."
+- "Add a section about the backup to the 'home' page." (the model reads the page, then sends the whole new text)
 
 The sections below show, for each request, the call it leads to. Their arguments use the project of the tests,
 whose statuses have Portuguese names (`A fazer`, `Concluído`, `Fechado`): names are whatever your team typed in
@@ -426,7 +448,8 @@ can be a task with no user story, in the row of a sprint: `taiga_tasks_create` w
 - **Time limit.** A request to Taiga that takes more than 120 seconds is stopped, and the tool answers with an
   error.
 - **No undo.** The server has no tool that undoes an edit, and a deletion is for good: Taiga keeps no trash.
-- **Not covered.** Content of wiki pages, epics, timelines, notifications, statistics and custom fields.
+- **Not covered.** Epics, timelines, notifications, statistics, custom fields and the links of the side menu of
+  the wiki.
 
 ## Troubleshooting
 
