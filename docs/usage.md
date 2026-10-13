@@ -8,8 +8,8 @@ The server is the npm package [`@campos-codes/taiga-r2da-mcp`](https://www.npmjs
 
 ## The tools at a glance
 
-The diagram shows the tools in their three groups: the 12 that are always there, the 9 that exist only with
-`TAIGA_WRITE=1`, and the 2 that delete, which exist only with `TAIGA_DELETE=1` on top of `TAIGA_WRITE=1`.
+The diagram shows the tools in their three groups: the 12 that are always there, the 11 that exist only with
+`TAIGA_WRITE=1`, and the 3 that delete, which exist only with `TAIGA_DELETE=1` on top of `TAIGA_WRITE=1`.
 
 ![Map of the tools: 10 read tools always registered, 7 write tools only with TAIGA_WRITE=1, 1 delete tool only with TAIGA_WRITE=1 and TAIGA_DELETE=1](diagrams/07-tool-map.svg)
 
@@ -40,12 +40,15 @@ flowchart LR
         tupdate["taiga_tasks_update"]
         icreate["taiga_issues_create"]
         iupdate["taiga_issues_update"]
+        screate["taiga_sprints_create"]
+        supdate["taiga_sprints_update"]
         wcreate["taiga_wiki_create"]
         wupdate["taiga_wiki_update"]
         aadd["taiga_attachments_add"]
     end
     subgraph remove["Delete tool: only with TAIGA_WRITE=1 and TAIGA_DELETE=1"]
         del["taiga_items_delete: two calls, show then delete"]
+        sdel["taiga_sprints_delete: two calls, show then delete"]
         wdel["taiga_wiki_delete: two calls, show then delete"]
     end
     server --> read
@@ -61,8 +64,8 @@ flowchart LR
 | Boards | `taiga_sprints_list`, `taiga_userstories_list`, `taiga_tasks_list`, `taiga_issues_list` | Lists with filters, one summary line per item |
 | One item | `taiga_items_get`, `taiga_attachments_get`, `taiga_search` | Everything about an item, the content of its files, and search by words |
 | Wiki | `taiga_wiki_list`, `taiga_wiki_get` | The pages of the wiki and the text of one |
-| Writing | `taiga_userstories_create`, `taiga_userstories_update`, `taiga_tasks_create`, `taiga_tasks_update`, `taiga_issues_create`, `taiga_issues_update`, `taiga_wiki_create`, `taiga_wiki_update`, `taiga_attachments_add` | Create, edit and move a user story, a task or an issue, attach a file to one, and create a wiki page or replace its text |
-| Deleting | `taiga_items_delete`, `taiga_wiki_delete` | Delete a user story, a task, an issue or a wiki page, in two calls |
+| Writing | `taiga_userstories_create`, `taiga_userstories_update`, `taiga_tasks_create`, `taiga_tasks_update`, `taiga_issues_create`, `taiga_issues_update`, `taiga_sprints_create`, `taiga_sprints_update`, `taiga_wiki_create`, `taiga_wiki_update`, `taiga_attachments_add` | Create, edit and move a user story, a task or an issue, attach a file to one, create and change a sprint, and create a wiki page or replace its text |
+| Deleting | `taiga_items_delete`, `taiga_sprints_delete`, `taiga_wiki_delete` | Delete a user story, a task, an issue, a sprint or a wiki page, in two calls |
 
 Parameters, example answers and errors of each tool are in [docs/tools.md](tools.md).
 
@@ -192,7 +195,7 @@ flowchart TD
 
 ### Write, with `TAIGA_WRITE=1`
 
-Start the server with `TAIGA_WRITE=1` to get the nine write tools. How to set it is in the guide of your client:
+Start the server with `TAIGA_WRITE=1` to get the eleven write tools. How to set it is in the guide of your client:
 [Claude Code](clients/claude-code.md), [Claude Desktop](clients/claude-desktop.md), [Codex](clients/codex.md).
 
 - A new user story without `status` gets the default status of the project; without `sprint` it is in no sprint.
@@ -221,10 +224,26 @@ Example requests:
 - "Block #13: waiting for the customer."
 - "Attach /home/ana/error-login.png to task #13 and show the image in the description."
 
-What cannot be done through this server: editing sprints, setting the points of a user story, anything with
-epics, the links of the side menu of the wiki, and deleting an attachment, including one sent by mistake.
-Deleting a user story, a task, an issue or a wiki page needs `TAIGA_DELETE=1` as well: see
+What cannot be done through this server: setting the points of a user story, anything with epics, the links of
+the side menu of the wiki, and deleting an attachment, including one sent by mistake. Deleting a user story, a
+task, an issue, a sprint or a wiki page needs `TAIGA_DELETE=1` as well: see
 [Delete an item](#delete-an-item-with-taiga_delete1).
+
+### Sprints
+
+`taiga_sprints_list` gives the sprints of a project, newest first. With `TAIGA_WRITE=1`, `taiga_sprints_create`
+makes one from a name, a first day and a last day, and `taiga_sprints_update` renames it, moves its days or
+closes it (`closed: true`) and opens it again (`closed: false`): only the fields given change, and a sprint has no
+version. User stories go into a sprint, or back to the backlog, with `taiga_userstories_update` and its `sprint`
+field, as before. With `TAIGA_DELETE=1`, `taiga_sprints_delete` removes a sprint in two calls, as
+`taiga_items_delete` does; its user stories are not deleted, they go back to the backlog, and the first call lists
+them.
+
+Example requests:
+
+- "Create Sprint 13 in my-project, from the 17th to the 30th of October."
+- "Move user story #12 to Sprint 13 and close Sprint 12."
+- "Extend Sprint 13 by a week."
 
 ### Wiki pages
 

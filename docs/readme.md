@@ -57,7 +57,7 @@ What to put in each client is in [Getting started](#getting-started).
 
 ## Features
 
-- **23 tools**: 12 to read, 9 to write, 2 to delete.
+- **26 tools**: 12 to read, 11 to write, 3 to delete.
 - **Read-only by default**: writing and deleting are two separate switches, both off.
 - **Names, not ids**: the model says `"In progress"` or a username, and the server looks the id up.
 - **Short answers**: one summary line per item, with paging, so a board of hundreds of items fits in context.
@@ -291,9 +291,9 @@ flowchart TD
     start(["The client starts the server"])
     read["12 read tools: always there"]
     w{"TAIGA_WRITE is 1 or true?"}
-    write["9 write tools: create, edit, move, attach, wiki"]
+    write["11 write tools: create, edit, move, attach, sprints, wiki"]
     d{"TAIGA_DELETE is 1 or true?"}
-    del["2 delete tools: show first, ask, then delete"]
+    del["3 delete tools: show first, ask, then delete"]
     ro(["Read-only: every request to Taiga is a GET"])
     rw(["Reads and writes, deletes nothing"])
     all(["Reads, writes and deletes"])
@@ -430,7 +430,7 @@ fails when the two differ. Example calls, example answers and errors of each too
 </details>
 
 <details>
-<summary><b>Write tools: 9, only with TAIGA_WRITE on</b></summary>
+<summary><b>Write tools: 11, only with TAIGA_WRITE on</b></summary>
 
 - **taiga_userstories_create**
   - Title: Create a user story
@@ -533,6 +533,26 @@ fails when the two differ. Example calls, example answers and errors of each too
     - `version` (integer, optional): Version of the item as taiga_items_get gave it. Required with description or tags, which replace what is there
   - Read-only: **false**
   - Destructive: **true**
+- **taiga_sprints_create**
+  - Title: Create a sprint
+  - Description: Creates a sprint (a milestone) with a name, a first day and a last day. User stories are put in it with taiga_userstories_update and its sprint field. The answer has the address of its taskboard.
+  - Parameters:
+    - `project` (string): Project slug or id, as returned by taiga_projects_list (e.g. "my-project")
+    - `name` (string): Name of the sprint
+    - `start` (string): First day of the sprint, YYYY-MM-DD
+    - `finish` (string): Last day of the sprint, YYYY-MM-DD
+  - Read-only: **false**
+- **taiga_sprints_update**
+  - Title: Edit a sprint
+  - Description: Changes a sprint: only the fields given. A new name, a new first or last day, or closed to close it (true) or open it again (false). User stories go into or out of it with taiga_userstories_update.
+  - Parameters:
+    - `project` (string): Project slug or id, as returned by taiga_projects_list (e.g. "my-project")
+    - `sprint` (string): Name, slug or id of the sprint, as taiga_sprints_list and taiga_projects_get give it
+    - `name` (string, optional): New name of the sprint
+    - `start` (string, optional): New first day, YYYY-MM-DD
+    - `finish` (string, optional): New last day, YYYY-MM-DD
+    - `closed` (boolean, optional): true closes the sprint, false opens it again
+  - Read-only: **false**
 - **taiga_wiki_create**
   - Title: Create a wiki page
   - Description: Creates a wiki page with a slug and its text (Markdown). The answer has its address. taiga_wiki_list lists it; a link in the side menu of the wiki is not made.
@@ -564,7 +584,7 @@ fails when the two differ. Example calls, example answers and errors of each too
 </details>
 
 <details>
-<summary><b>Delete tools: 2, only with TAIGA_WRITE and TAIGA_DELETE on</b></summary>
+<summary><b>Delete tools: 3, only with TAIGA_WRITE and TAIGA_DELETE on</b></summary>
 
 - **taiga_items_delete**
   - Title: Delete an item
@@ -572,6 +592,15 @@ fails when the two differ. Example calls, example answers and errors of each too
   - Parameters:
     - `project` (string): Project slug or id, as returned by taiga_projects_list (e.g. "my-project")
     - `ref` (integer): Number of the user story, task or issue (#12 is 12)
+    - `confirm` (string, optional): The code the first call gave. Leave it out on the first call: nothing is deleted without it
+  - Read-only: **false**
+  - Destructive: **true**
+- **taiga_sprints_delete**
+  - Title: Delete a sprint
+  - Description: Deletes a sprint for good: Taiga keeps no trash. Its user stories and tasks are not deleted: they leave the sprint and go back to the backlog. It takes two calls, like taiga_items_delete: the first, without confirm, deletes nothing, shows the sprint and what is in it and gives a code; show that to the user and, only after a yes, call again with the code in confirm. A client that can ask the user is made to ask on that second call.
+  - Parameters:
+    - `project` (string): Project slug or id, as returned by taiga_projects_list (e.g. "my-project")
+    - `sprint` (string): Name, slug or id of the sprint, as taiga_sprints_list and taiga_projects_get give it
     - `confirm` (string, optional): The code the first call gave. Leave it out on the first call: nothing is deleted without it
   - Read-only: **false**
   - Destructive: **true**
@@ -694,9 +723,9 @@ The threat model, what the server can touch and how to report a vulnerability: [
 - Version 0.3.0. Target: Taiga 6. Transport: stdio only.
 - Protocol: MCP revision `2026-07-28` and the older ones, on the same stdio connection, through version 2 of the
   TypeScript SDK (`@modelcontextprotocol/server`).
-- Writing covers user stories, tasks and issues (create, edit, move, comment, attach a file) and wiki pages
-  (create, replace the text) and, with `TAIGA_DELETE=1`, deletes them. Sprints are not changed, attachments are
-  not deleted and the points of a user story are not set.
+- Writing covers user stories, tasks and issues (create, edit, move, comment, attach a file), sprints (create,
+  rename, change the days, close and reopen) and wiki pages (create, replace the text) and, with
+  `TAIGA_DELETE=1`, deletes them. Attachments are not deleted and the points of a user story are not set.
 - At most 120 tool calls a minute, and 120 seconds for each request to Taiga.
 - A read that does not get through is tried a second time; a write is sent once, because the first try may have
   reached Taiga. When Taiga cannot be reached, or refuses the token, the error tells the model to say so to you,

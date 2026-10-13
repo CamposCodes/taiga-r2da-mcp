@@ -14,9 +14,9 @@ Statuses, sprints, people and issue values are given by name. Start with taiga_p
 to learn the valid names. To understand an item in full, call taiga_items_get with its comments and open each
 attachment it lists with taiga_attachments_get. The wiki pages of a project are listed by taiga_wiki_list and read by taiga_wiki_get, by slug. ${
   write
-    ? `User stories, tasks and issues can be created and edited (moving one is giving it a new status or sprint), files attached to them, and wiki pages created and edited (taiga_wiki_create, taiga_wiki_update): everything is done in the name of the current user, so change only what was asked and attach only the files that were asked for. When Taiga or this server refuses a change because the user lacks a permission, do not work around it: tell the user what was refused, offer the alternatives the error lists and wait for the choice. ${
+    ? `User stories, tasks and issues can be created and edited (moving one is giving it a new status or sprint), files attached to them, sprints created and edited (taiga_sprints_create, taiga_sprints_update; a user story goes into a sprint with taiga_userstories_update) and wiki pages created and edited (taiga_wiki_create, taiga_wiki_update): everything is done in the name of the current user, so change only what was asked and attach only the files that were asked for. When Taiga or this server refuses a change because the user lacks a permission, do not work around it: tell the user what was refused, offer the alternatives the error lists and wait for the choice. ${
         remove
-          ? "An item is deleted with taiga_items_delete and a wiki page with taiga_wiki_delete, each in two calls: the first deletes nothing and shows what would go. Ask the user whether that is really to be deleted, and call again with the code only after a yes."
+          ? "An item is deleted with taiga_items_delete, a sprint with taiga_sprints_delete and a wiki page with taiga_wiki_delete, each in two calls: the first deletes nothing and shows what would go. Ask the user whether that is really to be deleted, and call again with the code only after a yes."
           : "Nothing can be deleted."
       }`
     : "Nothing can be changed through this server."
@@ -493,6 +493,39 @@ const wikiPage = (client: TaigaClient, p: any, page: any) => ({
   modifiedBy: who(p, page.last_modifier ?? page.owner),
   url: `${client.site}/project/${p.slug}/wiki/${page.slug}`,
 });
+
+const sprintName = z.string().min(1).describe("Name, slug or id of the sprint, as taiga_sprints_list and taiga_projects_get give it");
+const day = () => z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+const sprintShape = z.object({
+  id: z.number(),
+  name: z.string(),
+  slug: text,
+  start: text,
+  finish: text,
+  closed: z.boolean(),
+  url: z.string().describe("Where a person sees the taskboard of the sprint"),
+});
+const sprintOf = (client: TaigaClient, p: any, m: any) => ({
+  id: m.id,
+  name: m.name,
+  slug: m.slug ?? null,
+  start: m.estimated_start ?? null,
+  finish: m.estimated_finish ?? null,
+  closed: Boolean(m.closed),
+  url: `${client.site}/project/${p.slug}/taskboard/${m.slug}`,
+});
+function sprintId(p: any, value: string): number {
+  const id = sprintFilter(p, value);
+  if (id === "null") {
+    throw new Error('Give the name of a sprint: "backlog" is not one.');
+  }
+  return id;
+}
+const ordered = (start: string | undefined, finish: string | undefined) => {
+  if (start && finish && start > finish) {
+    throw new Error(`The first day of a sprint cannot come after its last day: ${start} is after ${finish}.`);
+  }
+};
 
 async function wikiBySlug(client: TaigaClient, p: any, slug: string): Promise<any> {
   try {
@@ -1183,6 +1216,63 @@ function registerWriting(server: McpServer, client: TaigaClient, remove: boolean
   );
 
   server.registerTool(
+    "taiga_sprints_create",
+    {
+      title: "Create a sprint",
+      description:
+        "Creates a sprint (a milestone) with a name, a first day and a last day. User stories are put in it with " +
+        "taiga_userstories_update and its sprint field. The answer has the address of its taskboard.",
+      inputSchema: z.strictObject({
+        project,
+        name: z.string().min(1).describe("Name of the sprint"),
+        start: day().describe("First day of the sprint, YYYY-MM-DD"),
+        finish: day().describe("Last day of the sprint, YYYY-MM-DD"),
+      }),
+      outputSchema: sprintShape,
+      annotations: WRITE,
+    },
+    ({ project, name, start, finish }) =>
+      run(async () => {
+        const p = await loadProject(client, project);
+        allow(p, "add", "sprint");
+        ordered(start, finish);
+        return sprintOf(client, p, await client.send("POST", "/milestones", { project: p.id, name, estimated_start: start, estimated_finish: finish }));
+      }),
+  );
+
+  server.registerTool(
+    "taiga_sprints_update",
+    {
+      title: "Edit a sprint",
+      description:
+        "Changes a sprint: only the fields given. A new name, a new first or last day, or closed to close it (true) or " +
+        "open it again (false). User stories go into or out of it with taiga_userstories_update.",
+      inputSchema: z.strictObject({
+        project,
+        sprint: sprintName,
+        name: z.string().min(1).optional().describe("New name of the sprint"),
+        start: day().optional().describe("New first day, YYYY-MM-DD"),
+        finish: day().optional().describe("New last day, YYYY-MM-DD"),
+        closed: z.boolean().optional().describe("true closes the sprint, false opens it again"),
+      }),
+      outputSchema: sprintShape,
+      annotations: WRITE,
+    },
+    ({ project, sprint, name, start, finish, closed }) =>
+      run(async () => {
+        const p = await loadProject(client, project);
+        allow(p, "modify", "sprint");
+        const id = sprintId(p, sprint);
+        const fields = { name, estimated_start: start, estimated_finish: finish, closed };
+        if (Object.values(fields).every((value) => value === undefined)) {
+          throw new Error("Nothing to change: give at least one field.");
+        }
+        ordered(start, finish);
+        return sprintOf(client, p, await client.send("PATCH", `/milestones/${id}`, fields));
+      }),
+  );
+
+  server.registerTool(
     "taiga_wiki_create",
     {
       title: "Create a wiki page",
@@ -1319,6 +1409,43 @@ function registerWriting(server: McpServer, client: TaigaClient, remove: boolean
           withIt: tasks.length ? `, with its tasks ${tasks.map((task) => `#${task.ref}`).join(", ")}` : "",
           log: `${kind} #${ref} in ${p.slug}`,
           erase: () => client.send("DELETE", `/${KINDS[kind].path}/${id}`),
+        });
+      }),
+  );
+
+  server.registerTool(
+    "taiga_sprints_delete",
+    {
+      title: "Delete a sprint",
+      description:
+        "Deletes a sprint for good: Taiga keeps no trash. Its user stories and tasks are not deleted: they leave the " +
+        "sprint and go back to the backlog. It takes two calls, like taiga_items_delete: the first, without confirm, " +
+        "deletes nothing, shows the sprint and what is in it and gives a code; show that to the user and, only after " +
+        "a yes, call again with the code in confirm. A client that can ask the user is made to ask on that second call.",
+      inputSchema: z.strictObject({ project, sprint: sprintName, confirm: confirmCode }),
+      outputSchema: z.object({
+        deleted: z.boolean(),
+        sprint: sprintShape,
+        userStoriesInIt: z.array(z.string()).describe("The user stories that go back to the backlog"),
+        confirm: z.string().optional().describe("The code that deletes this sprint, to be sent only after the user said yes"),
+        next: z.string().optional().describe("What to do before calling again"),
+      }),
+      annotations: { ...WRITE, destructiveHint: true },
+    },
+    ({ project, sprint, confirm }, ctx) =>
+      show(async () => {
+        const p = await loadProject(client, project);
+        allow(p, "delete", "sprint");
+        const id = sprintId(p, sprint);
+        const m = await client.get(`/milestones/${id}`);
+        const stories: any[] = m.user_stories ?? [];
+        return deletion(server, ctx, confirm, {
+          state: `${p.id}/sprint/${id}/${m.modified_date}/${stories.map((us) => us.ref).join(",")}`,
+          shown: { sprint: sprintOf(client, p, m), userStoriesInIt: stories.map((us) => `#${us.ref} ${us.subject}`) },
+          what: `sprint "${clip(oneLine(m.name), 200)}" of ${p.slug}`,
+          withIt: stories.length ? `, whose ${stories.length} user ${stories.length === 1 ? "story goes" : "stories go"} back to the backlog` : "",
+          log: `sprint ${id} in ${p.slug}`,
+          erase: () => client.send("DELETE", `/milestones/${id}`),
         });
       }),
   );

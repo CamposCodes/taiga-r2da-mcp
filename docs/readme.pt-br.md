@@ -60,7 +60,7 @@ O que colocar em cada cliente está em [Primeiros passos](#primeiros-passos).
 
 ## Recursos
 
-- **23 tools**: 12 de leitura, 9 de escrita, 2 de exclusão.
+- **26 tools**: 12 de leitura, 11 de escrita, 3 de exclusão.
 - **Somente leitura por padrão**: escrever e excluir são duas chaves separadas, as duas desligadas.
 - **Nomes, não ids**: o modelo diz `"In progress"` ou um nome de usuário, e o servidor encontra o id.
 - **Respostas curtas**: uma linha de resumo por item, com paginação, para um quadro de centenas de itens caber
@@ -298,9 +298,9 @@ flowchart TD
     start(["O cliente inicia o servidor"])
     read["12 tools de leitura: sempre presentes"]
     w{"TAIGA_WRITE é 1 ou true?"}
-    write["9 tools de escrita: criar, editar, mover, anexar, wiki"]
+    write["11 tools de escrita: criar, editar, mover, anexar, sprints, wiki"]
     d{"TAIGA_DELETE é 1 ou true?"}
-    del["2 tools de exclusão: mostram antes, perguntam, depois excluem"]
+    del["3 tools de exclusão: mostram antes, perguntam, depois excluem"]
     ro(["Somente leitura: todo pedido ao Taiga é um GET"])
     rw(["Lê e escreve, não exclui nada"])
     all(["Lê, escreve e exclui"])
@@ -438,7 +438,7 @@ em inglês. Exemplos de chamada, exemplos de resposta e erros de cada tool estã
 </details>
 
 <details>
-<summary><b>Tools de escrita: 9, só com TAIGA_WRITE ligada</b></summary>
+<summary><b>Tools de escrita: 11, só com TAIGA_WRITE ligada</b></summary>
 
 - **taiga_userstories_create**
   - Título: Criar uma história de usuário
@@ -541,6 +541,26 @@ em inglês. Exemplos de chamada, exemplos de resposta e erros de cada tool estã
     - `version` (integer, opcional): Versão do item, como taiga_items_get devolveu. Obrigatória com description ou tags, que substituem o que existe
   - Somente leitura: **false**
   - Destrutiva: **true**
+- **taiga_sprints_create**
+  - Título: Criar uma sprint
+  - Descrição: Cria uma sprint (um milestone) com nome, primeiro dia e último dia. Histórias de usuário entram nela com taiga_userstories_update e o campo sprint. A resposta traz o endereço do quadro de tarefas dela.
+  - Parâmetros:
+    - `project` (string): Slug ou id do projeto, como devolvido por taiga_projects_list (por exemplo "my-project")
+    - `name` (string): Nome da sprint
+    - `start` (string): Primeiro dia da sprint, AAAA-MM-DD
+    - `finish` (string): Último dia da sprint, AAAA-MM-DD
+  - Somente leitura: **false**
+- **taiga_sprints_update**
+  - Título: Editar uma sprint
+  - Descrição: Altera uma sprint: só os campos informados. Um nome novo, um novo primeiro ou último dia, ou closed para fechá-la (true) ou reabri-la (false). Histórias de usuário entram e saem dela com taiga_userstories_update.
+  - Parâmetros:
+    - `project` (string): Slug ou id do projeto, como devolvido por taiga_projects_list (por exemplo "my-project")
+    - `sprint` (string): Nome, slug ou id da sprint, como taiga_sprints_list e taiga_projects_get devolvem
+    - `name` (string, opcional): Novo nome da sprint
+    - `start` (string, opcional): Novo primeiro dia, AAAA-MM-DD
+    - `finish` (string, opcional): Novo último dia, AAAA-MM-DD
+    - `closed` (boolean, opcional): true fecha a sprint, false a reabre
+  - Somente leitura: **false**
 - **taiga_wiki_create**
   - Título: Criar uma página da wiki
   - Descrição: Cria uma página da wiki com um slug e o texto (Markdown). A resposta traz o endereço dela. taiga_wiki_list passa a listá-la; um link no menu lateral da wiki não é criado.
@@ -572,7 +592,7 @@ em inglês. Exemplos de chamada, exemplos de resposta e erros de cada tool estã
 </details>
 
 <details>
-<summary><b>Tools de exclusão: 2, só com TAIGA_WRITE e TAIGA_DELETE ligadas</b></summary>
+<summary><b>Tools de exclusão: 3, só com TAIGA_WRITE e TAIGA_DELETE ligadas</b></summary>
 
 - **taiga_items_delete**
   - Título: Excluir um item
@@ -580,6 +600,15 @@ em inglês. Exemplos de chamada, exemplos de resposta e erros de cada tool estã
   - Parâmetros:
     - `project` (string): Slug ou id do projeto, como devolvido por taiga_projects_list (por exemplo "my-project")
     - `ref` (integer): Número da história de usuário, da tarefa ou do problema (#12 é 12)
+    - `confirm` (string, opcional): O código que a primeira chamada devolveu. Não informe na primeira chamada: nada é excluído sem ele
+  - Somente leitura: **false**
+  - Destrutiva: **true**
+- **taiga_sprints_delete**
+  - Título: Excluir uma sprint
+  - Descrição: Exclui de vez uma sprint: o Taiga não tem lixeira. As histórias e tarefas dela não são excluídas: saem da sprint e voltam ao backlog. São duas chamadas, como em taiga_items_delete: a primeira, sem confirm, não exclui nada, mostra a sprint e o que há nela e devolve um código; mostre isso ao usuário e, só depois de um sim, chame de novo com o código em confirm. Um cliente que consegue perguntar ao usuário é levado a perguntar nessa segunda chamada.
+  - Parâmetros:
+    - `project` (string): Slug ou id do projeto, como devolvido por taiga_projects_list (por exemplo "my-project")
+    - `sprint` (string): Nome, slug ou id da sprint, como taiga_sprints_list e taiga_projects_get devolvem
     - `confirm` (string, opcional): O código que a primeira chamada devolveu. Não informe na primeira chamada: nada é excluído sem ele
   - Somente leitura: **false**
   - Destrutiva: **true**
@@ -704,9 +733,9 @@ O modelo de ameaças, o que o servidor alcança e como reportar uma falha: [docs
 - Versão 0.3.0. Alvo: Taiga 6. Transporte: só stdio.
 - Protocolo: revisão `2026-07-28` do MCP e as anteriores, na mesma conexão stdio, pela versão 2 do SDK de
   TypeScript (`@modelcontextprotocol/server`).
-- A escrita cobre histórias de usuário, tarefas e problemas (criar, editar, mover, comentar, anexar arquivo) e
-  páginas da wiki (criar, substituir o texto) e, com `TAIGA_DELETE=1`, os exclui. Sprints não são alteradas,
-  anexos não são excluídos e os pontos de uma história não são definidos.
+- A escrita cobre histórias de usuário, tarefas e problemas (criar, editar, mover, comentar, anexar arquivo),
+  sprints (criar, renomear, mudar os dias, fechar e reabrir) e páginas da wiki (criar, substituir o texto) e, com
+  `TAIGA_DELETE=1`, os exclui. Anexos não são excluídos e os pontos de uma história não são definidos.
 - No máximo 120 chamadas de tool por minuto, e 120 segundos para cada chamada ao Taiga.
 - Uma leitura que não chega ao Taiga é tentada uma segunda vez; uma escrita é enviada uma vez só, porque a
   primeira tentativa pode ter chegado. Quando o Taiga não responde, ou recusa o token, o erro manda o modelo

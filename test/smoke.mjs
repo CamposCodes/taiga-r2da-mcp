@@ -78,6 +78,10 @@ const routes = {
   'GET /history/task/200': () => [{ created_at: '2026-10-09T15:30:00Z', user: { username: 'ana' }, comment: 'x'.repeat(2100), delete_comment_date: null, values_diff: {} }],
   'GET /history/issue/300': () => [{ created_at: '2026-10-09T15:30:00Z', user: { name: 'Sistema' }, comment: 'y'.repeat(310), delete_comment_date: null }, { created_at: '2026-10-09T15:31:00Z', user: null, comment: '', values_diff: { status: ['a', 'b'] } }, { created_at: '2026-10-09T15:32:00Z', user: null, comment: 'órfão', delete_comment_date: null }],
   'GET /search': (q) => (q.get('project') === '33' ? { count: 0 } : { count: 2, userstories: [{ ref: 12, subject: 'História', status: 1 }], tasks: [{ ref: 13, subject: 'Tarefa', status: 12 }], issues: [], wikipages: [{ slug: 'home' }] }),
+  'GET /milestones/3': () => ({ id: 3, name: 'Sprint 12', slug: 'sprint-12', estimated_start: '2026-10-09', estimated_finish: '2026-10-16', closed: false, modified_date: '2026-10-09T15:30:00Z', user_stories: [{ id: 100, ref: 12, subject: 'História', is_closed: false }] }),
+  'POST /milestones': (sent) => (sent.name === 'Sprint 12' ? answer(400, { name: ['Name duplicated for the project'] }) : { id: 4, name: sent.name, slug: 'sprint-13', estimated_start: sent.estimated_start, estimated_finish: sent.estimated_finish, closed: false, modified_date: '2026-10-10T12:00:00Z', user_stories: [] }),
+  'PATCH /milestones/3': (sent) => (sent.estimated_start && !sent.estimated_finish && sent.estimated_start > '2026-10-16' ? answer(400, { __all__: ['The estimated start must be previous to the estimated finish.'] }) : { ...routes['GET /milestones/3'](), ...sent }),
+  'DELETE /milestones/3': () => answer(204, ''),
   'GET /wiki': (q) => (q.get('project') === '32' ? Object.values(wiki) : []),
   'GET /wiki/by_slug': (q) => Object.values(wiki).find((page) => String(page.project) === q.get('project') && page.slug === q.get('slug')) ?? answer(404, { _error_message: 'No WikiPage matches the given query.' }),
   'POST /wiki': (sent) => (sent.slug === 'home' ? answer(400, { __all__: ['Wiki page with this Project and Slug already exists.'] }) : { id: 703, project: sent.project, slug: sent.slug, content: sent.content, version: 1, owner: 9, last_modifier: 9, created_date: '2026-10-10T12:00:00Z', modified_date: '2026-10-10T12:00:00Z' }),
@@ -475,8 +479,8 @@ await scenario('Without TAIGA_WRITE nothing but GET leaves the server, and it st
 
 const w = start('good', { TAIGA_WRITE: '1' })
 const writer = await w.open()
-await scenario('TAIGA_WRITE=1 adds 9 tools that write, and none that deletes', async () => {
-  assert.deepEqual(writer.tools.slice(12).map((t) => t.name), ['taiga_userstories_create', 'taiga_userstories_update', 'taiga_tasks_create', 'taiga_tasks_update', 'taiga_issues_create', 'taiga_issues_update', 'taiga_wiki_create', 'taiga_wiki_update', 'taiga_attachments_add'])
+await scenario('TAIGA_WRITE=1 adds 11 tools that write, and none that deletes', async () => {
+  assert.deepEqual(writer.tools.slice(12).map((t) => t.name), ['taiga_userstories_create', 'taiga_userstories_update', 'taiga_tasks_create', 'taiga_tasks_update', 'taiga_issues_create', 'taiga_issues_update', 'taiga_sprints_create', 'taiga_sprints_update', 'taiga_wiki_create', 'taiga_wiki_update', 'taiga_attachments_add'])
   assert.ok(writer.tools.slice(12).every((t) => t.annotations.readOnlyHint === false && t.outputSchema))
   assert.ok(writer.tools.every((t) => t.inputSchema.additionalProperties === false))
   assert.deepEqual(writer.tools.filter((t) => t.annotations.destructiveHint).map((t) => t.name), ['taiga_userstories_update', 'taiga_tasks_update', 'taiga_issues_update', 'taiga_wiki_update'])
@@ -490,8 +494,8 @@ await scenario('TAIGA_WRITE and TAIGA_DELETE are on with 1 or with true, and wit
     await server.stop()
     return tools.length
   }
-  assert.equal(await count({ TAIGA_WRITE: 'true' }), 21)
-  assert.equal(await count({ TAIGA_WRITE: 'true', TAIGA_DELETE: 'true' }), 23)
+  assert.equal(await count({ TAIGA_WRITE: 'true' }), 23)
+  assert.equal(await count({ TAIGA_WRITE: 'true', TAIGA_DELETE: 'true' }), 26)
   for (const value of ['yes', 'on', 'TRUE', '0', 'false', '']) assert.equal(await count({ TAIGA_WRITE: value, TAIGA_DELETE: value }), 12, value)
 })
 await scenario('A task that would be on no board is refused before anything is sent', async () => {
@@ -586,6 +590,26 @@ await scenario('taiga_wiki_create and taiga_wiki_update create a page and replac
   assert.deepEqual(seen.at(-1).body, { content: 'novo', version: 2 })
   assert.deepEqual([edited.content, edited.version], ['novo', 3])
 })
+await scenario('taiga_sprints_create and taiga_sprints_update create a sprint, change its days and close it', async () => {
+  const before = seen.length
+  const made = await w.call('taiga_sprints_create', { project: 'my-project', name: 'Sprint 13', start: '2026-10-17', finish: '2026-10-30' })
+  assert.equal(`${seen.at(-1).method} ${seen.at(-1).path}`, 'POST /api/v1/milestones')
+  assert.deepEqual(seen.at(-1).body, { project: 32, name: 'Sprint 13', estimated_start: '2026-10-17', estimated_finish: '2026-10-30' })
+  assert.deepEqual(made, { id: 4, name: 'Sprint 13', slug: 'sprint-13', start: '2026-10-17', finish: '2026-10-30', closed: false, url: `${base}/project/my-project/taskboard/sprint-13` })
+  assert.match((await w.call('taiga_sprints_create', { project: 'my-project', name: 'Sprint 12', start: '2026-10-17', finish: '2026-10-30' })).error, /Name duplicated/)
+  const sentSoFar = sent(before).length
+  assert.match((await w.call('taiga_sprints_create', { project: 'my-project', name: 'Invertida', start: '2026-10-30', finish: '2026-10-17' })).error, /^The first day of a sprint cannot come after its last day: 2026-10-30 is after 2026-10-17\.$/)
+  assert.match((await w.raw('taiga_sprints_create', { project: 'my-project', name: 'x', start: '17/10/2026', finish: '2026-10-30' })).content[0].text, /start: Invalid/)
+  assert.match((await w.call('taiga_sprints_update', { project: 'my-project', sprint: 'Sprint 12' })).error, /Nothing to change/)
+  assert.match((await w.call('taiga_sprints_update', { project: 'my-project', sprint: 'backlog', closed: true })).error, /"backlog" is not one/)
+  assert.match((await w.call('taiga_sprints_update', { project: 'my-project', sprint: 'Sprint 99', closed: true })).error, /Unknown sprint "Sprint 99"/)
+  assert.equal(sent(before).length, sentSoFar)
+  const closed = await w.call('taiga_sprints_update', { project: 'my-project', sprint: 'sprint-12', finish: '2026-10-20', closed: true })
+  assert.equal(`${seen.at(-1).method} ${seen.at(-1).path}`, 'PATCH /api/v1/milestones/3')
+  assert.deepEqual(seen.at(-1).body, { estimated_finish: '2026-10-20', closed: true })
+  assert.deepEqual([closed.name, closed.finish, closed.closed], ['Sprint 12', '2026-10-20', true])
+  assert.match((await w.call('taiga_sprints_update', { project: 'my-project', sprint: '3', start: '2026-10-25' })).error, /The estimated start must be previous to the estimated finish\./)
+})
 
 const smoke = mkdtempSync(join(tmpdir(), 'taiga-mcp-smoke-'))
 mkdirSync(join(smoke, '.ssh'), { recursive: true })
@@ -644,6 +668,8 @@ await scenario('A change the role does not allow is refused before anything is s
   assert.match((await w.call('taiga_userstories_update', { project: 'locked-project', ref: 12, subject: 'x' })).error, /modify_us.*instead: \(1\) leave a comment on it/)
   assert.match((await w.call('taiga_wiki_create', { project: 'locked-project', slug: 'x', content: 'x' })).error, /^You do not have permission to create a wiki page in locked-project: your role lacks the Taiga permission add_wiki_page\. Nothing was done\. What your role allows here instead: \(1\) ask a project admin to do it, or to give your role this permission\. Do not work around/)
   assert.match((await w.call('taiga_wiki_update', { project: 'locked-project', slug: 'home', content: 'x', version: 1 })).error, /permission to change a wiki page in locked-project: your role lacks the Taiga permission modify_wiki_page/)
+  assert.match((await w.call('taiga_sprints_create', { project: 'locked-project', name: 'x', start: '2026-10-17', finish: '2026-10-30' })).error, /permission to create a sprint in locked-project: your role lacks the Taiga permission add_milestone\. Nothing was done\./)
+  assert.match((await w.call('taiga_sprints_update', { project: 'locked-project', sprint: 'x', closed: true })).error, /permission to change a sprint in locked-project: your role lacks the Taiga permission modify_milestone/)
   assert.deepEqual(sent(before), [])
 })
 await scenario('What the role does allow goes through: a task, an edit it may make, a comment alone', async () => {
@@ -679,10 +705,10 @@ await scenario('The token is in nothing the writing server says', async () => {
 
 const d = start('good', { TAIGA_WRITE: '1', TAIGA_DELETE: '1' })
 const deleter = await d.open()
-await scenario('TAIGA_DELETE=1 adds the two tools that delete, marked as destructive', async () => {
-  assert.deepEqual(deleter.tools.slice(21).map((t) => t.name), ['taiga_items_delete', 'taiga_wiki_delete'])
-  assert.ok(deleter.tools.slice(21).every((t) => t.annotations.destructiveHint === true && t.annotations.readOnlyHint === false))
-  assert.match(deleter.instructions, /taiga_items_delete and a wiki page with taiga_wiki_delete, each in two calls.*only after a yes/)
+await scenario('TAIGA_DELETE=1 adds the three tools that delete, marked as destructive', async () => {
+  assert.deepEqual(deleter.tools.slice(23).map((t) => t.name), ['taiga_items_delete', 'taiga_sprints_delete', 'taiga_wiki_delete'])
+  assert.ok(deleter.tools.slice(23).every((t) => t.annotations.destructiveHint === true && t.annotations.readOnlyHint === false))
+  assert.match(deleter.instructions, /taiga_items_delete, a sprint with taiga_sprints_delete and a wiki page with taiga_wiki_delete, each in two calls.*only after a yes/)
   assert.match(d.stderr(), /\(writes user stories, tasks, issues and attachments, and deletes them\)/)
 })
 await scenario('docs/tools.md describes exactly the tools and the parameters that tools/list gives, in the same order', async () => {
@@ -749,6 +775,18 @@ await scenario('taiga_wiki_delete shows the page first and deletes it only with 
   assert.deepEqual([seen.at(-1).method, seen.at(-1).path], ['DELETE', '/api/v1/wiki/701'])
   assert.match((await d.call('taiga_wiki_delete', { project: 'locked-project', slug: 'home' })).error, /permission to delete a wiki page in locked-project: your role lacks the Taiga permission delete_wiki_page/)
 })
+await scenario('taiga_sprints_delete shows the sprint and its user stories first and deletes it only with the code', async () => {
+  const before = seen.length
+  const shown = await d.call('taiga_sprints_delete', { project: 'my-project', sprint: 'Sprint 12' })
+  assert.deepEqual([shown.deleted, shown.sprint.name, shown.userStoriesInIt], [false, 'Sprint 12', ['#12 História']])
+  assert.match(shown.confirm, CODE)
+  assert.equal((await d.call('taiga_wiki_delete', { project: 'my-project', slug: 'guia', confirm: shown.confirm })).deleted, false)
+  assert.deepEqual(sent(before), [])
+  const again = await d.call('taiga_sprints_delete', { project: 'my-project', sprint: '3' })
+  assert.equal((await d.call('taiga_sprints_delete', { project: 'my-project', sprint: '3', confirm: again.confirm })).deleted, true)
+  assert.deepEqual([seen.at(-1).method, seen.at(-1).path], ['DELETE', '/api/v1/milestones/3'])
+  assert.match((await d.call('taiga_sprints_delete', { project: 'locked-project', sprint: 'x' })).error, /permission to delete a sprint in locked-project: your role lacks the Taiga permission delete_milestone/)
+})
 await scenario('A role that may not delete is told so on the first call, with what it may do instead', async () => {
   assert.equal(d.stderr().split('\n').filter((line) => /Z DELETE \/(tasks\/200|userstories\/100|issues\/300) 204$/.test(line)).length, 3)
   const before = seen.length
@@ -787,6 +825,10 @@ await scenario('A client that can ask its user is made to ask, and nothing is de
   assert.equal((await e.call('taiga_wiki_delete', { project: 'my-project', slug: 'guia', confirm: page.confirm })).deleted, false)
   assert.equal(e.asked.at(-1).message, 'Delete the wiki page "guia" of my-project? Taiga keeps no trash: this cannot be undone.')
   assert.match(e.stderr(), /Z deletion of wiki page guia in my-project not approved by the user \(decline\)$/m)
+  const sprint = await e.call('taiga_sprints_delete', { project: 'my-project', sprint: 'Sprint 12' })
+  e.answers.push({ action: 'cancel' })
+  assert.equal((await e.call('taiga_sprints_delete', { project: 'my-project', sprint: 'Sprint 12', confirm: sprint.confirm })).deleted, false)
+  assert.equal(e.asked.at(-1).message, 'Delete the sprint "Sprint 12" of my-project, whose 1 user story goes back to the backlog? Taiga keeps no trash: this cannot be undone.')
   await e.stop()
 })
 await scenario('On the 2026-07-28 revision the question goes out in the answer and the yes comes in with the call made again', async () => {
@@ -883,4 +925,4 @@ await scenario('docs/testing.md lists exactly these scenarios, in this order', a
 })
 fake.close()
 dead.close()
-console.log(`ok: ${done.length} scenarios, 12 tools read-only, 9 more with TAIGA_WRITE=1, 2 more with TAIGA_DELETE=1`)
+console.log(`ok: ${done.length} scenarios, 12 tools read-only, 11 more with TAIGA_WRITE=1, 3 more with TAIGA_DELETE=1`)

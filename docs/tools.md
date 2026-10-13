@@ -8,8 +8,8 @@ Every tool the server registers, with its parameters, an example call, an exampl
   examples only `ref`, `subject` and `url` follow the call.
 - `npm test` fails when this file and `tools/list` disagree on a tool name or a parameter name.
 
-The 12 read tools are always registered. The 9 write tools are registered only when the server starts with
-`TAIGA_WRITE=1`, and the two tools that delete only with `TAIGA_DELETE=1` on top of it.
+The 12 read tools are always registered. The 11 write tools are registered only when the server starts with
+`TAIGA_WRITE=1`, and the three tools that delete only with `TAIGA_DELETE=1` on top of it.
 
 ## Conventions
 
@@ -61,10 +61,13 @@ The 12 read tools are always registered. The 9 write tools are registered only w
 | `taiga_tasks_update` | `false` | `true` | `false` | Replaces fields of a task: a description or the tags are overwritten |
 | `taiga_issues_create` | `false` | `false` | `false` | Adds an issue |
 | `taiga_issues_update` | `false` | `true` | `false` | Replaces fields of an issue: a description or the tags are overwritten |
+| `taiga_sprints_create` | `false` | `false` | `false` | Adds a sprint |
+| `taiga_sprints_update` | `false` | `false` | `false` | Changes the name, the days or the closed state of a sprint; nothing is overwritten that cannot be set back |
 | `taiga_wiki_create` | `false` | `false` | `false` | Adds a wiki page |
 | `taiga_wiki_update` | `false` | `true` | `false` | Replaces the whole text of a wiki page |
 | `taiga_attachments_add` | `false` | `false` | `false` | Adds a file to an item. Reads a file of the machine |
 | `taiga_items_delete` | `false` | `true` | `false` | Deletes an item for good, on the second call |
+| `taiga_sprints_delete` | `false` | `true` | `false` | Deletes a sprint for good, on the second call; its user stories go back to the backlog |
 | `taiga_wiki_delete` | `false` | `true` | `false` | Deletes a wiki page for good, on the second call |
 
 `idempotentHint` is set only on `taiga_attachments_get`. On the others it has its default, `false`: calling a
@@ -649,6 +652,7 @@ error says what that role may do in its place:
 | Create an issue (`add_issue`) | Create it as a user story (`add_us`). Create only a task, in a user story that already exists or in a sprint with no user story (`add_task`) |
 | Change an item (`modify_us`, `modify_task`, `modify_issue`) | Leave a comment on it saying what should change (`comment_us`, `comment_task`, `comment_issue`) |
 | Delete an item (`delete_us`, `delete_task`, `delete_issue`) | Close it instead, by moving it to a closed status (`modify_`). Leave a comment on it asking for the deletion (`comment_`) |
+| Create, change or delete a sprint (`add_milestone`, `modify_milestone`, `delete_milestone`) | Nothing: only asking an admin is offered |
 | Create, change or delete a wiki page (`add_wiki_page`, `modify_wiki_page`, `delete_wiki_page`) | Nothing: only asking an admin is offered |
 
 The last alternative is always "ask a project admin to do it, or to give your role this permission". The model is
@@ -968,6 +972,76 @@ Errors:
 - `You do not have permission to change an issue in <project>: your role lacks the Taiga permission modify_issue. Nothing was done. What your role allows here instead: <alternatives>. Do not work around this on your own: tell the user what was refused, offer the alternatives and wait for the choice.`
 - A version conflict reported by Taiga, when someone changed the issue between the read and the write.
 
+### `taiga_sprints_create`
+
+Creates a sprint (a milestone) with a name, a first day and a last day. User stories are put in it with
+taiga_userstories_update and its sprint field. The answer has the address of its taskboard.
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `project` | string | yes | Project slug or id, as returned by taiga_projects_list (e.g. "my-project") |
+| `name` | string, not empty | yes | Name of the sprint |
+| `start` | string, `YYYY-MM-DD` | yes | First day of the sprint, YYYY-MM-DD |
+| `finish` | string, `YYYY-MM-DD` | yes | Last day of the sprint, YYYY-MM-DD |
+
+```json
+{ "project": "my-project", "name": "Sprint 13", "start": "2026-10-17", "finish": "2026-10-30" }
+```
+
+```json
+{
+  "id": 4,
+  "name": "Sprint 13",
+  "slug": "sprint-13",
+  "start": "2026-10-17",
+  "finish": "2026-10-30",
+  "closed": false,
+  "url": "https://taiga.example.com/project/my-project/taskboard/sprint-13"
+}
+```
+
+The server sends `POST /milestones` with `{ "project": 32, "name": "Sprint 13", "estimated_start": "2026-10-17", "estimated_finish": "2026-10-30" }`.
+Taiga gives the sprint its slug.
+
+Errors:
+
+- `The first day of a sprint cannot come after its last day: 2026-10-30 is after 2026-10-17.`, before anything is sent.
+- `400 Bad Request on POST /milestones: {"name":["Name duplicated for the project"]}`, when a sprint with that name exists.
+- `You do not have permission to create a sprint in <project>: your role lacks the Taiga permission add_milestone. Nothing was done. What your role allows here instead: (1) ask a project admin to do it, or to give your role this permission. Do not work around this on your own: tell the user what was refused, offer the alternatives and wait for the choice.`
+- A day that is not `YYYY-MM-DD` is refused before the tool runs: `start: Invalid string: must match pattern ...`
+
+### `taiga_sprints_update`
+
+Changes a sprint: only the fields given. A new name, a new first or last day, or closed to close it (true) or
+open it again (false). User stories go into or out of it with taiga_userstories_update.
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `project` | string | yes | Project slug or id, as returned by taiga_projects_list (e.g. "my-project") |
+| `sprint` | string, not empty | yes | Name, slug or id of the sprint, as taiga_sprints_list and taiga_projects_get give it |
+| `name` | string, not empty | no | New name of the sprint |
+| `start` | string, `YYYY-MM-DD` | no | New first day, YYYY-MM-DD |
+| `finish` | string, `YYYY-MM-DD` | no | New last day, YYYY-MM-DD |
+| `closed` | boolean | no | true closes the sprint, false opens it again |
+
+```json
+{ "project": "my-project", "sprint": "sprint-12", "finish": "2026-10-20", "closed": true }
+```
+
+The server sends `PATCH /milestones/3` with `{ "estimated_finish": "2026-10-20", "closed": true }` and answers
+the sprint as Taiga left it, in the shape of `taiga_sprints_create`. A sprint has no version: the fields given
+replace what is there, and nothing else is touched.
+
+Errors:
+
+- `Nothing to change: give at least one field.`
+- `Give the name of a sprint: "backlog" is not one.`
+- `Unknown sprint "Sprint 99". Sprints: Sprint 12. Use "backlog" for no sprint.`
+- `The first day of a sprint cannot come after its last day: ...`, when both days are given in the wrong order;
+  with one day given, Taiga checks it against the other and refuses with
+  `The estimated start must be previous to the estimated finish.`
+- `You do not have permission to change a sprint in <project>: your role lacks the Taiga permission modify_milestone. Nothing was done. What your role allows here instead: (1) ask a project admin to do it, or to give your role this permission. Do not work around this on your own: tell the user what was refused, offer the alternatives and wait for the choice.`
+
 ### `taiga_wiki_create`
 
 Creates a wiki page with a slug and its text (Markdown). The answer has its address. taiga_wiki_list lists it; a
@@ -1161,6 +1235,46 @@ Errors:
 
 - `#99 is not a user story, task or issue of my-project.`
 - `You do not have permission to delete <a user story, a task or an issue> in <project>: your role lacks the Taiga permission <delete_us, delete_task or delete_issue>. Nothing was done. What your role allows here instead: <alternatives>. Do not work around this on your own: tell the user what was refused, offer the alternatives and wait for the choice.`
+
+### `taiga_sprints_delete`
+
+Deletes a sprint for good: Taiga keeps no trash. Its user stories and tasks are not deleted: they leave the sprint
+and go back to the backlog. It takes two calls, like taiga_items_delete: the first, without confirm, deletes
+nothing, shows the sprint and what is in it and gives a code; show that to the user and, only after a yes, call
+again with the code in confirm. A client that can ask the user is made to ask on that second call.
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `project` | string | yes | Project slug or id, as returned by taiga_projects_list (e.g. "my-project") |
+| `sprint` | string, not empty | yes | Name, slug or id of the sprint, as taiga_sprints_list and taiga_projects_get give it |
+| `confirm` | string | no | The code the first call gave. Leave it out on the first call: nothing is deleted without it |
+
+The first call, without `confirm`:
+
+```json
+{ "project": "my-project", "sprint": "Sprint 12" }
+```
+
+```json
+{
+  "deleted": false,
+  "sprint": { "id": 3, "name": "Sprint 12", "slug": "sprint-12", "start": "2026-10-09", "finish": "2026-10-16", "closed": false, "url": "https://taiga.example.com/project/my-project/taskboard/sprint-12" },
+  "userStoriesInIt": ["#12 História"],
+  "confirm": "0d9c6f3a-52b7-4e1c-9a4f-7b1e2c8d5a60",
+  "next": "Nothing was deleted. Show this to the user and ask whether it is really to be deleted. Only after a yes, call again with this code in confirm."
+}
+```
+
+The second call, with the code, sends `DELETE /milestones/3` and answers `{ "deleted": true, "sprint": { ... }, "userStoriesInIt": [...] }`.
+The code is random, good once, for ten minutes and only for that sprint as it was shown (a user story that
+entered or left it since makes a new first call necessary); the question put to the user through a client that
+can ask names the number of user stories that go back to the backlog.
+
+Errors:
+
+- `Give the name of a sprint: "backlog" is not one.`
+- `Unknown sprint "Sprint 99". Sprints: Sprint 12. Use "backlog" for no sprint.`
+- `You do not have permission to delete a sprint in <project>: your role lacks the Taiga permission delete_milestone. Nothing was done. What your role allows here instead: (1) ask a project admin to do it, or to give your role this permission. Do not work around this on your own: tell the user what was refused, offer the alternatives and wait for the choice.`
 
 ### `taiga_wiki_delete`
 

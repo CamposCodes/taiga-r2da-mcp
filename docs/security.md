@@ -25,7 +25,7 @@ This is what this one does with that access:
 | Files, reading | Only the file at the path given to `taiga_attachments_add`, after following links, and only when the server runs with `TAIGA_WRITE=1`. A path that looks like a credential is refused before the file is read |
 | Files, writing | Only inside the temp folder of the system: one folder for each run of the server, `taiga-mcp-` and six random characters, made when the first attachment is saved. An attachment is saved when it is neither a text nor an image of up to 3.5 MB |
 | Other processes | Starts none. Runs no shell command |
-| Taiga | Reads what the user of the token can read. With `TAIGA_WRITE=1`, creates and edits user stories, tasks, issues and wiki pages and attaches files to items. With `TAIGA_DELETE=1` on top of that, deletes user stories, tasks, issues and wiki pages. Without `TAIGA_DELETE=1` it deletes nothing |
+| Taiga | Reads what the user of the token can read. With `TAIGA_WRITE=1`, creates and edits user stories, tasks, issues, sprints and wiki pages and attaches files to items. With `TAIGA_DELETE=1` on top of that, deletes user stories, tasks, issues, sprints (their user stories go back to the backlog) and wiki pages. Without `TAIGA_DELETE=1` it deletes nothing |
 
 ## Trust boundaries
 

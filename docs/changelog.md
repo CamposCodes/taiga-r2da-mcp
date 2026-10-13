@@ -36,7 +36,12 @@ and the versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - Wiki pages: `taiga_wiki_list` and `taiga_wiki_get` read them; with `TAIGA_WRITE=1`, `taiga_wiki_create` makes
   one and `taiga_wiki_update` replaces its whole text with the version that was read; with `TAIGA_DELETE=1`,
   `taiga_wiki_delete` removes one in two calls, as `taiga_items_delete` does. The server checks `add_wiki_page`,
-  `modify_wiki_page` and `delete_wiki_page` before it sends anything. 23 tools: 12 read, 9 write, 2 delete.
+  `modify_wiki_page` and `delete_wiki_page` before it sends anything.
+- Sprints: with `TAIGA_WRITE=1`, `taiga_sprints_create` makes one from a name, a first day and a last day, and
+  `taiga_sprints_update` renames it, moves its days, closes it or opens it again; with `TAIGA_DELETE=1`,
+  `taiga_sprints_delete` removes one in two calls, and its user stories go back to the backlog. The server checks
+  `add_milestone`, `modify_milestone` and `delete_milestone` before it sends anything. 26 tools: 12 read, 11
+  write, 3 delete.
 
 ## 0.3.0 - 2026-10-13
 
