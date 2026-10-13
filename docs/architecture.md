@@ -17,7 +17,7 @@ flowchart LR
     user(["User"])
     subgraph machine["User's machine"]
         client["MCP client: Claude Code, Claude Desktop or Codex"]
-        server["taiga-mcp server: node dist/index.js"]
+        server["taiga-mcp server: the npm package, started with npx"]
         temp[("Temp folder: taiga-mcp-XXXXXX")]
         files[("Local files")]
     end
@@ -38,7 +38,7 @@ flowchart LR
 | Component | What it is | Notes |
 | --- | --- | --- |
 | MCP client | Claude Code, Claude Desktop, Codex or any client that starts a stdio server | Starts the server as a child process and decides when to ask the user for permission. A client that declared it can also carries to the user the question the server asks before a deletion |
-| `taiga-mcp` | One Node process, `node dist/index.js` | Holds the token in memory. Keeps no cache of Taiga. Between calls it remembers only the number of calls of the current minute, the folder where it saves files and the code of the last deletion it showed |
+| `taiga-mcp` | One Node process: the npm package `@campos-codes/taiga-r2da-mcp`, which the client starts with `npx -y` | Holds the token in memory. Keeps no cache of Taiga. Between calls it remembers only the number of calls of the current minute, the folder where it saves files and the code of the last deletion it showed |
 | Taiga REST API | `<TAIGA_URL>/api/v1` | Every request carries `Authorization: Bearer <token>` and has a time limit of 120 seconds |
 | Attachment file server | The address Taiga lists for each attachment | Read without the session token: where files are protected, the address carries its own short-lived key |
 | Temp folder | One folder per run of the server, `taiga-mcp-` and six random characters, inside the temp folder of the system | Receives the attachments that are neither a text nor an image of up to 3.5 MB. Made by `mkdtemp` on the first file saved, so on Linux and macOS only the user of the process opens it. Made again if it is deleted while the server runs |
@@ -60,7 +60,7 @@ version shows each of them.
 
 ```mermaid
 flowchart TD
-    start(["Client starts node dist/index.js"])
+    start(["Client starts the package with npx"])
     url{"TAIGA_URL set?"}
     address{"An https address, or this machine, with no user or password?"}
     token{"TAIGA_TOKEN set?"}

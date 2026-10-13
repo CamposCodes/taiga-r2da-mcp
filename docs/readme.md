@@ -11,6 +11,7 @@
 <p align="center">
   <a href="https://github.com/CamposCodes/taiga-r2da-mcp/actions/workflows/ci.yml"><img src="https://github.com/CamposCodes/taiga-r2da-mcp/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="https://www.npmjs.com/package/@campos-codes/taiga-r2da-mcp"><img src="https://img.shields.io/npm/v/%40campos-codes%2Ftaiga-r2da-mcp.svg" alt="npm"></a>
+  <a href="https://www.npmjs.com/package/@campos-codes/taiga-r2da-mcp"><img src="https://img.shields.io/npm/dm/%40campos-codes%2Ftaiga-r2da-mcp.svg" alt="npm downloads"></a>
   <a href="../LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT"></a>
   <a href="../package.json"><img src="https://img.shields.io/badge/node-%3E%3D20-brightgreen.svg" alt="Node 20+"></a>
 </p>
@@ -26,6 +27,18 @@ By default the server **only reads**: every request to Taiga is a `GET`. Started
 creates, edits and moves user stories, tasks and issues and attaches files to them. It deletes only when
 `TAIGA_DELETE=1` is set as well, and then in two calls: the first only shows what would be deleted.
 
+## Install
+
+The server is an npm package, [`@campos-codes/taiga-r2da-mcp`](https://www.npmjs.com/package/@campos-codes/taiga-r2da-mcp), and that is how it is meant to be
+installed. There is nothing to clone or to build: your MCP client starts it with
+
+```bash
+npx -y @campos-codes/taiga-r2da-mcp
+```
+
+and `npx` downloads the package the first time. What to put in each client is in
+[Getting started](#getting-started).
+
 ## Features
 
 - **18 tools**: 10 to read, 7 to write, 1 to delete.
@@ -38,6 +51,7 @@ creates, edits and moves user stories, tasks and issues and attaches files to th
 - **Asks before it deletes**: the item is shown first, and where the client can put a question to you, the
   server asks you itself.
 - **Small**: one source file and two dependencies, `@modelcontextprotocol/server` and `zod`.
+- **Nothing to build**: it comes from npm, and `npx` fetches it when the client starts it.
 
 ## Requirements
 
@@ -45,11 +59,11 @@ creates, edits and moves user stories, tasks and issues and attaches files to th
   ([release schedule](https://github.com/nodejs/Release/blob/main/schedule.json)), and its documentation still marks `fetch`, which carries every call to
   Taiga, as experimental.
 - A Taiga 6 installation you can log in to, reached over `https://`.
-- An MCP client: Claude Code, Claude Desktop, Codex, or any other that starts a server over stdio.
+- An MCP client: Claude Code, Claude Desktop, Codex, VS Code, Cursor, or any other that starts a server over stdio.
 
 ## Getting started
 
-The server is on npm as [`@campos-codes/taiga-r2da-mcp`](https://www.npmjs.com/package/@campos-codes/taiga-r2da-mcp). There is nothing to install beforehand: the client starts it with
+The server comes from npm, as [`@campos-codes/taiga-r2da-mcp`](https://www.npmjs.com/package/@campos-codes/taiga-r2da-mcp). There is nothing to install beforehand: the client starts it with
 `npx`, which downloads the package the first time it runs.
 
 ### 1. Get a token
@@ -59,8 +73,7 @@ address of your Taiga, and copy the value of the key `token`.
 
 ### 2. Add the server to your client
 
-The configuration below is the one Claude Desktop documents. A client that reads an `mcpServers` object takes it as
-it is:
+**Standard config.** Most clients read an `mcpServers` object and take this as it is:
 
 ```json
 {
@@ -117,6 +130,67 @@ env = { TAIGA_URL = "https://taiga.example.com", TAIGA_TOKEN = "<YOUR_TOKEN>" }
 ```
 
 Approval modes and time limits that matter for this server: [docs/clients/codex.md](clients/codex.md).
+
+</details>
+
+<details>
+<summary><b>VS Code</b> (GitHub Copilot)</summary>
+
+VS Code keeps its servers under a `servers` key, not `mcpServers`. Run the **MCP: Open User Configuration**
+command and add:
+
+```json
+{
+  "inputs": [
+    { "type": "promptString", "id": "taiga-token", "description": "Taiga token", "password": true }
+  ],
+  "servers": {
+    "taiga": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@campos-codes/taiga-r2da-mcp"],
+      "env": {
+        "TAIGA_URL": "https://taiga.example.com",
+        "TAIGA_TOKEN": "${input:taiga-token}"
+      }
+    }
+  }
+}
+```
+
+The `inputs` entry makes VS Code ask for the token and keep it out of the file: its documentation says of such a
+value that it "is then securely stored for subsequent use". Use the configuration of your user profile, not the
+`.vscode/mcp.json` of a project, which goes into the repository. Source:
+[MCP configuration reference](https://code.visualstudio.com/docs/agents/reference/mcp-configuration), read on 2026-10-13. This project did not try the server in VS Code
+`[not verified]`.
+
+</details>
+
+<details>
+<summary><b>Cursor</b></summary>
+
+Put the standard config in `~/.cursor/mcp.json`, the file the Cursor documentation gives "for tools available
+everywhere", and not in the `.cursor/mcp.json` of a project, which goes into the repository. Cursor fills
+`${env:NAME}` from the environment it starts in, which keeps the token out of the file:
+
+```json
+{
+  "mcpServers": {
+    "taiga": {
+      "command": "npx",
+      "args": ["-y", "@campos-codes/taiga-r2da-mcp"],
+      "env": {
+        "TAIGA_URL": "https://taiga.example.com",
+        "TAIGA_TOKEN": "${env:TAIGA_TOKEN}"
+      }
+    }
+  }
+}
+```
+
+The documentation also says: "Cursor asks for approval before using MCP tools by default." Source:
+[Model Context Protocol in Cursor](https://cursor.com/docs/context/mcp), read on 2026-10-13. This project did not try the server in Cursor
+`[not verified]`.
 
 </details>
 
@@ -476,7 +550,7 @@ your Taiga.
 
 ![Architecture of taiga-mcp: client and server on the user's machine, Taiga API and attachment files on the Taiga installation](diagrams/01-architecture.svg)
 
-Your MCP client starts `node dist/index.js` with the address of your Taiga and your token. The server checks the
+Your MCP client starts the package, with `npx -y @campos-codes/taiga-r2da-mcp`, and gives it the address of your Taiga and your token. The server checks the
 token, registers its tools and waits. Each tool call becomes one or more requests to the Taiga REST API, and the
 answer goes back to the model as short JSON. More in [docs/architecture.md](architecture.md).
 

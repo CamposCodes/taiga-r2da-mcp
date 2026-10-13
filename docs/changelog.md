@@ -5,6 +5,11 @@ and the versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## Unreleased
 
+- The READMEs open with an Install section that names the npm package and its command, and the other documents
+  say `npx -y @campos-codes/taiga-r2da-mcp` where they said `node dist/index.js`.
+- The READMEs name the standard configuration as such and have a block for VS Code and one for Cursor, each from
+  the documentation of that client and each marked as not tried. A badge shows the downloads of the package.
+
 ## 0.3.0 - 2026-10-13
 
 User stories and issues can be edited and moved, items can be deleted behind a second variable, the server checks

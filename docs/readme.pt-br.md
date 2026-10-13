@@ -11,6 +11,7 @@
 <p align="center">
   <a href="https://github.com/CamposCodes/taiga-r2da-mcp/actions/workflows/ci.yml"><img src="https://github.com/CamposCodes/taiga-r2da-mcp/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="https://www.npmjs.com/package/@campos-codes/taiga-r2da-mcp"><img src="https://img.shields.io/npm/v/%40campos-codes%2Ftaiga-r2da-mcp.svg" alt="npm"></a>
+  <a href="https://www.npmjs.com/package/@campos-codes/taiga-r2da-mcp"><img src="https://img.shields.io/npm/dm/%40campos-codes%2Ftaiga-r2da-mcp.svg" alt="downloads no npm"></a>
   <a href="../LICENSE"><img src="https://img.shields.io/badge/licen%C3%A7a-MIT-blue.svg" alt="Licença: MIT"></a>
   <a href="../package.json"><img src="https://img.shields.io/badge/node-%3E%3D20-brightgreen.svg" alt="Node 20+"></a>
 </p>
@@ -28,6 +29,18 @@ edita e move histórias de usuário, tarefas e problemas e anexa arquivos a eles
 
 Este arquivo está todo em português, com a lista de tools e os diagramas. A documentação detalhada, em `docs/`,
 está em inglês.
+
+## Instalação
+
+O servidor é um pacote npm, [`@campos-codes/taiga-r2da-mcp`](https://www.npmjs.com/package/@campos-codes/taiga-r2da-mcp), e é assim que ele deve ser instalado.
+Não é preciso clonar nem compilar nada: o seu cliente MCP inicia o servidor com
+
+```bash
+npx -y @campos-codes/taiga-r2da-mcp
+```
+
+e o `npx` baixa o pacote na primeira vez. O que colocar em cada cliente está em
+[Primeiros passos](#primeiros-passos).
 
 ## Recursos
 
@@ -49,11 +62,11 @@ está em inglês.
   ([calendário de versões](https://github.com/nodejs/Release/blob/main/schedule.json)), e a documentação dele ainda marca como experimental o `fetch`, que
   leva toda chamada ao Taiga.
 - Uma instalação do Taiga 6 em que você consiga entrar, acessada por `https://`.
-- Um cliente MCP: Claude Code, Claude Desktop, Codex, ou qualquer outro que inicie um servidor por stdio.
+- Um cliente MCP: Claude Code, Claude Desktop, Codex, VS Code, Cursor, ou qualquer outro que inicie um servidor por stdio.
 
 ## Primeiros passos
 
-O servidor está no npm como [`@campos-codes/taiga-r2da-mcp`](https://www.npmjs.com/package/@campos-codes/taiga-r2da-mcp). Não é preciso instalar nada antes: o cliente inicia o servidor
+O servidor vem do npm, como [`@campos-codes/taiga-r2da-mcp`](https://www.npmjs.com/package/@campos-codes/taiga-r2da-mcp). Não é preciso instalar nada antes: o cliente inicia o servidor
 com `npx`, que baixa o pacote na primeira vez em que roda.
 
 ### 1. Pegue um token
@@ -63,8 +76,7 @@ Storage**, o endereço do seu Taiga, e copie o valor da chave `token`.
 
 ### 2. Adicione o servidor ao seu cliente
 
-A configuração abaixo é a que o Claude Desktop documenta. Um cliente que lê um objeto `mcpServers` aceita ela
-como está:
+**Configuração padrão.** A maioria dos clientes lê um objeto `mcpServers` e aceita isto como está:
 
 ```json
 {
@@ -123,6 +135,67 @@ env = { TAIGA_URL = "https://taiga.example.com", TAIGA_TOKEN = "<YOUR_TOKEN>" }
 
 Modos de aprovação e limites de tempo que importam para este servidor: [docs/clients/codex.md](clients/codex.md)
 (em inglês).
+
+</details>
+
+<details>
+<summary><b>VS Code</b> (GitHub Copilot)</summary>
+
+O VS Code guarda os servidores na chave `servers`, e não em `mcpServers`. Rode o comando
+**MCP: Open User Configuration** e acrescente:
+
+```json
+{
+  "inputs": [
+    { "type": "promptString", "id": "taiga-token", "description": "Taiga token", "password": true }
+  ],
+  "servers": {
+    "taiga": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@campos-codes/taiga-r2da-mcp"],
+      "env": {
+        "TAIGA_URL": "https://taiga.example.com",
+        "TAIGA_TOKEN": "${input:taiga-token}"
+      }
+    }
+  }
+}
+```
+
+A entrada em `inputs` faz o VS Code pedir o token e deixá-lo fora do arquivo: a documentação diz, sobre um valor
+assim, que ele "is then securely stored for subsequent use". Use a configuração do seu perfil de usuário, e não o
+`.vscode/mcp.json` de um projeto, que vai para o repositório. Fonte:
+[MCP configuration reference](https://code.visualstudio.com/docs/agents/reference/mcp-configuration), lida em 2026-10-13. Este projeto não testou o servidor no VS Code
+`[não verificado]`.
+
+</details>
+
+<details>
+<summary><b>Cursor</b></summary>
+
+Coloque a configuração padrão em `~/.cursor/mcp.json`, o arquivo que a documentação do Cursor indica "for tools
+available everywhere", e não no `.cursor/mcp.json` de um projeto, que vai para o repositório. O Cursor preenche
+`${env:NAME}` com o ambiente em que foi iniciado, o que deixa o token fora do arquivo:
+
+```json
+{
+  "mcpServers": {
+    "taiga": {
+      "command": "npx",
+      "args": ["-y", "@campos-codes/taiga-r2da-mcp"],
+      "env": {
+        "TAIGA_URL": "https://taiga.example.com",
+        "TAIGA_TOKEN": "${env:TAIGA_TOKEN}"
+      }
+    }
+  }
+}
+```
+
+A documentação também diz: "Cursor asks for approval before using MCP tools by default." Fonte:
+[Model Context Protocol in Cursor](https://cursor.com/docs/context/mcp), lida em 2026-10-13. Este projeto não testou o servidor no Cursor
+`[não verificado]`.
 
 </details>
 
@@ -484,7 +557,7 @@ Taiga.
 
 ![Arquitetura do taiga-mcp: cliente e servidor na máquina do usuário, API do Taiga e arquivos de anexo na instalação do Taiga](diagrams/01-architecture.pt-BR.svg)
 
-O seu cliente MCP inicia `node dist/index.js` com o endereço do seu Taiga e o seu token. O servidor confere o
+O seu cliente MCP inicia o pacote, com `npx -y @campos-codes/taiga-r2da-mcp`, e entrega a ele o endereço do seu Taiga e o seu token. O servidor confere o
 token, registra as tools e espera. Cada chamada de tool vira uma ou mais chamadas à API REST do Taiga, e a
 resposta volta ao modelo em JSON curto. Mais em [docs/architecture.md](architecture.md).
 
