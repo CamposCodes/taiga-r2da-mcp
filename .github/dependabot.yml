@@ -5,3 +5,8 @@ updates:
     directory: /
     schedule:
       interval: monthly
+  # The two packages the server runs on have exact versions in package.json: a newer one arrives as a proposal.
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: monthly
