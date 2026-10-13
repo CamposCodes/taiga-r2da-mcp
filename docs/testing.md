@@ -88,41 +88,44 @@ Node 20 or newer. `npm run coverage` runs the scenarios itself, so in a hurry it
 | S34 | The token goes to the API and nowhere else | Attachments |
 | S35 | What Taiga refuses comes back as it said it, or as the status when it said nothing | Errors |
 | S36 | A token that expires in the middle of a run says how to renew it | Errors |
-| S37 | Without TAIGA_WRITE nothing but GET leaves the server, and it stops when its input closes | Errors |
-| S38 | TAIGA_WRITE=1 adds 7 tools that write, and none that deletes | Writing |
-| S39 | TAIGA_WRITE and TAIGA_DELETE are on with 1 or with true, and with nothing else | Writing |
-| S40 | A task that would be on no board is refused before anything is sent | Writing |
-| S41 | taiga_tasks_create sends names as ids and answers with the number and the address | Writing |
-| S42 | taiga_tasks_update moves and edits: what is not said is not sent, and "none" empties | Writing |
-| S43 | taiga_userstories_create takes the statuses of user stories, and "backlog" is a place for it | Writing |
-| S44 | taiga_userstories_update moves a user story on the kanban and between sprints | Writing |
-| S45 | An edit that replaces a description or the tags needs the version that was read, and is refused if the item changed | Writing |
-| S46 | taiga_issues_create and taiga_issues_update take type, severity and priority by name | Writing |
-| S47 | An edit of the wrong kind, of nothing or of an unknown name is refused before anything is sent | Writing |
-| S48 | What Taiga refuses in a write comes back with the fields at fault | Writing |
-| S49 | taiga_attachments_add sends a file to a task, a user story or an issue, as a form | Writing |
-| S50 | taiga_attachments_add refuses what is not a file | Writing |
-| S51 | taiga_attachments_add refuses a file that looks like a credential | Writing |
-| S52 | A change the role does not allow is refused before anything is sent, with what the role allows instead | Permissions |
-| S53 | What the role does allow goes through: a task, an edit it may make, a comment alone | Permissions |
-| S54 | A refusal that comes from Taiga itself asks the same of the model | Permissions |
-| S55 | Every change that reached Taiga and every tool error leaves a line on stderr | Permissions |
-| S56 | The token is in nothing the writing server says | Permissions |
-| S57 | TAIGA_DELETE=1 adds the one tool that deletes, marked as destructive | Deleting |
-| S58 | docs/tools.md describes exactly the tools and the parameters that tools/list gives, in the same order | Deleting |
-| S59 | The first call of taiga_items_delete deletes nothing: it shows the item and gives a random code | Deleting |
-| S60 | A code the server did not give for that item, as it is now, deletes nothing | Deleting |
-| S61 | With the code of the first call the item is deleted, whatever its kind, and the code works once | Deleting |
-| S62 | A role that may not delete is told so on the first call, with what it may do instead | Deleting |
-| S63 | A client that can ask its user is made to ask, and nothing is deleted without the yes given there | Deleting |
-| S64 | On the 2026-07-28 revision the question goes out in the answer and the yes comes in with the call made again | Deleting |
-| S65 | A burst of calls is cut at the limit, and the refusal says how long to wait | Limits and documents |
-| S66 | Every answer that is data said the same as text and as structured content | Limits and documents |
-| S67 | package.json and server.json name the same server, the same version and the same variables | Limits and documents |
-| S68 | manifest.json of the Claude Desktop extension names this version, the four variables and the read tools | Limits and documents |
-| S69 | docs/readme.md and docs/readme.pt-br.md list every tool with its parameters, as tools/list gives them | Limits and documents |
-| S70 | Every link between the documents leads to a file and a heading that exist, in the same upper and lower case | Limits and documents |
-| S71 | docs/testing.md lists exactly these scenarios, in this order | Limits and documents |
+| S37 | A read that does not get through is sent once more, and answers as if nothing had happened | Errors |
+| S38 | When the second try fails too, the error says that Taiga cannot be reached and what to tell the user | Errors |
+| S39 | Without TAIGA_WRITE nothing but GET leaves the server, and it stops when its input closes | Errors |
+| S40 | TAIGA_WRITE=1 adds 7 tools that write, and none that deletes | Writing |
+| S41 | TAIGA_WRITE and TAIGA_DELETE are on with 1 or with true, and with nothing else | Writing |
+| S42 | A task that would be on no board is refused before anything is sent | Writing |
+| S43 | taiga_tasks_create sends names as ids and answers with the number and the address | Writing |
+| S44 | A write that does not get through is not sent again, and the error says to read the item first | Writing |
+| S45 | taiga_tasks_update moves and edits: what is not said is not sent, and "none" empties | Writing |
+| S46 | taiga_userstories_create takes the statuses of user stories, and "backlog" is a place for it | Writing |
+| S47 | taiga_userstories_update moves a user story on the kanban and between sprints | Writing |
+| S48 | An edit that replaces a description or the tags needs the version that was read, and is refused if the item changed | Writing |
+| S49 | taiga_issues_create and taiga_issues_update take type, severity and priority by name | Writing |
+| S50 | An edit of the wrong kind, of nothing or of an unknown name is refused before anything is sent | Writing |
+| S51 | What Taiga refuses in a write comes back with the fields at fault | Writing |
+| S52 | taiga_attachments_add sends a file to a task, a user story or an issue, as a form | Writing |
+| S53 | taiga_attachments_add refuses what is not a file | Writing |
+| S54 | taiga_attachments_add refuses a file that looks like a credential | Writing |
+| S55 | A change the role does not allow is refused before anything is sent, with what the role allows instead | Permissions |
+| S56 | What the role does allow goes through: a task, an edit it may make, a comment alone | Permissions |
+| S57 | A refusal that comes from Taiga itself asks the same of the model | Permissions |
+| S58 | Every change that reached Taiga and every tool error leaves a line on stderr | Permissions |
+| S59 | The token is in nothing the writing server says | Permissions |
+| S60 | TAIGA_DELETE=1 adds the one tool that deletes, marked as destructive | Deleting |
+| S61 | docs/tools.md describes exactly the tools and the parameters that tools/list gives, in the same order | Deleting |
+| S62 | The first call of taiga_items_delete deletes nothing: it shows the item and gives a random code | Deleting |
+| S63 | A code the server did not give for that item, as it is now, deletes nothing | Deleting |
+| S64 | With the code of the first call the item is deleted, whatever its kind, and the code works once | Deleting |
+| S65 | A role that may not delete is told so on the first call, with what it may do instead | Deleting |
+| S66 | A client that can ask its user is made to ask, and nothing is deleted without the yes given there | Deleting |
+| S67 | On the 2026-07-28 revision the question goes out in the answer and the yes comes in with the call made again | Deleting |
+| S68 | A burst of calls is cut at the limit, and the refusal says how long to wait | Limits and documents |
+| S69 | Every answer that is data said the same as text and as structured content | Limits and documents |
+| S70 | package.json and server.json name the same server, the same version and the same variables | Limits and documents |
+| S71 | manifest.json of the Claude Desktop extension names this version, the four variables and the read tools | Limits and documents |
+| S72 | docs/readme.md and docs/readme.pt-br.md list every tool with its parameters, as tools/list gives them | Limits and documents |
+| S73 | Every link between the documents leads to a file and a heading that exist, in the same upper and lower case | Limits and documents |
+| S74 | docs/testing.md lists exactly these scenarios, in this order | Limits and documents |
 
 What the scenarios use, in the simulated Taiga:
 
@@ -140,15 +143,16 @@ Run on 2026-10-12, on Windows 11 with Node 24.15.0, version 0.3.0 of the server.
 | --- | --- |
 | `npm run check` | exit 0 |
 | `npm run build` | exit 0 |
-| `npm test` | exit 0: `ok: 69 scenarios, 10 tools read-only, 7 more with TAIGA_WRITE=1, 1 more with TAIGA_DELETE=1` |
+| `npm test` | exit 0: `ok: 74 scenarios, 10 tools read-only, 7 more with TAIGA_WRITE=1, 1 more with TAIGA_DELETE=1` |
 | `npm run coverage` | exit 0 |
 
 ```text
-coverage: 1097 of 1100 lines of dist/index.js run in full (99.7%), over 26 server processes
+coverage: 1118 of 1122 lines of dist/index.js run in full (99.6%), over 26 server processes
 not run in full:
   77: const text = error instanceof Error ? error.message : String(error);
-  478: const under = async (folder) => `${real}${sep}`.toLowerCase().startsWith(`${await realpath(folder).catch(() => folder)}${sep}`.toLowerCase());
-  1098: console.error("taiga-mcp:", error instanceof Error ? error.message : error);
+  205: ? ""
+  500: const under = async (folder) => `${real}${sep}`.toLowerCase().startsWith(`${await realpath(folder).catch(() => folder)}${sep}`.toLowerCase());
+  1120: console.error("taiga-mcp:", error instanceof Error ? error.message : error);
 ```
 
 A line counts as run only when every character of it was run, so a branch that is never taken shows up as a line.
@@ -187,6 +191,26 @@ The CI runs `npm run coverage` on every push. Its first run, on 2026-10-12, at c
 | Windows (windows-latest) | 24 | 69 passed | 1097 of 1100 (99.7%) |
 
 Linux runs one line less in full: the check of the profile folder, which exists only on Windows and macOS.
+
+### The package as npm delivers it
+
+Checked by hand on 2026-10-13, on Windows 11 with Node 24.15.0 and npm 11.12.1, with version 0.3.0 as the registry
+delivers it. It was published on 2026-10-13, and the registry gives its SHA-1 as
+`06df27f7f9b8ac7e8f771d68a00488d0170ec42d`: 4 files, which are the built server, the README, the licence and
+`package.json`, 28 kB in all.
+
+| Check | Result |
+| --- | --- |
+| `npm install` of the package, from the registry, in an empty project | It brought `@modelcontextprotocol/server` 2.3.1, `@modelcontextprotocol/core` 2.3.1 and `zod` 4.6.5, the versions the repository tests with |
+| The scenarios pointed at the installed `dist/index.js` | 74 scenarios passed |
+| The built file in the package | The same, byte for byte, as the one built from this repository. Its first line is `#!/usr/bin/env node`, and every file has Unix line endings |
+| The scenarios on other lines of Node, each `node.exe` taken from nodejs.org and checked against its SHA-256 | 74 passed on 20.0.0, the lowest version `engines` allows, on 22.23.3 and on 26.11.1. They pass on 18.18.0 too, which is below what the package and the SDK declare and is not supported |
+| `npx` started with no shell, as some programs start a command | `spawn npx ENOENT`: on Windows `npx` is a `.cmd` file |
+| `cmd /c npx -y @campos-codes/taiga-r2da-mcp`, spoken to over stdio | Answered `initialize` as `taiga-mcp 0.3.0`, and `tools/list` with 10 tools |
+| Claude Code 2.1.296, the server registered with `claude mcp add` and `npx -y @campos-codes/taiga-r2da-mcp` | `claude mcp get` answered `Status: ✔ Connected` |
+
+The last two ran against a simulated Taiga on `127.0.0.1`, with the package taken from the registry by
+`npx`. Claude Desktop and Codex were not tried.
 
 ## Live test
 
