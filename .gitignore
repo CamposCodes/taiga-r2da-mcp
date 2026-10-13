@@ -11,3 +11,6 @@ docs/internal/
 .codex/
 # The Claude Desktop extension and the folder it is packed from: built by "npm run pack:mcpb".
 build/
+
+# The README of the page of the package on npm: "npm pack" writes it from docs/readme.md and removes it again.
+/README.md

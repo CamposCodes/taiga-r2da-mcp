@@ -46,7 +46,10 @@
     "coverage": "node test/coverage.mjs dist/index.js",
     "test:live": "node test/live.mjs dist/index.js",
     "pack:mcpb": "node scripts/pack-mcpb.mjs",
-    "docs:tools": "node scripts/readme-tools.mjs"
+    "docs:tools": "node scripts/readme-tools.mjs",
+    "prepublishOnly": "npm run build && npm test",
+    "prepack": "node scripts/npm-readme.mjs",
+    "postpack": "node scripts/npm-readme.mjs --clean"
   },
   "dependencies": {
     "@modelcontextprotocol/server": "2.3.1",
