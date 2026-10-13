@@ -10,3 +10,7 @@ updates:
     directory: /
     schedule:
       interval: monthly
+    ignore:
+      # The types follow the lowest Node.js the package allows, which is 20: a newer line would offer what it lacks.
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
