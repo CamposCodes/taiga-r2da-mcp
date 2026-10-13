@@ -32,8 +32,9 @@ Only `npm run test:live` is made for a real Taiga: it is run by hand, works in t
 `TAIGA_TEST_PROJECT` and changes only the items it creates. Its rules are in
 [`docs/testing.md`](testing.md).
 
-CI runs `npm ci`, `npm run check`, `npm run build` and `npm run coverage` on Linux, macOS and Windows, each with
-Node 20, 22, 24 and 26. It never runs `npm run test:live`.
+CI runs `npm ci --ignore-scripts`, `npm audit --omit=dev`, `npm run check`, `npm run build` and `npm run coverage`
+on Linux, macOS and Windows, each with Node 20, 22, 24 and 26. An open advisory in one of the three packages the
+server runs on fails the job. It never runs `npm run test:live`.
 
 `npm run pack:mcpb`, after the build, writes the Claude Desktop extension, `build/taiga-mcp-<version>.mcpb`, from
 `dist/index.js`, the packages the server needs to run and `manifest.json`. The script,
