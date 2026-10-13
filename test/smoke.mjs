@@ -67,6 +67,8 @@ const routes = {
     attached(605, 'longo.txt', '/media/longo.txt'),
     attached(606, 'mentiroso.pdf', '/media/mentiroso.pdf', { size: 100 }),
     { ...attached(607, 'esquema.txt', '/media/notas.txt'), url: 'ftp://127.0.0.1/esquema.txt' },
+    attached(608, 'a'.repeat(300) + '.pdf', '/media/laudo.pdf'),
+    attached(609, 'esc\x1b[31mape.txt', '/media/notas.txt'),
   ],
   'GET /history/userstory/100': () => [{ created_at: '2026-10-09T15:30:00Z', user: { username: 'ana' }, comment: 'oi', delete_comment_date: null, values_diff: { status: ['a', 'b'] } }, { created_at: '2026-10-09T15:31:00Z', user: { username: 'ana' }, comment: 'apagado', delete_comment_date: 'x', values_diff: {} }],
   'GET /history/task/200': () => [{ created_at: '2026-10-09T15:30:00Z', user: { username: 'ana' }, comment: 'x'.repeat(2100), delete_comment_date: null, values_diff: {} }],
@@ -224,8 +226,10 @@ await scenario('Read-only by default: 10 tools, none of them a write, and the in
   assert.deepEqual(tools.at(-1).annotations, { readOnlyHint: false, destructiveHint: false, openWorldHint: false, idempotentHint: true })
   assert.match(s.stderr(), new RegExp(`^taiga-mcp: ${base} as ana \\(read-only\\)\\s*$`))
 })
-await scenario('A tool without parameters accepts only an empty object', async () => {
-  assert.deepEqual(tools.filter((t) => t.inputSchema.additionalProperties === false).map((t) => t.name), ['taiga_me', 'taiga_projects_list'])
+await scenario('Every tool refuses an argument it does not declare', async () => {
+  assert.ok(tools.every((t) => t.inputSchema.additionalProperties === false))
+  assert.match((await s.raw('taiga_me', { extra: 1 })).content[0].text, /Unrecognized key: "extra"/)
+  assert.match((await s.raw('taiga_items_get', { project: 'my-project', ref: 12, projet: 'x' })).content[0].text, /Unrecognized key: "projet"/)
 })
 await scenario('Every tool that answers data declares the shape of its answer', async () => {
   assert.deepEqual(tools.filter((t) => !t.outputSchema).map((t) => t.name), ['taiga_attachments_get'])
@@ -392,6 +396,13 @@ await scenario('The folder of saved files is new, only of this user, one for the
   assert.deepEqual(readFileSync(again.savedTo), media['/media/laudo.pdf'])
   rmSync(dirname(again.savedTo), { recursive: true })
 })
+await scenario('A name longer than a file system takes is shortened, and control characters are kept out of the names shown', async () => {
+  const long = await s.call('taiga_attachments_get', { project: 'my-project', ref: 14, attachment: '608' })
+  assert.ok(basename(long.savedTo).length <= 150 && long.savedTo.endsWith('a.pdf'), long.savedTo)
+  rmSync(dirname(long.savedTo), { recursive: true })
+  assert.equal((await s.call('taiga_items_get', { project: 'my-project', ref: 14 })).attachments.at(-1).name, 'esc[31mape.txt')
+  assert.equal((await s.raw('taiga_attachments_get', { project: 'my-project', ref: 14, attachment: '609' })).content[0].text, 'olá')
+})
 await scenario('An attachment that cannot be opened says why', async () => {
   const open = (attachment) => s.call('taiga_attachments_get', { project: 'my-project', ref: 14, attachment })
   assert.match((await open('x.png')).error, /Unknown attachment "x\.png"\. Valid: proibido\.txt, fora\.txt, enorme\.bin, grande\.png, longo\.txt/)
@@ -403,7 +414,7 @@ await scenario('An attachment that cannot be opened says why', async () => {
 })
 await scenario('The token goes to the API and nowhere else', async () => {
   const files = seen.slice(mediaFrom).filter((r) => r.path.startsWith('/media/'))
-  assert.equal(files.length, 8)
+  assert.equal(files.length, 10)
   assert.ok(files.every((r) => r.auth === undefined))
   assert.ok(seen.filter((r) => r.path.startsWith('/api/')).every((r) => ['Bearer good', 'Bearer plain', 'Bearer bad'].includes(r.auth)))
   assert.ok(!s.wrote().includes('good'))
@@ -438,6 +449,7 @@ const writer = await w.open()
 await scenario('TAIGA_WRITE=1 adds 7 tools that write, and none that deletes', async () => {
   assert.deepEqual(writer.tools.slice(10).map((t) => t.name), ['taiga_userstories_create', 'taiga_userstories_update', 'taiga_tasks_create', 'taiga_tasks_update', 'taiga_issues_create', 'taiga_issues_update', 'taiga_attachments_add'])
   assert.ok(writer.tools.slice(10).every((t) => t.annotations.readOnlyHint === false && t.outputSchema))
+  assert.ok(writer.tools.every((t) => t.inputSchema.additionalProperties === false))
   assert.deepEqual(writer.tools.filter((t) => t.annotations.destructiveHint).map((t) => t.name), ['taiga_userstories_update', 'taiga_tasks_update', 'taiga_issues_update'])
   assert.match(writer.instructions, /do not work around it.*Nothing can be deleted\./)
   assert.match(w.stderr(), /\(writes user stories, tasks, issues and attachments\)/)

@@ -59,7 +59,7 @@ Node 20 or newer. `npm run coverage` runs the scenarios itself, so in a hurry it
 | S05 | A Taiga that does not answer stops the server at start | Start |
 | S06 | TAIGA_DELETE=1 without TAIGA_WRITE=1 stops the server at start | Start |
 | S07 | Read-only by default: 10 tools, none of them a write, and the instructions say so | Protocol |
-| S08 | A tool without parameters accepts only an empty object | Protocol |
+| S08 | Every tool refuses an argument it does not declare | Protocol |
 | S09 | Every tool that answers data declares the shape of its answer | Protocol |
 | S10 | An argument of the wrong type comes back as a tool error the model can read | Protocol |
 | S11 | A tool that does not exist is a protocol error | Protocol |
@@ -84,49 +84,50 @@ Node 20 or newer. `npm run coverage` runs the scenarios itself, so in a hurry it
 | S30 | A text that is not UTF-8 keeps its accents | Attachments |
 | S31 | Any other file is saved under a name that cannot leave the folder | Attachments |
 | S32 | The folder of saved files is new, only of this user, one for the run, and made again if deleted | Attachments |
-| S33 | An attachment that cannot be opened says why | Attachments |
-| S34 | The token goes to the API and nowhere else | Attachments |
-| S35 | What Taiga refuses comes back as it said it, or as the status when it said nothing | Errors |
-| S36 | A token that expires in the middle of a run says how to renew it | Errors |
-| S37 | A read that does not get through is sent once more, and answers as if nothing had happened | Errors |
-| S38 | When the second try fails too, the error says that Taiga cannot be reached and what to tell the user | Errors |
-| S39 | Without TAIGA_WRITE nothing but GET leaves the server, and it stops when its input closes | Errors |
-| S40 | TAIGA_WRITE=1 adds 7 tools that write, and none that deletes | Writing |
-| S41 | TAIGA_WRITE and TAIGA_DELETE are on with 1 or with true, and with nothing else | Writing |
-| S42 | A task that would be on no board is refused before anything is sent | Writing |
-| S43 | taiga_tasks_create sends names as ids and answers with the number and the address | Writing |
-| S44 | A write that does not get through is not sent again, and the error says to read the item first | Writing |
-| S45 | taiga_tasks_update moves and edits: what is not said is not sent, and "none" empties | Writing |
-| S46 | taiga_userstories_create takes the statuses of user stories, and "backlog" is a place for it | Writing |
-| S47 | taiga_userstories_update moves a user story on the kanban and between sprints | Writing |
-| S48 | An edit that replaces a description or the tags needs the version that was read, and is refused if the item changed | Writing |
-| S49 | taiga_issues_create and taiga_issues_update take type, severity and priority by name | Writing |
-| S50 | An edit of the wrong kind, of nothing or of an unknown name is refused before anything is sent | Writing |
-| S51 | What Taiga refuses in a write comes back with the fields at fault | Writing |
-| S52 | taiga_attachments_add sends a file to a task, a user story or an issue, as a form | Writing |
-| S53 | taiga_attachments_add refuses what is not a file | Writing |
-| S54 | taiga_attachments_add refuses a file that looks like a credential | Writing |
-| S55 | A change the role does not allow is refused before anything is sent, with what the role allows instead | Permissions |
-| S56 | What the role does allow goes through: a task, an edit it may make, a comment alone | Permissions |
-| S57 | A refusal that comes from Taiga itself asks the same of the model | Permissions |
-| S58 | Every change that reached Taiga and every tool error leaves a line on stderr | Permissions |
-| S59 | The token is in nothing the writing server says | Permissions |
-| S60 | TAIGA_DELETE=1 adds the one tool that deletes, marked as destructive | Deleting |
-| S61 | docs/tools.md describes exactly the tools and the parameters that tools/list gives, in the same order | Deleting |
-| S62 | The first call of taiga_items_delete deletes nothing: it shows the item and gives a random code | Deleting |
-| S63 | A code the server did not give for that item, as it is now, deletes nothing | Deleting |
-| S64 | With the code of the first call the item is deleted, whatever its kind, and the code works once | Deleting |
-| S65 | A role that may not delete is told so on the first call, with what it may do instead | Deleting |
-| S66 | A client that can ask its user is made to ask, and nothing is deleted without the yes given there | Deleting |
-| S67 | On the 2026-07-28 revision the question goes out in the answer and the yes comes in with the call made again | Deleting |
-| S68 | A line break in a subject or a name reaches neither the question put to the user nor a line of the trail | Deleting |
-| S69 | A burst of calls is cut at the limit, and the refusal says how long to wait | Limits and documents |
-| S70 | Every answer that is data said the same as text and as structured content | Limits and documents |
-| S71 | package.json and server.json name the same server, the same version and the same variables | Limits and documents |
-| S72 | manifest.json of the Claude Desktop extension names this version, the four variables and the read tools | Limits and documents |
-| S73 | docs/readme.md and docs/readme.pt-br.md list every tool with its parameters, as tools/list gives them | Limits and documents |
-| S74 | Every link between the documents leads to a file and a heading that exist, in the same upper and lower case | Limits and documents |
-| S75 | docs/testing.md lists exactly these scenarios, in this order | Limits and documents |
+| S33 | A name longer than a file system takes is shortened, and control characters are kept out of the names shown | Attachments |
+| S34 | An attachment that cannot be opened says why | Attachments |
+| S35 | The token goes to the API and nowhere else | Attachments |
+| S36 | What Taiga refuses comes back as it said it, or as the status when it said nothing | Errors |
+| S37 | A token that expires in the middle of a run says how to renew it | Errors |
+| S38 | A read that does not get through is sent once more, and answers as if nothing had happened | Errors |
+| S39 | When the second try fails too, the error says that Taiga cannot be reached and what to tell the user | Errors |
+| S40 | Without TAIGA_WRITE nothing but GET leaves the server, and it stops when its input closes | Errors |
+| S41 | TAIGA_WRITE=1 adds 7 tools that write, and none that deletes | Writing |
+| S42 | TAIGA_WRITE and TAIGA_DELETE are on with 1 or with true, and with nothing else | Writing |
+| S43 | A task that would be on no board is refused before anything is sent | Writing |
+| S44 | taiga_tasks_create sends names as ids and answers with the number and the address | Writing |
+| S45 | A write that does not get through is not sent again, and the error says to read the item first | Writing |
+| S46 | taiga_tasks_update moves and edits: what is not said is not sent, and "none" empties | Writing |
+| S47 | taiga_userstories_create takes the statuses of user stories, and "backlog" is a place for it | Writing |
+| S48 | taiga_userstories_update moves a user story on the kanban and between sprints | Writing |
+| S49 | An edit that replaces a description or the tags needs the version that was read, and is refused if the item changed | Writing |
+| S50 | taiga_issues_create and taiga_issues_update take type, severity and priority by name | Writing |
+| S51 | An edit of the wrong kind, of nothing or of an unknown name is refused before anything is sent | Writing |
+| S52 | What Taiga refuses in a write comes back with the fields at fault | Writing |
+| S53 | taiga_attachments_add sends a file to a task, a user story or an issue, as a form | Writing |
+| S54 | taiga_attachments_add refuses what is not a file | Writing |
+| S55 | taiga_attachments_add refuses a file that looks like a credential | Writing |
+| S56 | A change the role does not allow is refused before anything is sent, with what the role allows instead | Permissions |
+| S57 | What the role does allow goes through: a task, an edit it may make, a comment alone | Permissions |
+| S58 | A refusal that comes from Taiga itself asks the same of the model | Permissions |
+| S59 | Every change that reached Taiga and every tool error leaves a line on stderr | Permissions |
+| S60 | The token is in nothing the writing server says | Permissions |
+| S61 | TAIGA_DELETE=1 adds the one tool that deletes, marked as destructive | Deleting |
+| S62 | docs/tools.md describes exactly the tools and the parameters that tools/list gives, in the same order | Deleting |
+| S63 | The first call of taiga_items_delete deletes nothing: it shows the item and gives a random code | Deleting |
+| S64 | A code the server did not give for that item, as it is now, deletes nothing | Deleting |
+| S65 | With the code of the first call the item is deleted, whatever its kind, and the code works once | Deleting |
+| S66 | A role that may not delete is told so on the first call, with what it may do instead | Deleting |
+| S67 | A client that can ask its user is made to ask, and nothing is deleted without the yes given there | Deleting |
+| S68 | On the 2026-07-28 revision the question goes out in the answer and the yes comes in with the call made again | Deleting |
+| S69 | A line break in a subject or a name reaches neither the question put to the user nor a line of the trail | Deleting |
+| S70 | A burst of calls is cut at the limit, and the refusal says how long to wait | Limits and documents |
+| S71 | Every answer that is data said the same as text and as structured content | Limits and documents |
+| S72 | package.json and server.json name the same server, the same version and the same variables | Limits and documents |
+| S73 | manifest.json of the Claude Desktop extension names this version, the four variables and the read tools | Limits and documents |
+| S74 | docs/readme.md and docs/readme.pt-br.md list every tool with its parameters, as tools/list gives them | Limits and documents |
+| S75 | Every link between the documents leads to a file and a heading that exist, in the same upper and lower case | Limits and documents |
+| S76 | docs/testing.md lists exactly these scenarios, in this order | Limits and documents |
 
 What the scenarios use, in the simulated Taiga:
 

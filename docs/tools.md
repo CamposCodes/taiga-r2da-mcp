@@ -30,7 +30,9 @@ The 10 read tools are always registered. The 7 write tools are registered only w
   show that JSON. `taiga_attachments_get` is the exception: it answers with content (an image, a text or the path
   of a saved file) and declares no `outputSchema`.
 - **Errors**: a tool error is a normal result with `isError: true` and one readable sentence, so the model can
-  correct the call and try again. Calling a tool that does not exist is a protocol error, `-32602`.
+  correct the call and try again. Calling a tool that does not exist is a protocol error, `-32602`. An argument
+  that the tool does not declare is refused before the tool runs, with `Unrecognized key: "<name>"`, so a
+  misspelt field is not dropped in silence.
 - **Permissions**: before it creates, changes or deletes an item, the server checks what Taiga says the current
   user may do in the project (`myPermissions` of `taiga_projects_get`). See [Permissions](#permissions).
 - **Cut texts**: a text longer than its limit ends with `… (cut: the first N of M characters)`. Limits: 2,000

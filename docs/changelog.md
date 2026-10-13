@@ -24,6 +24,9 @@ and the versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   the one of the API.
 - The trail on stderr names the file sent by `taiga_attachments_add`, with its size, and the path a file saved by
   `taiga_attachments_get` went to.
+- Every tool refuses an argument it does not declare (`Unrecognized key`), where only the two without parameters
+  did: a misspelt field was dropped in silence. A saved attachment gets a name of at most 150 characters, and the
+  names of attachments reach the model without control characters.
 
 ## 0.3.0 - 2026-10-13
 
