@@ -71,6 +71,7 @@ O que colocar em cada cliente está em [Primeiros passos](#primeiros-passos).
 - **Pergunta antes de excluir**: o item é mostrado primeiro e, onde o cliente consegue levar uma pergunta até
   você, o próprio servidor pergunta.
 - **Pequeno**: um arquivo de código e duas dependências, `@modelcontextprotocol/server` e `zod`.
+- **Nada a compilar**: vem do npm, e o `npx` o baixa quando o cliente o inicia.
 
 ## Requisitos
 
@@ -282,7 +283,7 @@ Só o nome do pacote é comprido: o comando que ele instala é `taiga-mcp`, e o 
 
 | Variável | Obrigatória | Para que serve |
 | --- | --- | --- |
-| `TAIGA_URL` | sim | Endereço do Taiga, com ou sem `/api/v1` no fim. Precisa começar com `https://`: só esta máquina (`localhost`, `127.0.0.1`, `[::1]`) pode ser acessada por `http://`. Um endereço com usuário ou senha é recusado |
+| `TAIGA_URL` | sim | Endereço do Taiga, com ou sem `/api/v1` no fim. Precisa começar com `https://`: só esta máquina (`localhost`, `127.0.0.1`, `[::1]`) pode ser acessada por `http://`. Um endereço com usuário, senha, consulta (`?`) ou fragmento (`#`) é recusado |
 | `TAIGA_TOKEN` | sim | Token de sessão do Taiga 6, copiado do navegador |
 | `TAIGA_WRITE` | não | `1` ou `true` registra as sete tools de escrita. Qualquer outro valor (`yes`, `on`, `TRUE`, `0`), ou a falta dela, deixa o servidor somente leitura |
 | `TAIGA_DELETE` | não | `1` ou `true` registra `taiga_items_delete`, a tool que exclui. Precisa de `TAIGA_WRITE` também ligada: sem ela o servidor não inicia |
@@ -563,7 +564,8 @@ Três coisas valem para as tools que escrevem:
 - **Uma versão para o que é substituído.** A descrição e as tags são substituídas por inteiro. Por isso, uma
   edição de qualquer uma das duas precisa informar a `version` do item que `taiga_items_get` devolveu: sem ela, ou
   quando alguém alterou o item nesse intervalo, nada é alterado e o modelo é orientado a ler o item de novo. Mover,
-  trocar o responsável, definir o prazo, bloquear ou comentar não precisa de versão.
+  trocar o responsável, definir o prazo, bloquear, comentar ou dar um novo título (`subject`) não precisa de versão:
+  um título é curto e fica no histórico do item.
 - **As permissões do Taiga.** Antes de criar, alterar ou excluir um item, o servidor confere o que o Taiga diz
   que o usuário pode fazer no projeto (`myPermissions` de `taiga_projects_get`). Quando falta a permissão, nada é
   enviado e o erro diz ao modelo o que aquele papel pode fazer no lugar: por exemplo, criar uma tarefa em uma

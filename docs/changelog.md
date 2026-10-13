@@ -29,6 +29,10 @@ and the versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   names of attachments reach the model without control characters.
 - A `TAIGA_URL` with a query or a fragment is refused at start, and a warning is written at start when
   `NODE_TLS_REJECT_UNAUTHORIZED=0` is in the environment of the server.
+- The documents say that a new subject replaces the old one with no version, that `dueDate` takes `YYYY-MM-DD` or
+  `none`, that `[::1]` may be reached over `http://` too, and that the `npx` form must be tried from outside the
+  repository. The release steps commit and tag before `npm publish`. The Portuguese README has the item on
+  having nothing to build.
 
 ## 0.3.0 - 2026-10-13
 

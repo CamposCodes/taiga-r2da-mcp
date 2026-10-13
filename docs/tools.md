@@ -233,6 +233,14 @@ Sprints of a project with dates, open and closed user stories and points. Newest
       "userStoriesClosed": 1,
       "pointsTotal": 5,
       "pointsClosed": 5
+    },
+    {
+      "name": "Sprint sem data",
+      "closed": true,
+      "userStoriesOpen": 0,
+      "userStoriesClosed": 0,
+      "pointsTotal": 0,
+      "pointsClosed": 0
     }
   ]
 }
@@ -604,7 +612,7 @@ address; tasks are added to it with taiga_tasks_create.
 | `description` | string | no | Markdown |
 | `assignee` | string | no | Username or full name of a member, or "none" for nobody |
 | `tags` | array of string | no | Tags of the item. On an edit this list replaces the current one |
-| `dueDate` | string | no | YYYY-MM-DD, or "none" for no due date |
+| `dueDate` | string, `YYYY-MM-DD` or `none` | no | YYYY-MM-DD, or "none" for no due date |
 | `status` | string | no | User story status name, e.g. "New": the column of the kanban (see taiga_projects_get) |
 | `sprint` | string | no | Sprint name, or "backlog" for no sprint |
 
@@ -654,7 +662,7 @@ sprint. A comment can go alone or with the changes.
 | `description` | string | no | Markdown |
 | `assignee` | string | no | Username or full name of a member, or "none" for nobody |
 | `tags` | array of string | no | Tags of the item. On an edit this list replaces the current one |
-| `dueDate` | string | no | YYYY-MM-DD, or "none" for no due date |
+| `dueDate` | string, `YYYY-MM-DD` or `none` | no | YYYY-MM-DD, or "none" for no due date |
 | `status` | string | no | User story status name, e.g. "New": the column of the kanban (see taiga_projects_get) |
 | `sprint` | string | no | Sprint name, or "backlog" for no sprint |
 | `blocked` | string | no | Why the user story is blocked, which blocks it; "none" unblocks it |
@@ -696,7 +704,7 @@ gets the default one of the project. The answer has the number of the new task a
 | `description` | string | no | Markdown |
 | `assignee` | string | no | Username or full name of a member, or "none" for nobody |
 | `tags` | array of string | no | Tags of the item. On an edit this list replaces the current one |
-| `dueDate` | string | no | YYYY-MM-DD, or "none" for no due date |
+| `dueDate` | string, `YYYY-MM-DD` or `none` | no | YYYY-MM-DD, or "none" for no due date |
 | `status` | string | no | Task status name, e.g. "In progress": the column of the board (see taiga_projects_get) |
 | `userStory` | integer, 1 or more | no | Number of the user story the task belongs to |
 | `sprint` | string | no | Sprint name, for a task without a user story. A task with a story is always in the sprint of its story |
@@ -754,7 +762,7 @@ go alone or with the changes.
 | `description` | string | no | Markdown |
 | `assignee` | string | no | Username or full name of a member, or "none" for nobody |
 | `tags` | array of string | no | Tags of the item. On an edit this list replaces the current one |
-| `dueDate` | string | no | YYYY-MM-DD, or "none" for no due date |
+| `dueDate` | string, `YYYY-MM-DD` or `none` | no | YYYY-MM-DD, or "none" for no due date |
 | `status` | string | no | Task status name, e.g. "In progress": the column of the board (see taiga_projects_get) |
 | `userStory` | integer, 1 or more | no | Number of the user story the task belongs to |
 | `sprint` | string | no | Sprint name, for a task without a user story. A task with a story is always in the sprint of its story |
@@ -815,7 +823,7 @@ default ones of the project. The answer has the number of the new issue and its 
 | `description` | string | no | Markdown |
 | `assignee` | string | no | Username or full name of a member, or "none" for nobody |
 | `tags` | array of string | no | Tags of the item. On an edit this list replaces the current one |
-| `dueDate` | string | no | YYYY-MM-DD, or "none" for no due date |
+| `dueDate` | string, `YYYY-MM-DD` or `none` | no | YYYY-MM-DD, or "none" for no due date |
 | `status` | string | no | Issue status name, e.g. "New" (see taiga_projects_get) |
 | `sprint` | string | no | Sprint name, or "backlog" for no sprint |
 | `issueType` | string | no | Issue type name, e.g. "Bug" (see taiga_projects_get) |
@@ -867,7 +875,7 @@ taiga_items_get gave. Moving it is giving the new status, or the sprint it goes 
 | `description` | string | no | Markdown |
 | `assignee` | string | no | Username or full name of a member, or "none" for nobody |
 | `tags` | array of string | no | Tags of the item. On an edit this list replaces the current one |
-| `dueDate` | string | no | YYYY-MM-DD, or "none" for no due date |
+| `dueDate` | string, `YYYY-MM-DD` or `none` | no | YYYY-MM-DD, or "none" for no due date |
 | `status` | string | no | Issue status name, e.g. "New" (see taiga_projects_get) |
 | `sprint` | string | no | Sprint name, or "backlog" for no sprint |
 | `issueType` | string | no | Issue type name, e.g. "Bug" (see taiga_projects_get) |

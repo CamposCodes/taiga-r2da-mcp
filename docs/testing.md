@@ -140,30 +140,32 @@ What the scenarios use, in the simulated Taiga:
 
 ## Report of the last run
 
-Run on 2026-10-12, on Windows 11 with Node 24.15.0, version 0.3.0 of the server.
+Run on 2026-10-13, on Windows 11 with Node 24.15.0, version 0.3.0 of the server with the fixes of the audit.
 
 | Command | Result |
 | --- | --- |
 | `npm run check` | exit 0 |
 | `npm run build` | exit 0 |
-| `npm test` | exit 0: `ok: 74 scenarios, 10 tools read-only, 7 more with TAIGA_WRITE=1, 1 more with TAIGA_DELETE=1` |
+| `npm test` | exit 0: `ok: 77 scenarios, 10 tools read-only, 7 more with TAIGA_WRITE=1, 1 more with TAIGA_DELETE=1` |
 | `npm run coverage` | exit 0 |
 
 ```text
-coverage: 997 of 1001 lines of dist/index.js run in full (99.6%), over 26 server processes
+coverage: 1033 of 1038 lines of dist/index.js run in full (99.5%), over 30 server processes
 not run in full:
-  47: const text = error instanceof Error ? error.message : String(error);
-  157: ? ""
-  409: const under = async (folder) => `${real}${sep}`.toLowerCase().startsWith(`${await realpath(folder).catch(() => folder)}${sep}`.toLowerCase());
-  999: console.error("taiga-mcp:", error instanceof Error ? error.message : error);
+  49: const text = error instanceof Error ? error.message : String(error);
+  163: ? ""
+  178: await reader.cancel().catch(() => undefined);
+  433: const under = async (folder) => `${real}${sep}`.toLowerCase().startsWith(`${await realpath(folder).catch(() => folder)}${sep}`.toLowerCase());
+  1036: console.error("taiga-mcp:", error instanceof Error ? error.message : error);
 ```
 
 A line counts as run only when every character of it was run, so a branch that is never taken shows up as a line.
-The lines are those of `dist/index.js`, the file that runs. The three that are not run in full:
+The lines are those of `dist/index.js`, the file that runs. The four that are not run in full:
 
 | Line | Why no scenario reaches it |
 | --- | --- |
 | `error instanceof Error ? error.message : String(error)` | Everything the server and Node throw here is an `Error`. The other branch is kept for a value that is not |
+| `reader.cancel().catch(() => undefined)` | It runs only when cancelling a download that grew past its limit fails, which a healthy stream never does |
 | `realpath(folder).catch(() => folder)` | It runs only when the profile folder of the user does not exist on the machine |
 | `console.error("taiga-mcp:", error instanceof Error ? … : error)` | The same as the first, at start |
 
@@ -223,6 +225,12 @@ delivers it. It was published on 2026-10-13, and the registry gives its SHA-1 as
 
 The last two ran against a simulated Taiga on `127.0.0.1`, with the package taken from the registry by
 `npx`. Claude Desktop and Codex were not tried.
+
+The `npx` form has to be tried from a folder outside this repository. Inside it, `npx` takes the project itself
+for the package already installed, looks for `node_modules/.bin/taiga-mcp`, which does not exist, and fails with
+`'taiga-mcp' is not recognized`; a Claude Code opened in the repository then reports `CONNECTION_CLOSED` for the
+server, while the same registration made in any other folder answers `Status: ✔ Connected` (measured on
+2026-10-13 with Claude Code 2.1.296, Node 24.15.0 and npm 11.12.1).
 
 ## Live test
 

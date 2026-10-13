@@ -26,6 +26,12 @@ tool through the protocol and checks what is sent and what comes back. It needs 
 `npm run coverage` runs the same scenarios itself and then says how many lines of the built server they ran. The
 list of the scenarios and the report of the last run are in [`docs/testing.md`](testing.md).
 
+To try the package as npm delivers it, with `npx -y @campos-codes/taiga-r2da-mcp`, do it from a folder outside
+this repository. Inside it, `npx` takes the project for the package already installed, looks for
+`node_modules/.bin/taiga-mcp`, which does not exist, and fails with `'taiga-mcp' is not recognized`; a Claude
+Code opened in the repository then reports `CONNECTION_CLOSED` for the server. In the repository, give `node`
+and the path of `dist/index.js` instead.
+
 **Never point `npm test`, or a development session, at a real Taiga with a real token.** If a behaviour of the
 real API is missing from the simulated one, add it to `test/smoke.mjs` with the field names the real API uses.
 Only `npm run test:live` is made for a real Taiga: it is run by hand, works in the one project named in
@@ -91,8 +97,12 @@ this order:
    package), `manifest.json` and the `McpServer` line of `src/index.ts` say the same version. `npm test` fails
    when one of them differs, and one scenario of `test/smoke.mjs` names the version too. Move what is under
    Unreleased in `docs/changelog.md` to the new version, then run `npm ci`, `npm run build` and `npm run coverage`.
-2. **npm.** `npm publish`, logged in to npm as the owner of the scope `@campos-codes`, then `git tag v<version>`
-   on the commit that was published and `git push origin v<version>`. `npm publish` builds the server and runs
+2. **npm.** Commit everything first: `git status` must be clean, because `npm publish` packs the working tree
+   and records the current commit as the `gitHead` of the version, so a publish from uncommitted changes points
+   the registry at a commit that does not produce the published file (version 0.3.0 was published that way:
+   its `gitHead` is eleven commits before the tag). Then `git tag v<version>` on that commit,
+   `git push origin main v<version>`, and `npm publish`, logged in to npm as the owner of the scope
+   `@campos-codes`. `npm publish` builds the server and runs
    `npm test` first (`prepublishOnly`), and writes the `README.md` that the page of the package shows
    (`prepack`, `scripts/npm-readme.mjs`): `docs/readme.md` with every link and picture pointed at that tag on
    GitHub, which is why the tag must exist, and each Mermaid diagram replaced by a link, because npm shows its

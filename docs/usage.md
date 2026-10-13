@@ -145,7 +145,7 @@ flowchart TD
     refuse["Tool error: file too large"]
     download["Download from the address Taiga lists, without the token"]
     kind{"Kind of file?"}
-    image["Image content: png, jpg, gif or webp up to 3.5 MB"]
+    image["Image content: png, jpg, jpeg, gif or webp up to 3.5 MB"]
     text["Text content: first 50,000 characters, UTF-8 or Latin-1"]
     file["Saved to the temp folder: the answer has the path"]
     add(["taiga_attachments_add: only with TAIGA_WRITE=1"])
@@ -434,7 +434,7 @@ can be a task with no user story, in the row of a sprint: `taiga_tasks_create` w
 | --- | --- | --- |
 | `Taiga refused the token: it expired or is wrong.` | The token expired, is incomplete, or another key was copied. No tool works until it is replaced, and the error tells the model to say so | Copy the `token` key again, set `TAIGA_TOKEN` again in the configuration of the server and have the client start the server again |
 | `Missing environment variable TAIGA_URL` (or `TAIGA_TOKEN`) | The client configuration lacks the variable | Add it to the configuration of the server in your client |
-| `TAIGA_URL must start with https://: ...` | The address is a plain `http://` one, over which the token would travel in clear text | Use the `https://` address. Only this machine (`localhost`, `127.0.0.1`) may be reached over `http://` |
+| `TAIGA_URL must start with https://: ...` | The address is a plain `http://` one, over which the token would travel in clear text | Use the `https://` address. Only this machine (`localhost`, `127.0.0.1`, `[::1]`) may be reached over `http://` |
 | `TAIGA_URL must not carry a user or a password: ...` | The address has `user:password@` in it | Remove it: the token goes in `TAIGA_TOKEN` |
 | `TAIGA_URL must not carry a query or a fragment: ...` | The address ends in `?...` or `#...` | Give only the address of the site, like `https://taiga.example.com` |
 | `NODE_TLS_REJECT_UNAUTHORIZED=0 is set: ...` on stderr at start | The environment of the server turns the check of TLS certificates off | Remove that variable: with it, whoever intercepts the connection to Taiga reads the token. On a network with TLS inspection, use `NODE_EXTRA_CA_CERTS` instead |

@@ -555,8 +555,8 @@ Three things hold for the tools that write:
   names a project accepts.
 - **A version for what is replaced.** A description and the tags are replaced whole. So an edit of either must
   give the `version` of the item that `taiga_items_get` answered: without it, or when somebody changed the item
-  since, nothing is changed and the model is told to read the item again. A move, an assignee, a due date, a block
-  or a comment needs no version.
+  since, nothing is changed and the model is told to read the item again. A move, an assignee, a due date, a block,
+  a comment or a new subject needs no version: a title is short and stays in the history of the item.
 - **The permissions of Taiga.** Before it creates, changes or deletes an item, the server checks what Taiga says
   the user may do in the project (`myPermissions` of `taiga_projects_get`). When the permission is missing,
   nothing is sent and the error tells the model what that role may do instead: for example, create a task in a
