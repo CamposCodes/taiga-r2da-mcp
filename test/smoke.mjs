@@ -30,7 +30,9 @@ const sparse = [{ id: 400, ref: 20, subject: 'Solta', status: 99, assigned_to: 7
 const wiki = {
   701: { id: 701, project: 32, slug: 'home', content: '# Início\n\nTexto', version: 2, owner: 9, last_modifier: 9, created_date: '2026-10-01T12:00:00Z', modified_date: '2026-10-09T15:30:00Z' },
   702: { id: 702, project: 32, slug: 'guia', content: 'x'.repeat(100), version: 1, owner: 9, last_modifier: 77, created_date: '2026-10-02T12:00:00Z', modified_date: '2026-10-02T12:00:00Z' },
+  704: { id: 704, project: 33, slug: 'solta', content: '', version: 1, owner: null, last_modifier: null, created_date: '2026-10-03T12:00:00Z', modified_date: '2026-10-03T12:00:00Z' },
 }
+let sprintStories = 1
 
 const media = {
   '/media/tela.png': Buffer.from([0x89, 0x50, 0x4e, 0x47]),
@@ -78,12 +80,12 @@ const routes = {
   'GET /history/task/200': () => [{ created_at: '2026-10-09T15:30:00Z', user: { username: 'ana' }, comment: 'x'.repeat(2100), delete_comment_date: null, values_diff: {} }],
   'GET /history/issue/300': () => [{ created_at: '2026-10-09T15:30:00Z', user: { name: 'Sistema' }, comment: 'y'.repeat(310), delete_comment_date: null }, { created_at: '2026-10-09T15:31:00Z', user: null, comment: '', values_diff: { status: ['a', 'b'] } }, { created_at: '2026-10-09T15:32:00Z', user: null, comment: 'órfão', delete_comment_date: null }],
   'GET /search': (q) => (q.get('project') === '33' ? { count: 0 } : { count: 2, userstories: [{ ref: 12, subject: 'História', status: 1 }], tasks: [{ ref: 13, subject: 'Tarefa', status: 12 }], issues: [], wikipages: [{ slug: 'home' }] }),
-  'GET /milestones/3': () => ({ id: 3, name: 'Sprint 12', slug: 'sprint-12', estimated_start: '2026-10-09', estimated_finish: '2026-10-16', closed: false, modified_date: '2026-10-09T15:30:00Z', user_stories: [{ id: 100, ref: 12, subject: 'História', is_closed: false }] }),
+  'GET /milestones/3': () => ({ id: 3, name: 'Sprint 12', slug: 'sprint-12', estimated_start: '2026-10-09', estimated_finish: '2026-10-16', closed: false, modified_date: '2026-10-09T15:30:00Z', user_stories: [{ id: 100, ref: 12, subject: 'História', is_closed: false }, { id: 101, ref: 16, subject: 'Outra', is_closed: false }].slice(0, sprintStories) }),
   'POST /milestones': (sent) => (sent.name === 'Sprint 12' ? answer(400, { name: ['Name duplicated for the project'] }) : { id: 4, name: sent.name, slug: 'sprint-13', estimated_start: sent.estimated_start, estimated_finish: sent.estimated_finish, closed: false, modified_date: '2026-10-10T12:00:00Z', user_stories: [] }),
   'PATCH /milestones/3': (sent) => (sent.estimated_start && !sent.estimated_finish && sent.estimated_start > '2026-10-16' ? answer(400, { __all__: ['The estimated start must be previous to the estimated finish.'] }) : { ...routes['GET /milestones/3'](), ...sent }),
   'DELETE /milestones/3': () => answer(204, ''),
-  'GET /wiki': (q) => (q.get('project') === '32' ? Object.values(wiki) : []),
-  'GET /wiki/by_slug': (q) => Object.values(wiki).find((page) => String(page.project) === q.get('project') && page.slug === q.get('slug')) ?? answer(404, { _error_message: 'No WikiPage matches the given query.' }),
+  'GET /wiki': (q) => Object.values(wiki).filter((page) => String(page.project) === q.get('project')),
+  'GET /wiki/by_slug': (q) => (q.get('slug') === 'secreta' ? answer(403, { _error_message: 'You do not have permission to perform this action.' }) : Object.values(wiki).find((page) => String(page.project) === q.get('project') && page.slug === q.get('slug')) ?? answer(404, { _error_message: 'No WikiPage matches the given query.' })),
   'POST /wiki': (sent) => (sent.slug === 'home' ? answer(400, { __all__: ['Wiki page with this Project and Slug already exists.'] }) : { id: 703, project: sent.project, slug: sent.slug, content: sent.content, version: 1, owner: 9, last_modifier: 9, created_date: '2026-10-10T12:00:00Z', modified_date: '2026-10-10T12:00:00Z' }),
   'PATCH /wiki/701': (sent) => (sent.version === wiki[701].version ? { ...wiki[701], content: sent.content, version: sent.version + 1 } : answer(400, { version: ['The version parameter is not valid'] })),
   'DELETE /wiki/701': () => answer(204, ''),
@@ -165,7 +167,11 @@ function start(token, extra = {}, can = {}) {
     }
   })
   let id = 0
-  const rpc = (method, params) => new Promise((resolve) => { const n = ++id; waiting.set(n, resolve); child.stdin.write(JSON.stringify({ jsonrpc: '2.0', id: n, method, params }) + '\n') })
+  const rpc = (method, params) => Promise.race([
+    new Promise((resolve) => { const n = ++id; waiting.set(n, resolve); child.stdin.write(JSON.stringify({ jsonrpc: '2.0', id: n, method, params }) + '\n') }),
+    exited.then((code) => { throw new Error(`the server stopped with code ${code} during ${method}: ${err.slice(-1500)}`) }),
+    new Promise((_, reject) => setTimeout(() => reject(new Error(`no answer to ${method} ${JSON.stringify(params).slice(0, 200)} in 60 s; the server wrote: ${err.slice(-1500)}`)), 60_000).unref()),
+  ])
   const raw = async (name, args = {}) => (await rpc('tools/call', { name, arguments: args })).result
   const call = async (name, args = {}) => {
     const result = await raw(name, args)
@@ -396,7 +402,9 @@ await scenario('taiga_wiki_list and taiga_wiki_get read the wiki pages of a proj
   assert.deepEqual(await s.call('taiga_wiki_get', { project: 'my-project', slug: 'home' }), { slug: 'home', content: '# Início\n\nTexto', version: 2, createdAt: '2026-10-01T12:00:00Z', modifiedAt: '2026-10-09T15:30:00Z', modifiedBy: 'ana', url: `${base}/project/my-project/wiki/home` })
   assert.deepEqual(seen.at(-1).query, { project: '32', slug: 'home' })
   assert.match((await s.call('taiga_wiki_get', { project: 'my-project', slug: 'nope' })).error, /^Unknown wiki page "nope" in my-project: taiga_wiki_list gives the slugs\.$/)
-  assert.deepEqual(await s.call('taiga_wiki_list', { project: 'locked-project' }), { pages: [] })
+  assert.match((await s.call('taiga_wiki_get', { project: 'my-project', slug: 'secreta' })).error, /^Taiga refused GET \/wiki\/by_slug: the current user does not have the permission for it\./)
+  assert.deepEqual(await s.call('taiga_wiki_list', { project: 'locked-project' }), { pages: [{ slug: 'solta', modifiedAt: '2026-10-03T12:00:00Z', modifiedBy: null, characters: 0 }] })
+  assert.deepEqual(await s.call('taiga_wiki_list', { project: 'bare-project' }), { pages: [] })
 })
 
 const mediaFrom = seen.length
@@ -825,10 +833,14 @@ await scenario('A client that can ask its user is made to ask, and nothing is de
   assert.equal((await e.call('taiga_wiki_delete', { project: 'my-project', slug: 'guia', confirm: page.confirm })).deleted, false)
   assert.equal(e.asked.at(-1).message, 'Delete the wiki page "guia" of my-project? Taiga keeps no trash: this cannot be undone.')
   assert.match(e.stderr(), /Z deletion of wiki page guia in my-project not approved by the user \(decline\)$/m)
-  const sprint = await e.call('taiga_sprints_delete', { project: 'my-project', sprint: 'Sprint 12' })
-  e.answers.push({ action: 'cancel' })
-  assert.equal((await e.call('taiga_sprints_delete', { project: 'my-project', sprint: 'Sprint 12', confirm: sprint.confirm })).deleted, false)
-  assert.equal(e.asked.at(-1).message, 'Delete the sprint "Sprint 12" of my-project, whose 1 user story goes back to the backlog? Taiga keeps no trash: this cannot be undone.')
+  for (const [stories, tail] of [[1, ', whose 1 user story goes back to the backlog'], [2, ', whose 2 user stories go back to the backlog'], [0, '']]) {
+    sprintStories = stories
+    const sprint = await e.call('taiga_sprints_delete', { project: 'my-project', sprint: 'Sprint 12' })
+    e.answers.push({ action: 'cancel' })
+    assert.equal((await e.call('taiga_sprints_delete', { project: 'my-project', sprint: 'Sprint 12', confirm: sprint.confirm })).deleted, false)
+    assert.equal(e.asked.at(-1).message, `Delete the sprint "Sprint 12" of my-project${tail}? Taiga keeps no trash: this cannot be undone.`)
+  }
+  sprintStories = 1
   await e.stop()
 })
 await scenario('On the 2026-07-28 revision the question goes out in the answer and the yes comes in with the call made again', async () => {

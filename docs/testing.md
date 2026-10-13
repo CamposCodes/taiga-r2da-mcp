@@ -145,23 +145,24 @@ What the scenarios use, in the simulated Taiga:
 
 ## Report of the last run
 
-Run on 2026-10-13, on Windows 11 with Node 24.15.0, version 0.3.0 of the server with the fixes of the audit.
+Run on 2026-10-13, on Windows 11 with Node 24.15.0, version 0.3.0 of the server with the fixes of the audit and
+the wiki and sprint tools.
 
 | Command | Result |
 | --- | --- |
 | `npm run check` | exit 0 |
 | `npm run build` | exit 0 |
-| `npm test` | exit 0: `ok: 77 scenarios, 10 tools read-only, 7 more with TAIGA_WRITE=1, 1 more with TAIGA_DELETE=1` |
+| `npm test` | exit 0: `ok: 82 scenarios, 12 tools read-only, 11 more with TAIGA_WRITE=1, 3 more with TAIGA_DELETE=1` |
 | `npm run coverage` | exit 0 |
 
 ```text
-coverage: 1033 of 1038 lines of dist/index.js run in full (99.5%), over 30 server processes
+coverage: 1270 of 1275 lines of dist/index.js run in full (99.6%), over 30 server processes
 not run in full:
   49: const text = error instanceof Error ? error.message : String(error);
   163: ? ""
   178: reader.cancel().catch(() => undefined);
-  433: const under = async (folder) => `${real}${sep}`.toLowerCase().startsWith(`${await realpath(folder).catch(() => folder)}${sep}`.toLowerCase());
-  1036: console.error("taiga-mcp:", error instanceof Error ? error.message : error);
+  499: const under = async (folder) => `${real}${sep}`.toLowerCase().startsWith(`${await realpath(folder).catch(() => folder)}${sep}`.toLowerCase());
+  1273: console.error("taiga-mcp:", error instanceof Error ? error.message : error);
 ```
 
 A line counts as run only when every character of it was run, so a branch that is never taken shows up as a line.
@@ -293,22 +294,26 @@ The steps:
 
 | # | Step |
 | --- | --- |
-| L01 | The server starts with the token of .env and lists 18 tools |
+| L01 | The server starts with the token of .env and lists 26 tools |
 | L02 | taiga_me, taiga_projects_list and taiga_projects_get answer in the declared shape |
 | L03 | The lists and the search answer in the declared shape on the real data |
-| L04 | taiga_items_get reads items that already exist, with comments and history, without changing them |
-| L05 | taiga_userstories_create creates a user story marked as a test |
-| L06 | taiga_userstories_update moves it to another status, blocks it, unblocks it and comments |
-| L07 | taiga_tasks_create creates a task in that user story |
-| L08 | taiga_tasks_update moves the task, assigns it, sets and clears a due date, and comments |
-| L09 | An edit of a description needs the version that was read, and one made on an old version is refused |
-| L10 | taiga_issues_create and taiga_issues_update create an issue and move it |
-| L11 | taiga_attachments_add sends a file to each item, and taiga_attachments_get reads it back |
-| L12 | taiga_attachments_add refuses a file that looks like a credential, before anything is sent |
-| L13 | taiga_items_get shows what the test wrote: the comment, the attachment, the task of the story |
-| L14 | A wrong kind, an unknown name and an edit of nothing are refused by the server |
-| L15 | taiga_items_delete shows first, asks the user, and deletes only with the code and the yes: every item of the test is removed |
-| L16 | The token is in nothing the server wrote |
+| L04 | taiga_wiki_list and taiga_wiki_get read the wiki of the project without changing it |
+| L05 | taiga_items_get reads items that already exist, with comments and history, without changing them |
+| L06 | taiga_userstories_create creates a user story marked as a test |
+| L07 | taiga_userstories_update moves it to another status, blocks it, unblocks it and comments |
+| L08 | taiga_tasks_create creates a task in that user story |
+| L09 | taiga_tasks_update moves the task, assigns it, sets and clears a due date, and comments |
+| L10 | An edit of a description needs the version that was read, and one made on an old version is refused |
+| L11 | taiga_issues_create and taiga_issues_update create an issue and move it |
+| L12 | taiga_attachments_add sends a file to each item, and taiga_attachments_get reads it back |
+| L13 | taiga_attachments_add refuses a file that looks like a credential, before anything is sent |
+| L14 | taiga_items_get shows what the test wrote: the comment, the attachment, the task of the story |
+| L15 | A wrong kind, an unknown name and an edit of nothing are refused by the server |
+| L16 | taiga_wiki_create, taiga_wiki_update and taiga_wiki_get create a page marked as a test and replace its text with the version read |
+| L17 | taiga_sprints_create and taiga_sprints_update create a sprint marked as a test, move its days, close and reopen it, and take the test story in |
+| L18 | taiga_sprints_delete and taiga_wiki_delete show first, ask the user, and delete only with the code and the yes |
+| L19 | taiga_items_delete shows first, asks the user, and deletes only with the code and the yes: every item of the test is removed |
+| L20 | The token is in nothing the server wrote |
 
 In L15 the test client says it can be asked, and stands in for the user: for each item it first answers no, and
 checks that nothing was deleted, then yes.
