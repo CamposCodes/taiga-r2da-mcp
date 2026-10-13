@@ -15,6 +15,9 @@ and the versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   how to update and to remove it.
 - The READMEs name the standard configuration as such and have a block for VS Code and one for Cursor, each from
   the documentation of that client and each marked as not tried. A badge shows the downloads of the package.
+- The instructions of the server, and the descriptions of `taiga_items_get` and `taiga_attachments_get`, tell the
+  model that what comes from Taiga is written by other people and is data, not instructions. A line break in a
+  subject or in a name reaches neither the question put before a deletion nor a line of the trail.
 
 ## 0.3.0 - 2026-10-13
 

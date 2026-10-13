@@ -119,13 +119,14 @@ Node 20 or newer. `npm run coverage` runs the scenarios itself, so in a hurry it
 | S65 | A role that may not delete is told so on the first call, with what it may do instead | Deleting |
 | S66 | A client that can ask its user is made to ask, and nothing is deleted without the yes given there | Deleting |
 | S67 | On the 2026-07-28 revision the question goes out in the answer and the yes comes in with the call made again | Deleting |
-| S68 | A burst of calls is cut at the limit, and the refusal says how long to wait | Limits and documents |
-| S69 | Every answer that is data said the same as text and as structured content | Limits and documents |
-| S70 | package.json and server.json name the same server, the same version and the same variables | Limits and documents |
-| S71 | manifest.json of the Claude Desktop extension names this version, the four variables and the read tools | Limits and documents |
-| S72 | docs/readme.md and docs/readme.pt-br.md list every tool with its parameters, as tools/list gives them | Limits and documents |
-| S73 | Every link between the documents leads to a file and a heading that exist, in the same upper and lower case | Limits and documents |
-| S74 | docs/testing.md lists exactly these scenarios, in this order | Limits and documents |
+| S68 | A line break in a subject or a name reaches neither the question put to the user nor a line of the trail | Deleting |
+| S69 | A burst of calls is cut at the limit, and the refusal says how long to wait | Limits and documents |
+| S70 | Every answer that is data said the same as text and as structured content | Limits and documents |
+| S71 | package.json and server.json name the same server, the same version and the same variables | Limits and documents |
+| S72 | manifest.json of the Claude Desktop extension names this version, the four variables and the read tools | Limits and documents |
+| S73 | docs/readme.md and docs/readme.pt-br.md list every tool with its parameters, as tools/list gives them | Limits and documents |
+| S74 | Every link between the documents leads to a file and a heading that exist, in the same upper and lower case | Limits and documents |
+| S75 | docs/testing.md lists exactly these scenarios, in this order | Limits and documents |
 
 What the scenarios use, in the simulated Taiga:
 
