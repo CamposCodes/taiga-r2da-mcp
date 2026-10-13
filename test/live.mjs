@@ -1,14 +1,9 @@
-// Runs dist/index.js against a real Taiga, in the ONE project named in .env. It reads what is there and changes
-// only the items it creates itself, which it marks as test items and deletes at the end when the role allows.
-// Nothing that comes from Taiga is printed: the details go to docs/internal/live-test.json, which git ignores.
-// Usage, after "npm run build" and with a filled .env (see docs/testing.md): npm run test:live
 import assert from 'node:assert/strict'
 import { spawn } from 'node:child_process'
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
-// .env is read here and handed to the server. Its values are never printed.
 const env = Object.fromEntries(
   readFileSync('.env', 'utf8')
     .split(/\r?\n/)
@@ -33,8 +28,6 @@ child.stdout.on('data', (d) => {
     const line = buffer.slice(0, i); buffer = buffer.slice(i + 1)
     if (!line.trim()) continue
     const m = JSON.parse(line)
-    // The server asks the user before it deletes. This test stands in for the user, and says yes only when the
-    // question names an item it marked itself: anything else is cancelled.
     if (m.method === 'elicitation/create') {
       asked.push(m.params.message)
       const answer = m.params.message.includes(label) ? answers.shift() : undefined
@@ -51,9 +44,7 @@ const rpc = (method, params) => Promise.race([
   exited.then((code) => { throw new Error(`the server stopped with code ${code}: ${wrote.replaceAll(env.TAIGA_TOKEN, '<token>').trim()}`) }),
 ])
 
-// The two rules of this test, enforced on every call: one project, and no change to an item it did not create.
 const mine = new Map()
-// The description each item of the test should have, where it is not the note it was created with.
 const described = new Map()
 async function call(name, args = {}) {
   if ('project' in args) assert.equal(args.project, slug)
@@ -61,7 +52,6 @@ async function call(name, args = {}) {
   const result = (await rpc('tools/call', { name, arguments: args })).result
   if (result.isError) return { error: result.content[0].text }
   if (result.structuredContent === undefined) return result.content
-  // An answer that is data comes twice, as text and as structured content: the two must say the same.
   assert.deepEqual(result.structuredContent, JSON.parse(result.content[0].text), name)
   return result.structuredContent
 }
@@ -75,7 +65,6 @@ async function step(title, body) {
 const REFUSED = 'refused for lack of permission, as designed'
 let project
 const may = (permission) => project.myPermissions.includes(permission)
-// A write either works or is refused for lack of permission, in the words the server promises.
 async function write(permission, name, args) {
   const result = await call(name, args)
   if (!result.error) return result
@@ -171,7 +160,6 @@ try {
     if (!edited) return REFUSED
     described.set(task.ref, text)
     assert.match((await call('taiga_tasks_update', { project: slug, ref: task.ref, description: 'x' })).error, /give its version/)
-    // The task is one version ahead now: an edit made on what was read before is not sent.
     assert.match((await call('taiga_tasks_update', { project: slug, ref: task.ref, description: 'x', version: read.version })).error, /changed since version/)
     assert.equal((await call('taiga_items_get', { project: slug, ref: task.ref })).description, text)
   })
@@ -226,7 +214,6 @@ try {
   await step('taiga_items_delete shows first, asks the user, and deletes only with the code and the yes: every item of the test is removed', async () => {
     if (!mine.size) return 'skipped: no item was created'
     let refusals = 0
-    // The story goes last, and is first shown with the task that would go with it.
     const order = [...mine].sort(([, a], [, b]) => (a === 'us') - (b === 'us'))
     if (story && task) {
       const shown = await call('taiga_items_delete', { project: slug, ref: story.ref })
@@ -235,14 +222,11 @@ try {
     for (const [ref, kind] of order) {
       const shown = await write(`delete_${kind}`, 'taiga_items_delete', { project: slug, ref })
       if (!shown) { refusals++; continue }
-      // Last check before the only irreversible call of this test: it is one of ours.
       assert.ok(shown.deleted === false && shown.item.subject.startsWith(label), 'refusing to delete an item this test did not mark')
-      // A wrong code deletes nothing, uses up the code that was waiting and shows the item again with a new one.
       const again = await call('taiga_items_delete', { project: slug, ref, confirm: 'no' })
       assert.ok(again.deleted === false && again.confirm !== shown.confirm)
       assert.equal((await call('taiga_items_delete', { project: slug, ref, confirm: shown.confirm })).deleted, false)
       assert.equal((await call('taiga_items_get', { project: slug, ref })).ref, ref)
-      // With the right code the server asks the user. A no deletes nothing and spends the code; a yes deletes.
       const refused = await call('taiga_items_delete', { project: slug, ref })
       answers.push({ action: 'decline' })
       assert.equal((await call('taiga_items_delete', { project: slug, ref, confirm: refused.confirm })).deleted, false)
@@ -252,7 +236,6 @@ try {
       assert.equal((await call('taiga_items_delete', { project: slug, ref, confirm: last.confirm })).deleted, true)
       assert.ok(asked.length >= 2 && asked.at(-1).includes(`#${ref} `) && asked.at(-1).includes(label))
       mine.delete(ref)
-      // The task of a deleted story went with it, even when the role may not delete tasks.
       if (kind === 'us' && task) mine.delete(task.ref)
       assert.match((await call('taiga_items_get', { project: slug, ref })).error ?? '', /./)
     }
@@ -262,7 +245,6 @@ try {
     assert.ok(!wrote.includes(env.TAIGA_TOKEN))
   })
 } finally {
-  // Whatever happened, say what stayed in the project, so that somebody can delete it by hand.
   report.steps = steps
   report.left = [...mine].map(([ref, kind]) => ({ ref, kind }))
   rmSync(folder, { recursive: true, force: true })

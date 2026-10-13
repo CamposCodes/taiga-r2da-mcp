@@ -7,23 +7,6 @@ import { z } from "zod";
 import { CLIENT_CAPABILITIES_META_KEY, McpServer, inputRequired, inputResponse, type CallToolResult, type InputRequiredResult } from "@modelcontextprotocol/server";
 import { serveStdio } from "@modelcontextprotocol/server/stdio";
 
-/* eslint-disable @typescript-eslint/no-explicit-any -- API payloads are plain JSON */
-
-/**
- * MCP server for a Taiga 6 installation. It reads projects, sprints, user stories, tasks and issues, with their
- * attachments. Started with TAIGA_WRITE=1 it also creates and edits user stories, tasks and issues and attaches
- * files to them; without it every call to the API is a GET. With TAIGA_DELETE=1 on top of that it deletes them,
- * in two calls: the first only shows what would go.
- *
- * It authenticates with the token Taiga gives the browser after login, so it works where people enter through
- * the company's identity provider and have no password in Taiga.
- */
-// ponytail: the token lasts about a day and is pasted again when it expires; use Taiga's refresh token if that
-// becomes a chore (refreshing rotates it, which ends the browser session it was copied from).
-// ponytail: a write is confirmed by the permission prompt of the MCP client, which the annotations below feed.
-// Deleting adds steps of its own: the item is shown first and, where the client can put a question to the person,
-// the server asks for the yes itself. In a client that cannot, the second call is still made by the model.
-
 const instructions = (write: boolean, remove: boolean) => `Access to a Taiga project management server. A project has user stories (worked on a kanban or
 planned in sprints), tasks that belong to a user story or to a sprint, and issues (bugs, questions, improvements).
 Projects are addressed by slug and every user story, task and issue by its number (#12 is ref 12); the number is unique in the project.
@@ -41,37 +24,22 @@ attachment it lists with taiga_attachments_get. ${
 
 const READ = { readOnlyHint: true, openWorldHint: false } as const;
 const WRITE = { readOnlyHint: false, destructiveHint: false, openWorldHint: false } as const;
-/** Opening an attachment changes nothing in Taiga, but it can leave a file on this machine: not read-only. */
 const SAVES = { ...WRITE, idempotentHint: true } as const;
 
-/** Attachments shown as they are: images as images, these extensions as text. The rest goes to a file. */
 const IMAGES: Record<string, string> = { png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg", gif: "image/gif", webp: "image/webp" };
 const TEXTS = /^(txt|md|log|csv|tsv|json|xml|ya?ml|sql|html?|css|js|ts|py|java|cs|php|sh|ini)$/;
 const MAX_FILE = 25 * 1024 * 1024;
-// An image above this goes to a file too: the model API refuses images of more than 5 MB once encoded.
 const MAX_IMAGE = 3.5 * 1024 * 1024;
 const MAX_TEXT = 50_000;
-/** A Taiga that stopped answering must not hold a tool for ever. Generous: a large file on a slow line fits. */
 const TIMEOUT = 120_000;
-// A model caught in a loop must not flood Taiga, least of all with writes.
-// ponytail: one window for every tool; give each tool its own limit if a real workload ever reaches this one.
 const MAX_CALLS_PER_MINUTE = 120;
-/** How long the code of a deletion that was shown is good for. */
 const DELETE_WINDOW = 10 * 60_000;
 
-/**
- * The trail of what the server changed and of what it refused, for whoever reads the log of the client: one line
- * each on stderr, since stdout carries the protocol. Never the token, and never the content of an item.
- */
 const trail = (what: string) => console.error(`taiga-mcp: ${new Date().toISOString()} ${what}`);
 
 let windowStart = 0;
 let calls = 0;
 
-/**
- * Runs a tool and returns what it shows. A failure (unknown status name, API refusal, too many calls, ...) becomes
- * a tool error with a readable message, so the model can correct itself.
- */
 async function show(body: () => Promise<CallToolResult | InputRequiredResult>): Promise<CallToolResult | InputRequiredResult> {
   try {
     const now = Date.now();
@@ -91,13 +59,11 @@ async function show(body: () => Promise<CallToolResult | InputRequiredResult>): 
   }
 }
 
-/** A result as data, and the same data as JSON text for the clients that read only text. */
 function data(value: object): CallToolResult {
   const text = JSON.stringify(value, null, 2);
   return { content: [{ type: "text", text }], structuredContent: JSON.parse(text) };
 }
 
-/** The usual case: a tool that answers data. */
 const run = (body: () => Promise<object>) => show(async () => data(await body()));
 
 type Kind = "us" | "task" | "issue";
@@ -109,7 +75,6 @@ const KINDS: Record<Kind, { path: string; history: string; statuses: string; a: 
 };
 
 class TaigaClient {
-  /** Address of the Taiga site, without the API path: the links given to people start here. */
   readonly site: string;
   private readonly baseUrl: string;
 
@@ -121,7 +86,6 @@ class TaigaClient {
     this.baseUrl = this.site + "/api/v1";
   }
 
-  /** One page of a list, with the total the server counted. */
   async page(path: string, query: Record<string, unknown> = {}): Promise<{ total: number; items: any[] }> {
     const response = await this.request("GET", path, query);
     const items = await this.body(response, `GET ${path}`);
@@ -132,17 +96,12 @@ class TaigaClient {
     return this.body(await this.request("GET", path, query), `GET ${path}`);
   }
 
-  /** The only way anything is written to Taiga. The payload goes as JSON, or as a form when it carries a file. */
   async send(method: "POST" | "PATCH" | "DELETE", path: string, payload?: unknown): Promise<any> {
     const response = await this.request(method, path, {}, payload);
     trail(`${method} ${path} ${response.status}`);
     return this.body(response, `${method} ${path}`);
   }
 
-  /**
-   * The bytes of an attachment. Taiga gives each attachment an address that is read as it is (where the files
-   * are protected, the address carries its own short-lived key), so the session token is not sent to it.
-   */
   async download(address: string): Promise<Buffer> {
     const response = await reach(true, "Attachment unreachable", () => fetch(new URL(address, this.site), { signal: AbortSignal.timeout(TIMEOUT) }));
     if (!response.ok) {
@@ -158,7 +117,6 @@ class TaigaClient {
         url.searchParams.set(key, String(value));
       }
     }
-    // A form says its own content type, with the boundary between its parts.
     const form = payload instanceof FormData;
     return reach(method === "GET", `Taiga API unreachable at ${this.baseUrl}`, () =>
       fetch(url, {
@@ -197,7 +155,6 @@ class TaigaClient {
       );
     }
     if (!response.ok) {
-      // A refused write may answer with the fields at fault ({"subject": ["..."]}) and no message.
       const fields = data && typeof data === "object" ? `: ${clip(JSON.stringify(data), 500)}` : "";
       throw new Error(data?._error_message || data?.detail || `${response.status} ${response.statusText} on ${what}${fields}`);
     }
@@ -205,20 +162,13 @@ class TaigaClient {
   }
 }
 
-/** Why a request did not get through. Node says only "fetch failed" and keeps the reason (DNS, TLS, a closed connection) in the cause. */
 const reason = (error: unknown) => [(error as Error).message, ((error as Error).cause as Error | undefined)?.message].filter(Boolean).join(": ");
 
-/** What the model has to tell the user when Taiga cannot be reached: the next calls would fail the same way. */
 const OFFLINE =
   "Tell the user that this server cannot reach Taiga right now, so its tools will not work until it can: Taiga may " +
   "be down, or the network or the VPN of this machine may be off. Once the address opens in the browser, ask " +
   "again; if it still fails, start this server again in the client.";
 
-/**
- * Sends one request. A read that does not get through is sent a second time: a connection that stayed idle may
- * have been closed by the other side, and reading twice changes nothing. A write is sent once, because the first
- * try may have reached Taiga, and so is a request whose time ran out, because the wait was long already.
- */
 async function reach(read: boolean, what: string, send: () => Promise<Response>): Promise<Response> {
   let again = false;
   try {
@@ -240,11 +190,9 @@ async function reach(read: boolean, what: string, send: () => Promise<Response>)
 }
 
 const same = (a: unknown, b: unknown) => String(a).trim().toLowerCase() === String(b).trim().toLowerCase();
-/** A text that is cut says so, with its real length: the model must know that something is missing. */
 const clip = (text: string, max: number) =>
   text.length > max ? `${text.slice(0, max)}… (cut: the first ${max} of ${text.length} characters)` : text;
 
-/** Project with its statuses, members, sprints and value lists: what is needed to turn names into ids and back. */
 function loadProject(client: TaigaClient, project: string): Promise<any> {
   return /^\d+$/.test(project) ? client.get(`/projects/${project}`) : client.get("/projects/by_slug", { slug: project });
 }
@@ -257,15 +205,12 @@ function byName(list: any[], value: string, what: string): number {
   return found.id;
 }
 
-/** Id, username or full name of a project member, tried in that order; "none" asks for what has nobody. */
 function memberFilter(project: any, value: string): number | "null" {
   if (same(value, "none")) {
     return "null";
   }
   const members: any[] = project.members;
   const usernames = (list: any[]) => list.map((m) => m.username).join(", ");
-  // An id or a username names one person. A full name comes last and must be of one member only: people choose
-  // their full name, and one of them can choose the username of another.
   const named = members.filter((m) => same(m.full_name, value) || same(m.full_name_display, value));
   const found = members.find((m) => String(m.id) === value.trim()) ?? members.find((m) => same(m.username, value)) ?? named[0];
   if (!found) {
@@ -277,7 +222,6 @@ function memberFilter(project: any, value: string): number | "null" {
   return found.id;
 }
 
-/** Name, slug or id of a sprint; "backlog" asks for what is in none. */
 function sprintFilter(project: any, value: string): number | "null" {
   if (same(value, "backlog") || same(value, "none")) {
     return "null";
@@ -294,7 +238,6 @@ function sprintFilter(project: any, value: string): number | "null" {
 
 const nameOf = (list: any[] | undefined, id: unknown) => (list ?? []).find((entry) => entry.id === id)?.name ?? null;
 
-/** One line of a list: enough to analyse a board without spending context on long descriptions. */
 function summary(project: any, kind: Kind, item: any) {
   const people = [...new Set([item.assigned_to, ...(item.assigned_users ?? [])].filter((id) => id != null))];
   const username = (id: number) => project.members.find((m: any) => m.id === id)?.username ?? `user ${id}`;
@@ -327,15 +270,12 @@ function summary(project: any, kind: Kind, item: any) {
   };
 }
 
-/** How a refusal for lack of permission ends: the model must not pick the way around on its own. */
 const ASK = "Do not work around this on your own: tell the user what was refused, offer the alternatives and wait for the choice.";
 
-/** Taiga gives, with each project, what the current user may do in it. A project that gives no list is not judged here: Taiga decides. */
 const can = (p: any, permission: string) => !Array.isArray(p.my_permissions) || p.my_permissions.includes(permission);
 
 type Action = "add" | "modify" | "delete";
 
-/** What can stand in for a refused change, each with the permission it needs. */
 function alternatives(action: Action, kind: Kind): [string, string][] {
   const edit = `taiga_${KINDS[kind].path}_update`;
   if (action === "modify") {
@@ -360,10 +300,6 @@ function alternatives(action: Action, kind: Kind): [string, string][] {
   return { us: [task, issue, comment], task: [story, issue, comment], issue: [story, task] }[kind];
 }
 
-/**
- * Stops a change the role of the current user does not allow, before anything is sent, and says what that role
- * does allow in its place.
- */
 function allow(p: any, action: Action, kind: Kind): void {
   const permission = `${action}_${kind}`;
   if (can(p, permission)) {
@@ -398,7 +334,6 @@ const listFilters = {
   size: z.number().int().min(1).max(200).optional().describe("Items per page, default 50"),
 };
 
-/** What the answers are made of. A value Taiga may leave out is nullish, so that an answer is never refused for it. */
 const text = z.string().nullish();
 const count = z.number().nullish();
 const modules = z.object({ backlog: z.boolean(), kanban: z.boolean(), issues: z.boolean(), wiki: z.boolean() });
@@ -430,7 +365,6 @@ const changed = line.extend({
   url: z.string().describe("Where a person sees the item"),
 });
 
-/** The filters every kind of item shares, as the query Taiga expects. */
 function commonQuery(p: any, kind: Kind, args: any) {
   return {
     project: p.id,
@@ -452,7 +386,6 @@ async function list(client: TaigaClient, kind: Kind, args: any, extra: (p: any) 
   return { total: result.total, page: query.page, size: query.page_size, items: result.items.map((item) => summary(p, kind, item)) };
 }
 
-/** Finds a user story, task or issue by its number, whatever its kind. */
 async function resolve(client: TaigaClient, p: any, ref: number): Promise<{ kind: Kind; id: number }> {
   const found = await client.get("/resolver", { project: p.slug, ref });
   const kind = (["us", "task", "issue"] as Kind[]).find((k) => found[k] != null);
@@ -462,7 +395,6 @@ async function resolve(client: TaigaClient, p: any, ref: number): Promise<{ kind
   return { kind, id: found[kind] };
 }
 
-/** Id of the item with this number, which must be of the kind the tool works on. */
 async function idOf(client: TaigaClient, p: any, ref: number, kind: Kind): Promise<number> {
   const found = await resolve(client, p, ref);
   if (found.kind !== kind) {
@@ -471,12 +403,10 @@ async function idOf(client: TaigaClient, p: any, ref: number, kind: Kind): Promi
   return found.id;
 }
 
-/** Files attached to an item. Each has the address its content is read from. */
 function attachmentsOf(client: TaigaClient, p: any, kind: Kind, id: number): Promise<any[]> {
   return client.get(`/${KINDS[kind].path}/attachments`, { project: p.id, object_id: id, page_size: 200 });
 }
 
-/** The tasks of a user story, one short line each. */
 async function tasksOf(client: TaigaClient, p: any, id: number) {
   const tasks: any[] = await client.get("/tasks", { project: p.id, user_story: id, page_size: 200 });
   return tasks.map((task) => {
@@ -485,14 +415,9 @@ async function tasksOf(client: TaigaClient, p: any, id: number) {
   });
 }
 
-/**
- * What was said about an item, as the fields Taiga expects: names become ids, "none" becomes empty and what was
- * not said is left out (an undefined field does not go in the request).
- */
 async function fieldsOf(client: TaigaClient, p: any, kind: Kind, args: any) {
   const sprint = args.sprint ? sprintFilter(p, args.sprint) : undefined;
   if (kind === "task" && sprint === "null") {
-    // With no story and no sprint a task is on no board: only its address would reach it.
     throw new Error("A task cannot go to the backlog: give it a sprint or a user story.");
   }
   const assignee = args.assignee ? memberFilter(p, args.assignee) : undefined;
@@ -514,7 +439,6 @@ async function fieldsOf(client: TaigaClient, p: any, kind: Kind, args: any) {
   };
 }
 
-/** An item as a write left it, with the address where a person sees it. */
 const written = (client: TaigaClient, p: any, kind: Kind, item: any) => ({
   ...summary(p, kind, item),
   version: item.version,
@@ -523,11 +447,6 @@ const written = (client: TaigaClient, p: any, kind: Kind, item: any) => ({
 
 let folder: string | undefined;
 
-/**
- * Where attachments are saved: one folder for the whole run, made by mkdtemp on the first file. Nobody can guess
- * its name or prepare it in a shared temp folder and, on Linux and macOS, only this user opens it. A folder that
- * was deleted in the meantime is replaced by a new one.
- */
 async function savingFolder(): Promise<string> {
   if (!folder || !(await stat(folder).catch(() => null))) {
     folder = await mkdtemp(join(tmpdir(), "taiga-mcp-"));
@@ -535,22 +454,11 @@ async function savingFolder(): Promise<string> {
   return folder;
 }
 
-/** A path that starts with two slashes, of either kind: a share of another machine, or of this one under another name. */
 const NETWORK = /^[\\/]{2}/;
 
-/** Inside the home of the user, the folder where programs keep their data: browser profiles, client configurations. */
 const PROFILE = ({ win32: "AppData", darwin: "Library" } as Record<string, string | undefined>)[process.platform];
 
-/**
- * The real path of a file that may be sent to Taiga. A file that looks like a credential is refused, whatever the
- * model was told: a text in a card can ask for the SSH key of the user as easily as for a screenshot.
- */
-// ponytail: a deny list, not a sandbox. It stops the usual targets of a hidden instruction, not a secret kept
-// under an ordinary name in an ordinary folder; limit the tool to one folder if that is ever needed.
-// The file must be a regular one of up to 25 MB.
 async function sendable(path: string): Promise<string> {
-  // A network path is refused before the disk is touched: reaching \\host\share offers the credentials of the user
-  // to that host, and \\localhost\C$ is another name for every folder that is checked below.
   if (NETWORK.test(path)) {
     throw new Error(`${path} is not sent: a network path is refused. Copy the file to a folder of this machine first.`);
   }
@@ -558,12 +466,10 @@ async function sendable(path: string): Promise<string> {
   if (!info.isFile() || info.size > MAX_FILE) {
     throw new Error(`${path} is not a file of up to ${MAX_FILE} bytes.`);
   }
-  // The real path, with links and mapped drives followed: a drive mapped to a share comes back as a network path.
   const real = await realpath(path);
   const under = async (folder: string) => `${real}${sep}`.toLowerCase().startsWith(`${await realpath(folder).catch(() => folder)}${sep}`.toLowerCase());
   const hidden = real.split(sep).some((part) => part.startsWith("."));
   const profile = PROFILE !== undefined && (await under(join(homedir(), PROFILE))) && !(await under(tmpdir()));
-  // On Linux the kernel serves the environment of this very process, token included, as a file under /proc.
   const system = /^\/(proc|sys|dev|run)(\/|$)/.test(real);
   if (NETWORK.test(real) || system || hidden || profile || /\.(pem|key|p12|pfx|ppk|kdbx)$/i.test(real)) {
     throw new Error(
@@ -827,7 +733,6 @@ function registerTools(server: McpServer, client: TaigaClient) {
           result.taskList = await tasksOf(client, p, id);
         }
         if (include.length) {
-          // Unasked, Taiga gives only the 30 newest entries; 1000 is the most it gives at once.
           const entries: any[] = await client.get(`/history/${KINDS[kind].history}/${id}`, { page_size: 1000 });
           if (include.includes("comments")) {
             result.commentList = entries
@@ -910,7 +815,6 @@ function registerTools(server: McpServer, client: TaigaClient) {
           };
         }
         if (TEXTS.test(extension)) {
-          // Files exported by older Windows programs are not UTF-8: read those byte by byte instead of garbling them.
           let text: string;
           try {
             text = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
@@ -919,7 +823,6 @@ function registerTools(server: McpServer, client: TaigaClient) {
           }
           return { content: [{ type: "text", text: clip(text, MAX_TEXT) }] };
         }
-        // The name comes from whoever uploaded the file: only letters, digits, dot, dash and underscore reach the disk.
         const saved = join(await savingFolder(), `${p.slug}-${ref}-${file.id}-${file.name}`.replace(/[^\p{L}\p{N}._-]+/gu, "_"));
         await writeFile(saved, bytes);
         const answer = { name: file.name, size: bytes.length, savedTo: saved, note: "Not shown here: read this file with a file tool." };
@@ -964,7 +867,6 @@ const issueChanges = {
   severity: z.string().optional().describe('Severity name, e.g. "Normal" (see taiga_projects_get)'),
   priority: z.string().optional().describe('Priority name, e.g. "High" (see taiga_projects_get)'),
 };
-/** What only an edit can say. */
 const edits = (kind: Kind) => ({
   blocked: z.string().optional().describe(`Why ${KINDS[kind].a.replace(/^an? /, "the ")} is blocked, which blocks it; "none" unblocks it`),
   comment: z.string().optional().describe(`Comment to leave on ${KINDS[kind].a.replace(/^an? /, "the ")}, Markdown`),
@@ -976,16 +878,8 @@ const edits = (kind: Kind) => ({
     .describe("Version of the item as taiga_items_get gave it. Required with description or tags, which replace what is there"),
 });
 
-/**
- * The one deletion that was shown and waits for its second call. The code is random, so it cannot be had without
- * the first call, and showing another item replaces it.
- */
 let waiting: { code: string; state: string; expires: number } | undefined;
 
-/**
- * The tools that change Taiga. They exist only when the server is started with TAIGA_WRITE=1, and the one that
- * deletes only with TAIGA_DELETE=1 on top of it.
- */
 function registerWriting(server: McpServer, client: TaigaClient, remove: boolean) {
   const create = (kind: Kind) => (args: any) =>
     run(async () => {
@@ -1006,20 +900,15 @@ function registerWriting(server: McpServer, client: TaigaClient, remove: boolean
       if (!given.length) {
         throw new Error("Nothing to change: give at least one field.");
       }
-      // Taiga takes a change that is only a comment from a role that may comment and may not edit.
       if (!(given.length === 1 && given[0] === "comment" && can(p, `comment_${kind}`))) {
         allow(p, "modify", kind);
       }
-      // A description and the tags replace what is there, so the caller says which version it read: without that
-      // the edit of somebody else, made in the meantime, would be lost without a word.
       if (args.version === undefined && (fields.description !== undefined || fields.tags !== undefined)) {
         throw new Error(
           `A description or the tags replace what #${args.ref} has now: read it with taiga_items_get and give its ` +
             "version, so that a change somebody made in the meantime is not lost.",
         );
       }
-      // Taiga refuses a change that does not say which version of the item it was made on. A move or a comment
-      // loses nothing, so it goes on the version of now.
       const { version } = await client.get(`/${KINDS[kind].path}/${id}`);
       if (args.version !== undefined && args.version !== version) {
         throw new Error(
@@ -1213,11 +1102,9 @@ function registerWriting(server: McpServer, client: TaigaClient, remove: boolean
           item: summary(p, kind, item),
           ...(kind === "us" ? { tasksDeletedWithIt: tasks.map((task) => `#${task.ref} ${task.subject}`) } : {}),
         };
-        // What a code stands for: this item of this project, in the version that was shown, with those tasks.
         const state = `${p.id}/${kind}/${id}/v${item.version}/${tasks.map((task) => task.ref).join(",")}`;
         const valid = confirm !== undefined && confirm === waiting?.code && state === waiting.state && Date.now() < waiting.expires;
         if (!valid) {
-          // A code is of one use: a wrong one spends the one that was waiting, and a guess never finds it.
           waiting = { code: randomUUID(), state, expires: Date.now() + DELETE_WINDOW };
           return data({
             deleted: false,
@@ -1232,9 +1119,6 @@ function registerWriting(server: McpServer, client: TaigaClient, remove: boolean
               "yes, call again with this code in confirm.",
           });
         }
-        // The code proves that the item was shown, and both calls came from the model. Where the client can put a
-        // question to the person, the yes has to come from there: the model cannot answer in the person's place.
-        // What the client can do comes with each request on the 2026-07-28 revision, and with the handshake before it.
         const can = (ctx.mcpReq.envelope as Record<string, any> | undefined)?.[CLIENT_CAPABILITIES_META_KEY] ?? server.server.getClientCapabilities();
         if (can?.elicitation) {
           const answer = inputResponse(ctx.mcpReq.inputResponses, "approve");
@@ -1271,7 +1155,6 @@ function required(name: string): string {
   return value;
 }
 
-/** The address of Taiga, refused when the token would travel in clear text or the address carries a password. */
 function siteOf(url: string): string {
   let address: URL;
   try {
@@ -1290,15 +1173,11 @@ function siteOf(url: string): string {
 
 async function main() {
   const url = siteOf(required("TAIGA_URL"));
-  // The browser keeps the token as a JSON string, quotes included.
   const token = required("TAIGA_TOKEN").trim().replace(/^"|"$/g, "");
-  // Node refuses a header with a space or a line break in it, and says so with the whole header in the message.
   if (!/^[\x21-\x7e]+$/.test(token)) {
     throw new Error("TAIGA_TOKEN has a space, a line break or another character no token has: copy it again, in one piece.");
   }
   const client = new TaigaClient(url, token);
-  // A switch is on with 1, or with true: that is how a client that builds the environment from a form writes a
-  // ticked box. Anything else, "yes" and "on" included, leaves it off.
   const on = (name: string) => ["1", "true"].includes(process.env[name] ?? "");
   const write = on("TAIGA_WRITE");
   const remove = on("TAIGA_DELETE");
@@ -1306,7 +1185,6 @@ async function main() {
     throw new Error("TAIGA_DELETE=1 needs TAIGA_WRITE=1: deleting is a kind of writing.");
   }
   const me = await client.get("/users/me");
-  // One server for the connection, whichever revision of the protocol the client opens it with.
   serveStdio(() => {
     const server = new McpServer({ name: "taiga-mcp", version: "0.3.0" }, { instructions: instructions(write, remove) });
     registerTools(server, client);
@@ -1315,7 +1193,6 @@ async function main() {
     }
     return server;
   });
-  // stdout carries the protocol, so messages for humans go to stderr.
   const mode = !write ? "read-only" : `writes user stories, tasks, issues and attachments${remove ? ", and deletes them" : ""}`;
   console.error(`taiga-mcp: ${client.site} as ${me.username} (${mode})`);
 }

@@ -1,9 +1,3 @@
-// Writes README.md at the top of the package, for the page of the package on npm, and removes it again:
-// "prepack" and "postpack" of package.json run it. The repository keeps its documents in docs/, and npm shows
-// only a README that sits at the top. The text is docs/readme.md with every link and picture pointed at the
-// repository on GitHub, at the tag of the version being packed, since the page of npm has no docs/ to follow.
-// Usage: node scripts/npm-readme.mjs          writes README.md
-//        node scripts/npm-readme.mjs --clean  removes it
 import { readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { posix } from 'node:path'
 

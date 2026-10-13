@@ -1,5 +1,3 @@
-// Runs dist/index.js over stdio against a fake Taiga that answers with the field names measured on the real one.
-// Each scenario below is a row of docs/testing.md. Usage, after "npm run build": npm test
 import assert from 'node:assert/strict'
 import { spawn } from 'node:child_process'
 import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, symlinkSync, writeFileSync } from 'node:fs'
@@ -21,19 +19,15 @@ const project = {
   members: [{ id: 9, username: 'ana', full_name: 'Ana Rocha', full_name_display: 'Ana Rocha', role_name: 'Developer' }],
   milestones: [{ id: 3, name: 'Sprint 12', slug: 'sprint-12', closed: false }],
 }
-// A role that may create tasks and comment, and little else.
 const locked = { ...project, id: 33, slug: 'locked-project', name: 'Locked', my_permissions: ['view_us', 'view_tasks', 'view_issues', 'add_task', 'comment_us', 'comment_task', 'modify_issue'], members: [{ id: 66, username: 'zeca', full_name_display: 'ana', role_name: 'Guest' }, ...project.members, { id: 10, username: 'bia', full_name: 'Bia Lima', role_name: 'Guest' }, { id: 67, username: 'bia2', full_name: 'Bia Lima', role_name: 'Guest' }], milestones: [] }
-// A project that leaves out everything it may leave out, the list of permissions included.
 const bare = { id: 34, slug: 'bare-project', name: 'Bare', members: [] }
 const projects = { 'my-project': project, 'locked-project': locked, 'bare-project': bare }
 
 const us = { id: 100, ref: 12, subject: 'História', status: 1, status_extra_info: { name: 'A fazer', is_closed: false }, is_closed: false, milestone: 3, assigned_to: 9, assigned_users: [9], total_points: 5, tags: [['api', '#fff']], due_date: null, is_blocked: false, blocked_note: '', total_comments: 2, created_date: '2026-10-01T12:00:00Z', modified_date: '2026-10-09T15:30:00Z', finish_date: null }
 const task = { id: 200, ref: 13, subject: 'Tarefa', status: 12, status_extra_info: { name: 'Em andamento', is_closed: false }, is_closed: false, milestone: 3, assigned_to: null, user_story: 100, user_story_extra_info: { id: 100, ref: 12, subject: 'História' }, tags: [], due_date: '2026-10-15', is_blocked: true, blocked_note: 'espera', total_comments: 0, created_date: '2026-10-01T12:00:00Z', modified_date: '2026-10-09T15:30:00Z', finished_date: null }
 const issue = { id: 300, ref: 14, subject: 'Erro', status: 21, status_extra_info: { name: 'A fazer', is_closed: false }, is_closed: false, milestone: null, assigned_to: 9, type: 5, severity: 6, priority: 7, tags: [], due_date: null, is_blocked: false, total_comments: 0, created_date: '2026-10-01T12:00:00Z', modified_date: '2026-10-09T15:30:00Z', finished_date: null }
-// What the bare project lists: no status name, somebody who left the project, a plain tag, blocked with no reason.
 const sparse = [{ id: 400, ref: 20, subject: 'Solta', status: 99, assigned_to: 77, tags: ['x'], is_blocked: true, blocked_note: '' }, { id: 401, ref: 21, subject: 'Mais solta', status_extra_info: { is_closed: true } }]
 
-// The files behind the attachments. Taiga gives each an address with a key of its own and a fragment.
 const media = {
   '/media/tela.png': Buffer.from([0x89, 0x50, 0x4e, 0x47]),
   '/media/notas.txt': Buffer.from('olá', 'utf8'),
@@ -45,18 +39,15 @@ const media = {
 const attached = (id, name, file, extra = {}) => ({ id, name, size: media[file]?.length ?? 1, url: `${base}${file}?token=k#_taiga-refresh=task:${id}`, description: '', is_deprecated: false, created_date: '2026-10-01T12:00:00Z', ...extra })
 const answer = (status, body, headers = {}) => ({ answer: true, status, body, headers })
 const refs = { 12: { us: 100 }, 13: { task: 200 }, 14: { issue: 300 } }
-// What changes between two looks at an item: its version, and the tasks of the user story.
 const version = { us: 4, task: 7, issue: 2 }
 let oneMoreTask = false
 
 const routes = {
-  // Another valid token, of an account for which Taiga gives less.
   'GET /users/me': (q, req) => (req.headers.authorization === 'Bearer plain' ? { id: 9, username: 'ana', full_name: 'Ana Rocha' } : { id: 9, username: 'ana', full_name_display: 'Ana Rocha', email: 'ana@example.com' }),
   'GET /projects': () => [project, locked],
   'GET /projects/32': () => project,
   'GET /projects/by_slug': (q) => (q.get('slug') === 'expired' ? answer(401, { _error_message: 'no' }) : projects[q.get('slug')] ?? answer(404, { detail: 'No Project matches the given query.' })),
   'GET /milestones': (q) => (q.get('project') === '34' ? answer(502, 'Bad Gateway') : q.get('project') === '33' ? [{ name: 'Sprint vazio', closed: true }] : [{ name: 'Sprint 12', estimated_start: '2026-10-09', estimated_finish: '2026-10-16', closed: false, total_points: 8, closed_points: 3, user_stories: [{ is_closed: true }, { is_closed: false }] }]),
-  // The bare project answers with no total: the server counts what came.
   'GET /userstories': (q) => (q.get('project') === '34' ? answer(200, sparse, { 'x-pagination-count': undefined }) : [us]),
   'GET /tasks': (q) => (q.get('project') === '34' ? [{ id: 402, ref: 22, subject: 'Sem história', status: 11 }] : oneMoreTask ? [task, { ...task, id: 202, ref: 18, subject: 'Outra tarefa' }] : [task]),
   'GET /issues': () => [issue],
@@ -66,7 +57,6 @@ const routes = {
   'GET /issues/300': () => ({ ...issue, description: null, version: version.issue }),
   'GET /userstories/attachments': () => [],
   'GET /tasks/attachments': () => [attached(501, 'tela.png', '/media/tela.png', { description: 'print' }), attached(502, 'notas.txt', '/media/notas.txt'), attached(503, 'antigo.csv', '/media/antigo.csv'), attached(504, 'laudo final.pdf', '/media/laudo.pdf', { is_deprecated: true })],
-  // The attachments that go wrong, or that are too much to show.
   'GET /issues/attachments': () => [
     { ...attached(601, 'proibido.txt', '/media/notas.txt'), url: `${base}/media/notas.txt` },
     { ...attached(602, 'fora.txt', '/media/notas.txt'), url: 'http://127.0.0.1:1/fora.txt' },
@@ -76,10 +66,8 @@ const routes = {
   ],
   'GET /history/userstory/100': () => [{ created_at: '2026-10-09T15:30:00Z', user: { username: 'ana' }, comment: 'oi', delete_comment_date: null, values_diff: { status: ['a', 'b'] } }, { created_at: '2026-10-09T15:31:00Z', user: { username: 'ana' }, comment: 'apagado', delete_comment_date: 'x', values_diff: {} }],
   'GET /history/task/200': () => [{ created_at: '2026-10-09T15:30:00Z', user: { username: 'ana' }, comment: 'x'.repeat(2100), delete_comment_date: null, values_diff: {} }],
-  // An entry of the system, and one of somebody whose account is gone.
   'GET /history/issue/300': () => [{ created_at: '2026-10-09T15:30:00Z', user: { name: 'Sistema' }, comment: 'y'.repeat(310), delete_comment_date: null }, { created_at: '2026-10-09T15:31:00Z', user: null, comment: '', values_diff: { status: ['a', 'b'] } }, { created_at: '2026-10-09T15:32:00Z', user: null, comment: 'órfão', delete_comment_date: null }],
   'GET /search': (q) => (q.get('project') === '33' ? { count: 0 } : { count: 2, userstories: [{ ref: 12, subject: 'História', status: 1 }], tasks: [{ ref: 13, subject: 'Tarefa', status: 12 }], issues: [], wikipages: [{ slug: 'home' }] }),
-  // A write is answered with the item as it was left, as Taiga does.
   'POST /userstories': (sent) => ({ ...us, id: 101, ref: 16, subject: sent.subject }),
   'PATCH /userstories/100': () => ({ ...us, version: version.us + 1 }),
   'POST /tasks': (sent) => (sent.subject === 'boom' ? answer(400, { subject: ['This field is wrong.'] }) : { ...task, id: 201, ref: 15, subject: sent.subject }),
@@ -93,8 +81,6 @@ const routes = {
   'DELETE /tasks/200': () => answer(204, ''),
   'DELETE /issues/300': () => answer(204, ''),
 }
-// How many of the next requests of each method this side drops without an answer: what a connection that the
-// other side closed looks like to the server.
 const drop = { GET: 0, POST: 0, PATCH: 0, DELETE: 0 }
 const fake = createServer(async (req, res) => {
   if (drop[req.method] > 0) {
@@ -104,7 +90,6 @@ const fake = createServer(async (req, res) => {
   const url = new URL(req.url, 'http://x')
   let sent = ''
   for await (const chunk of req) sent += chunk
-  // A file goes as a form, kept as text; everything else that is sent is JSON.
   const type = req.headers['content-type'] ?? ''
   const body = type.startsWith('application/json') ? JSON.parse(sent) : sent || undefined
   seen.push({ method: req.method, path: url.pathname, query: Object.fromEntries(url.searchParams), auth: req.headers.authorization, type, body })
@@ -120,22 +105,17 @@ const fake = createServer(async (req, res) => {
     res.end(typeof data === 'string' ? data : JSON.stringify(data))
   }
   if (!['Bearer good', 'Bearer plain'].includes(req.headers.authorization)) return reply(answer(401, { _error_message: 'no' }))
-  // Taiga itself refuses a write to the bare project, which gave no list of permissions to check first.
   if (req.method !== 'GET' && (body?.project === 34 || String(body).includes('name="project"\r\n\r\n34'))) return reply(answer(403, { _error_message: 'You do not have permission to perform this action.' }))
   const route = routes[`${req.method} ${url.pathname.replace('/api/v1', '')}`]
   const data = route ? route(req.method === 'GET' ? url.searchParams : body, req) : answer(404, { _error_message: 'not found' })
   reply(data?.answer ? data : answer(200, data))
 })
-// This side keeps an idle connection for ten minutes, longer than a run takes. By default it would close it after
-// five seconds, and a server that the machine held up for longer than that then writes its next request into the
-// closed connection: the call fails with "fetch failed: other side closed", in whatever scenario happens to be running.
 fake.keepAliveTimeout = 10 * 60_000
 await new Promise((r) => fake.listen(0, '127.0.0.1', r))
 const base = `http://127.0.0.1:${fake.address().port}`
 const sent = (from = 0) => seen.slice(from).filter((r) => r.method !== 'GET')
 
 let structured = 0
-// "can" is what the client says it can do, and "answers" what its user will say to each question of the server.
 function start(token, extra = {}, can = {}) {
   const asked = []
   const answers = []
@@ -155,7 +135,6 @@ function start(token, extra = {}, can = {}) {
       const line = buffer.slice(0, i); buffer = buffer.slice(i + 1)
       if (!line.trim()) continue
       const m = JSON.parse(line)
-      // A message with a method is a request of the server to the client: the question it puts to the user.
       if (m.method === 'elicitation/create') {
         asked.push(m.params)
         child.stdin.write(JSON.stringify({ jsonrpc: '2.0', id: m.id, result: answers.shift() ?? { action: 'cancel' } }) + '\n')
@@ -165,7 +144,6 @@ function start(token, extra = {}, can = {}) {
   let id = 0
   const rpc = (method, params) => new Promise((resolve) => { const n = ++id; waiting.set(n, resolve); child.stdin.write(JSON.stringify({ jsonrpc: '2.0', id: n, method, params }) + '\n') })
   const raw = async (name, args = {}) => (await rpc('tools/call', { name, arguments: args })).result
-  // An answer that is data comes twice, as text and as structured content: the two must say the same.
   const call = async (name, args = {}) => {
     const result = await raw(name, args)
     const text = result.content[0].text
@@ -174,14 +152,12 @@ function start(token, extra = {}, can = {}) {
     if (name !== 'taiga_attachments_get') { assert.deepEqual(result.structuredContent, data, name); structured++ }
     return data
   }
-  // The opening every client before 2026-07-28 makes.
   const open = async () => {
     const opened = (await rpc('initialize', { protocolVersion: '2025-06-18', capabilities: can, clientInfo: { name: 'smoke', version: '0' } })).result
     child.stdin.write(JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initialized' }) + '\n')
     return { ...opened, tools: (await rpc('tools/list', {})).result.tools }
   }
   const exited = new Promise((r) => child.on('exit', r))
-  // A client stops the server by closing its input: the server leaves by itself.
   const stop = async () => { child.stdin.end(); assert.equal(await exited, 0) }
   return { rpc, raw, call, open, stop, exited, asked, answers, stderr: () => err, wrote: () => out + err }
 }
@@ -200,7 +176,6 @@ const refused = async (extra, pattern) => {
   return seen.length - before
 }
 
-// ---------------------------------------------------------------------------------------------------- start
 await scenario('A wrong token stops the server at start, with the way out in the message', async () => {
   const bad = start('bad')
   assert.equal(await bad.exited, 1)
@@ -234,8 +209,6 @@ await scenario('TAIGA_DELETE=1 without TAIGA_WRITE=1 stops the server at start',
   assert.equal(await refused({ TAIGA_DELETE: '1' }, /TAIGA_DELETE=1 needs TAIGA_WRITE=1/), 0)
 })
 
-// ------------------------------------------------------------------------------------------------- protocol
-// The browser stores the token with quotes: they are dropped.
 const s = start('"good"')
 const opened = await s.open()
 const tools = opened.tools
@@ -243,7 +216,6 @@ await scenario('Read-only by default: 10 tools, none of them a write, and the in
   assert.equal(tools.length, 10)
   assert.match(opened.instructions, /Nothing can be changed through this server\./)
   assert.deepEqual(tools.filter((t) => t.annotations.readOnlyHint !== true).map((t) => t.name), ['taiga_attachments_get'])
-  // Opening an attachment can leave a file on the machine, so it does not claim to be read-only.
   assert.deepEqual(tools.at(-1).annotations, { readOnlyHint: false, destructiveHint: false, openWorldHint: false, idempotentHint: true })
   assert.match(s.stderr(), new RegExp(`^taiga-mcp: ${base} as ana \\(read-only\\)\\s*$`))
 })
@@ -275,7 +247,6 @@ await scenario('The 2026-07-28 opening (server/discover, no handshake) is served
   await m.stop()
 })
 
-// --------------------------------------------------------------------------------------------------- reading
 await scenario('taiga_me gives the current user', async () => {
   assert.deepEqual(await s.call('taiga_me'), { id: 9, username: 'ana', fullName: 'Ana Rocha', email: 'ana@example.com' })
 })
@@ -299,7 +270,6 @@ await scenario('A project that leaves values out is still answered', async () =>
   const loose = await s.call('taiga_userstories_list', { project: 'bare-project' })
   assert.equal(loose.total, 2)
   assert.deepEqual(loose.items[1], { type: 'us', ref: 21, subject: 'Mais solta', status: null, closed: true, sprint: null, assignees: [], points: null, tags: [], dueDate: null, blocked: false, comments: null, createdAt: null, modifiedAt: null, finishedAt: null })
-  // A task with no user story, a sprint with no user story, a member with one name only, a search that finds nothing.
   assert.equal((await s.call('taiga_tasks_list', { project: 'bare-project' })).items[0].userStory, null)
   assert.deepEqual(await s.call('taiga_sprints_list', { project: 'locked-project' }), { sprints: [{ name: 'Sprint vazio', closed: true, userStoriesOpen: 0, userStoriesClosed: 0 }] })
   const lockedDetail = await s.call('taiga_projects_get', { project: 'locked-project' })
@@ -317,7 +287,6 @@ await scenario('taiga_userstories_list turns names into the filters Taiga expect
   assert.deepEqual([stories.page, stories.size], [2, 10])
   assert.deepEqual(seen.at(-1).query, { project: '32', status: '2', assigned_to: '9', status__is_closed: 'false', milestone: 'null', tags: 'api', q: 'pdf', page: '2', page_size: '10' })
   assert.deepEqual(stories.items[0], { type: 'us', ref: 12, subject: 'História', status: 'A fazer', closed: false, sprint: 'Sprint 12', assignees: ['ana'], points: 5, tags: ['api'], dueDate: null, blocked: false, comments: 2, createdAt: '2026-10-01T12:00:00Z', modifiedAt: '2026-10-09T15:30:00Z', finishedAt: null })
-  // A status, a member and a sprint are also found by their id.
   await s.call('taiga_userstories_list', { project: 'my-project', status: '1', assignee: '9', sprint: '3' })
   assert.deepEqual(seen.at(-1).query, { project: '32', status: '1', assigned_to: '9', milestone: '3', page: '1', page_size: '50' })
 })
@@ -334,7 +303,6 @@ await scenario('A name that does not exist is refused with the names that do', a
   assert.match((await s.call('taiga_userstories_list', { project: 'locked-project', sprint: 'Sprint 1' })).error, /Sprints: \(no sprints\)/)
 })
 await scenario('A person is found by username before any full name, and a full name two people share is refused', async () => {
-  // In this project somebody listed first chose "ana", the username of a colleague, as full name.
   await s.call('taiga_tasks_list', { project: 'locked-project', assignee: 'ana' })
   assert.equal(seen.at(-1).query.assigned_to, '9')
   await s.call('taiga_tasks_list', { project: 'locked-project', assignee: 'Ana Rocha' })
@@ -354,10 +322,8 @@ await scenario('taiga_items_get gives a user story with its tasks, comments and 
   const item = await s.call('taiga_items_get', { project: 'my-project', ref: 12, include: ['comments', 'history'] })
   assert.deepEqual([item.type, item.description, item.createdBy, item.attachments], ['us', 'texto', 'ana', []])
   assert.deepEqual(item.taskList, [{ ref: 13, subject: 'Tarefa', status: 'Em andamento', closed: false, assignees: [] }])
-  // A deleted comment is not shown.
   assert.deepEqual(item.commentList, [{ when: '2026-10-09T15:30:00Z', who: 'ana', body: 'oi' }])
   assert.deepEqual(item.history.map((entry) => entry.changed), [['status'], []])
-  // Taiga gives 30 history entries unless more are asked for.
   assert.equal(seen.at(-1).query.page_size, '1000')
 })
 await scenario('taiga_items_get gives a task with what is attached to it', async () => {
@@ -391,7 +357,6 @@ await scenario('taiga_search finds items and wiki pages', async () => {
   assert.deepEqual([found.count, found.wikiPages], [2, ['home']])
 })
 
-// ----------------------------------------------------------------------------------------------- attachments
 const mediaFrom = seen.length
 await scenario('taiga_attachments_get shows an image as an image and a text as text', async () => {
   const image = await s.raw('taiga_attachments_get', { project: 'my-project', ref: 13, attachment: 'tela.png' })
@@ -412,9 +377,7 @@ await scenario('Any other file is saved under a name that cannot leave the folde
 })
 await scenario('The folder of saved files is new, only of this user, one for the run, and made again if deleted', async () => {
   assert.match(basename(folder), /^taiga-mcp-.{6,}$/)
-  // Windows has no such mode: there the temp folder is already inside the profile of the user.
   assert.ok(process.platform === 'win32' || (statSync(folder).mode & 0o777) === 0o700)
-  // An image too large for a model goes to a file as well, in the same folder.
   const large = await s.call('taiga_attachments_get', { project: 'my-project', ref: 14, attachment: 'grande.png' })
   assert.deepEqual([dirname(large.savedTo), basename(large.savedTo), large.size], [folder, 'my-project-14-604-grande.png', media['/media/grande.png'].length])
   rmSync(folder, { recursive: true })
@@ -431,16 +394,13 @@ await scenario('An attachment that cannot be opened says why', async () => {
   assert.match((await open('fora.txt')).error, /Attachment unreachable: /)
 })
 await scenario('The token goes to the API and nowhere else', async () => {
-  // The files are read with the key of their own address: the session token does not go to them.
   const files = seen.slice(mediaFrom).filter((r) => r.path.startsWith('/media/'))
   assert.equal(files.length, 7)
   assert.ok(files.every((r) => r.auth === undefined))
   assert.ok(seen.filter((r) => r.path.startsWith('/api/')).every((r) => ['Bearer good', 'Bearer plain', 'Bearer bad'].includes(r.auth)))
-  // It is in no answer, no error and no line of stderr.
   assert.ok(!s.wrote().includes('good'))
 })
 
-// ---------------------------------------------------------------------------------------------------- errors
 await scenario('What Taiga refuses comes back as it said it, or as the status when it said nothing', async () => {
   assert.match((await s.call('taiga_projects_get', { project: 'nope' })).error, /^No Project matches the given query\.$/)
   assert.match((await s.call('taiga_sprints_list', { project: 'bare-project' })).error, /^502 Bad Gateway on GET \/milestones$/)
@@ -457,7 +417,6 @@ await scenario('When the second try fails too, the error says that Taiga cannot 
   drop.GET = 2
   assert.match((await s.call('taiga_projects_get', { project: 'my-project' })).error, /^Taiga API unreachable at http:\/\/127\.0\.0\.1:\d+\/api\/v1: fetch failed: .+\. A second try failed too\. Tell the user that this server cannot reach Taiga right now, so its tools will not work until it can: .+ start this server again in the client\.$/)
   assert.equal(drop.GET, 0)
-  // The refusal is in the trail, and the server is still there: the next call is answered.
   assert.match(s.stderr(), /Z tool error: Taiga API unreachable at /)
   assert.equal((await s.call('taiga_projects_get', { project: 'my-project' })).slug, 'my-project')
 })
@@ -466,13 +425,11 @@ await scenario('Without TAIGA_WRITE nothing but GET leaves the server, and it st
   await s.stop()
 })
 
-// --------------------------------------------------------------------------------------------------- writing
 const w = start('good', { TAIGA_WRITE: '1' })
 const writer = await w.open()
 await scenario('TAIGA_WRITE=1 adds 7 tools that write, and none that deletes', async () => {
   assert.deepEqual(writer.tools.slice(10).map((t) => t.name), ['taiga_userstories_create', 'taiga_userstories_update', 'taiga_tasks_create', 'taiga_tasks_update', 'taiga_issues_create', 'taiga_issues_update', 'taiga_attachments_add'])
   assert.ok(writer.tools.slice(10).every((t) => t.annotations.readOnlyHint === false && t.outputSchema))
-  // An edit replaces what was there: only the three tools that edit are marked as destructive.
   assert.deepEqual(writer.tools.filter((t) => t.annotations.destructiveHint).map((t) => t.name), ['taiga_userstories_update', 'taiga_tasks_update', 'taiga_issues_update'])
   assert.match(writer.instructions, /do not work around it.*Nothing can be deleted\./)
   assert.match(w.stderr(), /\(writes user stories, tasks, issues and attachments\)/)
@@ -498,7 +455,6 @@ await scenario('taiga_tasks_create sends names as ids and answers with the numbe
   assert.equal(`${seen.at(-1).method} ${seen.at(-1).path}`, 'POST /api/v1/tasks')
   assert.deepEqual(seen.at(-1).body, { project: 32, subject: 'Nova', description: 'faça', status: 12, assigned_to: 9, user_story: 100, tags: ['api'], due_date: '2026-10-20' })
   assert.deepEqual([created.ref, created.subject, created.url], [15, 'Nova', `${base}/project/my-project/task/15`])
-  // With no user story, a task goes to the row of a sprint.
   await w.call('taiga_tasks_create', { project: 'my-project', subject: 'Sem história', sprint: 'Sprint 12' })
   assert.deepEqual(seen.at(-1).body, { project: 32, subject: 'Sem história', milestone: 3 })
 })
@@ -507,13 +463,11 @@ await scenario('A write that does not get through is not sent again, and the err
   const before = seen.length
   const { error } = await w.call('taiga_tasks_update', { project: 'my-project', ref: 13, comment: 'de novo' })
   assert.match(error, /^Taiga API unreachable at .+: fetch failed: .+\. The request was sent once and not repeated, because it may have reached Taiga: read the item before sending the change again\. Tell the user that this server cannot reach Taiga right now/)
-  // The one PATCH was dropped, and no second one came.
   assert.deepEqual([drop.PATCH, sent(before)], [0, []])
 })
 await scenario('taiga_tasks_update moves and edits: what is not said is not sent, and "none" empties', async () => {
   const moved = await w.call('taiga_tasks_update', { project: 'my-project', ref: 13, status: 'a fazer', assignee: 'none', dueDate: 'none', blocked: 'none', comment: 'feito' })
   assert.equal(`${seen.at(-1).method} ${seen.at(-1).path}`, 'PATCH /api/v1/tasks/200')
-  // The version read goes along: Taiga refuses a change that does not say which version it was made on.
   assert.deepEqual(seen.at(-1).body, { version: 7, status: 11, assigned_to: null, due_date: null, is_blocked: false, blocked_note: '', comment: 'feito' })
   assert.equal(moved.url, `${base}/project/my-project/task/13`)
   await w.call('taiga_tasks_update', { project: 'my-project', ref: 13, subject: 'Outra', userStory: 12, sprint: 'Sprint 12', blocked: 'espera o cliente' })
@@ -538,12 +492,10 @@ await scenario('An edit that replaces a description or the tags needs the versio
   for (const change of [{ description: 'novo texto' }, { tags: ['novo'] }]) {
     assert.match((await w.call('taiga_tasks_update', { project: 'my-project', ref: 13, ...change })).error, /^A description or the tags replace what #13 has now: read it with taiga_items_get and give its version/)
   }
-  // Somebody edited the task after it was read: the edit made on the old version is not sent.
   assert.match((await w.call('taiga_tasks_update', { project: 'my-project', ref: 13, description: 'novo texto', version: 6 })).error, /^#13 changed since version 6: it is at version 7 now\. Read it again with taiga_items_get/)
   assert.deepEqual(sent(before), [])
   const edited = await w.call('taiga_tasks_update', { project: 'my-project', ref: 13, description: 'novo texto', tags: ['novo'], version: 7 })
   assert.deepEqual(seen.at(-1).body, { version: 7, description: 'novo texto', tags: ['novo'] })
-  // The answer has the version the write left, for the next edit.
   assert.equal(edited.version, 8)
 })
 await scenario('taiga_issues_create and taiga_issues_update take type, severity and priority by name', async () => {
@@ -569,7 +521,6 @@ await scenario('What Taiga refuses in a write comes back with the fields at faul
   assert.match((await w.call('taiga_tasks_create', { project: 'my-project', subject: 'boom', userStory: 12 })).error, /^400 Bad Request on POST \/tasks: \{"subject":\["This field is wrong\."\]\}$/)
 })
 
-// A folder of this run alone: two runs at the same time must not remove the files of each other.
 const smoke = mkdtempSync(join(tmpdir(), 'taiga-mcp-smoke-'))
 mkdirSync(join(smoke, '.ssh'), { recursive: true })
 const sending = join(smoke, 'envio.txt')
@@ -598,7 +549,6 @@ await scenario('taiga_attachments_add refuses a file that looks like a credentia
   const before = seen.length
   const send = async (path) => (await w.call('taiga_attachments_add', { project: 'my-project', ref: 13, path })).error
   const secrets = [join(smoke, '.ssh', 'id_test'), join(smoke, 'cert.PEM'), join(smoke, '.env')]
-  // The folder where programs keep the data of the user, outside the temp folder: client configurations live there.
   const profile = { win32: join(homedir(), 'AppData', 'Local'), darwin: join(homedir(), 'Library') }[process.platform]
   if (profile) secrets.push(join(profile, 'taiga-mcp-smoke-profile.txt'))
   for (const path of secrets) {
@@ -606,14 +556,10 @@ await scenario('taiga_attachments_add refuses a file that looks like a credentia
     assert.match(await send(path), /is not sent: it looks like a credential or a configuration file/, path)
   }
   if (profile) rmSync(secrets.at(-1))
-  // A network path is refused before the disk is touched: \\localhost\C$ is another name for every folder above,
-  // and another host would be offered the credentials of the user.
   for (const path of ['\\\\localhost\\C$\\Users\\ana\\AppData\\Roaming\\config.json', '//files.example.com/share/notes.txt']) {
     assert.match(await send(path), /is not sent: a network path is refused/, path)
   }
-  // On Linux the environment of the server itself, token included, is a file under /proc.
   if (process.platform === 'linux') assert.match(await send('/proc/self/environ'), /is not sent: it looks like a credential/)
-  // A link with an innocent name that leads to one of them is followed first. Windows asks for a privilege to make one.
   if (process.platform !== 'win32') {
     symlinkSync(secrets[0], join(smoke, 'foto.txt'))
     assert.match(await send(join(smoke, 'foto.txt')), /is not sent/)
@@ -621,17 +567,14 @@ await scenario('taiga_attachments_add refuses a file that looks like a credentia
   assert.deepEqual(sent(before), [])
 })
 
-// ----------------------------------------------------------------------------------------------- permissions
 await scenario('A change the role does not allow is refused before anything is sent, with what the role allows instead', async () => {
   const before = seen.length
   const refusedStory = (await w.call('taiga_userstories_create', { project: 'locked-project', subject: 'História nova' })).error
   assert.match(refusedStory, /^You do not have permission to create a user story in locked-project: your role lacks the Taiga permission add_us\. Nothing was done\./)
-  // Only what this role may do is offered: a task and a comment, not an issue.
   assert.match(refusedStory, /instead: \(1\) create only a task, in a user story that already exists or in a sprint with no user story \(taiga_tasks_create\); \(2\) write it as a comment on a user story that already exists \(taiga_userstories_update with only comment\); \(3\) ask a project admin to do it, or to give your role this permission\./)
   assert.match(refusedStory, /Do not work around this on your own: tell the user what was refused, offer the alternatives and wait for the choice\.$/)
   assert.match((await w.call('taiga_issues_create', { project: 'locked-project', subject: 'x' })).error, /permission to create an issue.*add_issue.*instead: \(1\) create only a task.*\(2\) ask a project admin/)
   assert.match((await w.call('taiga_tasks_update', { project: 'locked-project', ref: 13, status: 'A fazer' })).error, /permission to change a task.*modify_task.*instead: \(1\) leave a comment on it saying what should change \(taiga_tasks_update with only comment\); \(2\) ask/)
-  // With no comment permission either, only the admin is left.
   assert.match((await w.call('taiga_userstories_update', { project: 'locked-project', ref: 12, subject: 'x' })).error, /modify_us.*instead: \(1\) leave a comment on it/)
   assert.deepEqual(sent(before), [])
 })
@@ -640,7 +583,6 @@ await scenario('What the role does allow goes through: a task, an edit it may ma
   assert.deepEqual(seen.at(-1).body, { project: 33, subject: 'Só a tarefa', user_story: 100 })
   await w.call('taiga_issues_update', { project: 'locked-project', ref: 14, status: 'Fechado' })
   assert.deepEqual(seen.at(-1).body, { version: 2, status: 22 })
-  // Taiga takes a change that is only a comment from a role that may comment and may not edit.
   await w.call('taiga_tasks_update', { project: 'locked-project', ref: 13, comment: 'alguém pode mover?' })
   assert.deepEqual(seen.at(-1).body, { version: 7, comment: 'alguém pode mover?' })
 })
@@ -655,12 +597,10 @@ await scenario('Every change that reached Taiga and every tool error leaves a li
   has(/^taiga-mcp: \d{4}-\d\d-\d\dT[\d:.]+Z POST \/tasks 200$/)
   has(/Z PATCH \/userstories\/100 200$/)
   has(/Z POST \/issues\/attachments 200$/)
-  // What Taiga refused is there with its status, and what the server refused with its reason.
   has(/Z POST \/tasks 400$/)
   has(/Z POST \/userstories 403$/)
   has(/Z tool error: You do not have permission to create a user story in locked-project: your role lacks the Taiga permission add_us\./)
   has(/Z tool error: .*is not sent: a network path is refused/)
-  // A read leaves no line.
   assert.ok(!lines.some((line) => / GET /.test(line)))
 })
 await scenario('The token is in nothing the writing server says', async () => {
@@ -668,7 +608,6 @@ await scenario('The token is in nothing the writing server says', async () => {
   await w.stop()
 })
 
-// -------------------------------------------------------------------------------------------------- deleting
 const d = start('good', { TAIGA_WRITE: '1', TAIGA_DELETE: '1' })
 const deleter = await d.open()
 await scenario('TAIGA_DELETE=1 adds the one tool that deletes, marked as destructive', async () => {
@@ -689,7 +628,6 @@ await scenario('The first call of taiga_items_delete deletes nothing: it shows t
   assert.deepEqual([shown.deleted, shown.item.subject, shown.tasksDeletedWithIt], [false, 'Tarefa', undefined])
   assert.match(shown.confirm, CODE)
   assert.match(shown.next, /^Nothing was deleted\. Show this to the user and ask whether it is really to be deleted\. Only after a yes, call again with this code in confirm\.$/)
-  // A user story takes its tasks with it, and the first call says which.
   const story = await show(12)
   assert.deepEqual([story.deleted, story.tasksDeletedWithIt], [false, ['#13 Tarefa']])
   assert.match(story.confirm, CODE)
@@ -698,24 +636,19 @@ await scenario('The first call of taiga_items_delete deletes nothing: it shows t
 })
 await scenario('A code the server did not give for that item, as it is now, deletes nothing', async () => {
   const before = seen.length
-  // A guess on a first call, in the shape the codes once had or in the shape they have.
   for (const confirm of ['task-13-v7', 'yes', '00000000-0000-4000-8000-000000000000']) {
     const guess = await show(13, { confirm })
     assert.equal(guess.deleted, false)
     assert.match(guess.next, /^That code does not stand for this item as it is now: .* Nothing was deleted\./)
   }
-  // The code of another item, and the code of the item with the same number in another project.
   assert.equal((await show(14, { confirm: (await show(13)).confirm })).deleted, false)
   assert.equal((await d.call('taiga_items_delete', { project: 'bare-project', ref: 13, confirm: (await show(13)).confirm })).deleted, false)
-  // A code that is not the last one given: showing another item replaced it.
   const first = await show(13)
   await show(14)
   assert.equal((await show(13, { confirm: first.confirm })).deleted, false)
-  // An item that changed since it was shown.
   const old = await show(13)
   version.task = 8
   assert.equal((await show(13, { confirm: old.confirm })).deleted, false)
-  // A user story that got one more task since it was shown.
   const story = await show(12)
   oneMoreTask = true
   const grown = await show(12, { confirm: story.confirm })
@@ -729,14 +662,12 @@ await scenario('With the code of the first call the item is deleted, whatever it
     const gone = await show(ref, { confirm: shown.confirm })
     assert.deepEqual([gone.deleted, gone.item.ref, gone.confirm, gone.next], [true, ref, undefined, undefined])
     assert.deepEqual([seen.at(-1).method, seen.at(-1).path, seen.at(-1).body], ['DELETE', `/api/v1/${path}`, undefined])
-    // The simulated Taiga still has the item: the code that deleted it does not delete it a second time.
     const before = seen.length
     assert.equal((await show(ref, { confirm: shown.confirm })).deleted, false)
     assert.deepEqual(sent(before), [])
   }
 })
 await scenario('A role that may not delete is told so on the first call, with what it may do instead', async () => {
-  // Each deletion left its line on stderr: the last record of an item Taiga no longer has.
   assert.equal(d.stderr().split('\n').filter((line) => /Z DELETE \/(tasks\/200|userstories\/100|issues\/300) 204$/.test(line)).length, 3)
   const before = seen.length
   assert.match((await d.call('taiga_items_delete', { project: 'locked-project', ref: 14 })).error, /permission to delete an issue.*delete_issue.*instead: \(1\) close it instead, by moving it to a closed status \(taiga_issues_update\); \(2\) ask a project admin/)
@@ -749,10 +680,8 @@ await scenario('A client that can ask its user is made to ask, and nothing is de
   await e.open()
   const erase = (extra = {}) => e.call('taiga_items_delete', { project: 'my-project', ref: 12, ...extra })
   const before = seen.length
-  // The first call asks nobody: it only shows.
   await erase()
   assert.equal(e.asked.length, 0)
-  // Any answer that is not a plain yes deletes nothing and spends the code.
   for (const answer of [{ action: 'decline' }, { action: 'cancel' }, { action: 'accept', content: { delete: false } }, { action: 'accept', content: {} }]) {
     const { confirm } = await erase()
     e.answers.push(answer)
@@ -761,15 +690,12 @@ await scenario('A client that can ask its user is made to ask, and nothing is de
     assert.match((await erase({ confirm })).next, /^That code does not stand for this item as it is now/)
   }
   assert.deepEqual(sent(before), [])
-  // The question names the item and what would go with it, and takes a yes or a no.
   assert.equal(e.asked.length, 4)
   assert.equal(e.asked[0].message, 'Delete the user story #12 "História" of my-project, with its tasks #13? Taiga keeps no trash: this cannot be undone.')
   assert.equal(e.asked[0].requestedSchema.properties.delete.type, 'boolean')
   assert.match(e.stderr(), /Z deletion of us #12 in my-project not approved by the user \(decline\)$/m)
-  // A wrong code is never put to the user.
   assert.equal((await erase({ confirm: 'yes' })).deleted, false)
   assert.equal(e.asked.length, 4)
-  // With the yes of the user, it is deleted.
   const { confirm } = await erase()
   e.answers.push({ action: 'accept', content: { delete: true } })
   assert.equal((await erase({ confirm })).deleted, true)
@@ -786,7 +712,6 @@ await scenario('On the 2026-07-28 revision the question goes out in the answer a
   assert.equal(asks.resultType, 'input_required')
   assert.equal(asks.inputRequests.approve.params.message, 'Delete the issue #14 "Erro" of my-project? Taiga keeps no trash: this cannot be undone.')
   assert.deepEqual(sent(before), [])
-  // A no in the retried call deletes nothing; a yes, after a new look, deletes.
   assert.equal((await erase({ confirm }, { inputResponses: { approve: { action: 'decline' } } })).structuredContent.deleted, false)
   assert.deepEqual(sent(before), [])
   const again = (await erase()).structuredContent.confirm
@@ -798,7 +723,6 @@ await scenario('On the 2026-07-28 revision the question goes out in the answer a
 })
 rmSync(smoke, { recursive: true })
 
-// ---------------------------------------------------------------------------------------------------- limits
 await scenario('A burst of calls is cut at the limit, and the refusal says how long to wait', async () => {
   const r = start('good')
   await r.open()
@@ -816,18 +740,15 @@ await scenario('package.json and server.json name the same server, the same vers
   assert.equal(registry.name, pkg.mcpName)
   assert.deepEqual([registry.version, registry.packages[0].version, registry.packages[0].identifier], [pkg.version, pkg.version, pkg.name])
   assert.deepEqual(registry.packages[0].environmentVariables.map((v) => [v.name, v.isRequired, v.isSecret]), [['TAIGA_URL', true, false], ['TAIGA_TOKEN', true, true], ['TAIGA_WRITE', false, false], ['TAIGA_DELETE', false, false]])
-  // The version the server says it is, in both openings of the protocol.
   assert.equal(opened.serverInfo.version, pkg.version)
 })
 await scenario('manifest.json of the Claude Desktop extension names this version, the four variables and the read tools', async () => {
   const read = (name) => JSON.parse(readFileSync(name, 'utf8'))
   const [pkg, manifest] = [read('package.json'), read('manifest.json')]
   assert.equal(manifest.version, pkg.version)
-  // Each variable of the server is filled from a field of the form the client shows, and the token field is kept as a secret.
   assert.deepEqual(manifest.server.mcp_config.env, { TAIGA_URL: '${user_config.taiga_url}', TAIGA_TOKEN: '${user_config.taiga_token}', TAIGA_WRITE: '${user_config.allow_writing}', TAIGA_DELETE: '${user_config.allow_deleting}' })
   assert.deepEqual(Object.keys(manifest.user_config), ['taiga_url', 'taiga_token', 'allow_writing', 'allow_deleting'])
   assert.deepEqual([manifest.user_config.taiga_token.sensitive, manifest.user_config.allow_writing.default, manifest.user_config.allow_deleting.default], [true, false, false])
-  // It lists the tools that are always there, and says that more can appear.
   assert.deepEqual([manifest.tools.map((t) => t.name), manifest.tools_generated], [tools.map((t) => t.name), true])
 })
 await scenario('docs/readme.md and docs/readme.pt-br.md list every tool with its parameters, as tools/list gives them', async () => {
@@ -840,16 +761,11 @@ await scenario('docs/readme.md and docs/readme.pt-br.md list every tool with its
 })
 await scenario('Every link between the documents leads to a file and a heading that exist, in the same upper and lower case', async () => {
   const pages = ['docs', 'docs/clients'].flatMap((folder) => readdirSync(folder).filter((name) => name.endsWith('.md')).map((name) => `${folder}/${name}`))
-  // Windows forgives a wrong case in a name and GitHub does not: each part of a path is looked up in its folder.
   const exists = (path) => path.split('/').every((part, i, parts) => part === '..' || readdirSync(parts.slice(0, i).join('/') || '.').includes(part))
-  // The anchor GitHub gives a heading: lower case, punctuation dropped, spaces turned into dashes.
   const headings = (page) => [...readFileSync(page, 'utf8').matchAll(/^#{1,6} (.+?)\r?$/gm)].map((m) => m[1].replaceAll('`', '').trim().toLowerCase().replace(/[^\p{L}\p{N} _-]/gu, '').replaceAll(' ', '-'))
   let followed = 0
   for (const page of pages) {
-    // What is inside a code block or a code span is an example, not a link.
     const prose = readFileSync(page, 'utf8').replace(/```[^]*?```/g, '').replace(/`[^`\n]*`/g, '')
-    // Every "](target)", which also finds a link whose text is an image, as a badge is, and every target of a
-    // link or of a picture written in HTML.
     for (const target of [...prose.matchAll(/\]\(([^)\s]+)\)|\b(?:src|srcset|href)="([^"]+)"/g)].map((found) => found[1] ?? found[2])) {
       if (/^(https?:|mailto:)/.test(target)) continue
       const [path, anchor] = target.split('#')

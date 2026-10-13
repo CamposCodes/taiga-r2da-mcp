@@ -1,6 +1,3 @@
-// How much of dist/index.js the scenarios of smoke.mjs run, from the coverage Node itself records (no dependency).
-// A line counts as run only when every character of it was run, so a branch never taken shows up.
-// Usage, after "npm run build": npm run coverage
 import { spawnSync } from 'node:child_process'
 import { mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -15,7 +12,6 @@ if (run.status !== 0) {
 }
 
 const source = readFileSync(target, 'utf8')
-// A character is run when any of the server processes ran it.
 const covered = new Uint8Array(source.length)
 let processes = 0
 for (const name of readdirSync(folder)) {
@@ -23,7 +19,6 @@ for (const name of readdirSync(folder)) {
   if (!script) continue
   processes++
   const ran = new Uint8Array(source.length)
-  // V8 lists the functions from the outside in and, in each, the blocks from the outside in: a later range refines an earlier one.
   for (const fn of script.functions) for (const range of fn.ranges) ran.fill(range.count > 0 ? 1 : 0, range.startOffset, range.endOffset)
   for (let i = 0; i < ran.length; i++) covered[i] |= ran[i]
 }

@@ -1,11 +1,7 @@
-// Writes the list of tools of docs/readme.md and docs/readme.pt-br.md, between the "tools:start" and "tools:end" comments,
-// from what the built server itself answers to tools/list, so the list cannot say something the server does not.
-// Usage, after "npm run build": npm run docs:tools
 import { spawn } from 'node:child_process'
 import { readFileSync, writeFileSync } from 'node:fs'
 import { createServer } from 'node:http'
 
-// The server checks its token at start: a stand-in on this machine answers that one request.
 const fake = createServer((req, res) => {
   res.writeHead(200, { 'Content-Type': 'application/json' })
   res.end('{"id":1,"username":"docs"}')
@@ -38,8 +34,6 @@ const { tools } = (await rpc('tools/list', {})).result
 child.stdin.end()
 fake.close()
 
-// The Portuguese README says everything in Portuguese: each text of the server has its translation in the file
-// below, and a text with none stops the script, so a new tool cannot go out half translated.
 const portuguese = JSON.parse(readFileSync('scripts/readme-tools.pt-BR.json', 'utf8'))
 function translated(text) {
   if (!(text in portuguese)) throw new Error(`scripts/readme-tools.pt-BR.json has no translation for: ${text}`)
@@ -58,7 +52,6 @@ const LANGUAGES = {
     list: 'lista de', or: 'ou', say: translated,
   },
 }
-// The three groups, in the order the server registers them.
 const firstWrite = tools.findIndex((tool) => tool.name.endsWith('_create'))
 const firstDelete = tools.findIndex((tool) => tool.name.endsWith('_delete'))
 const groups = [tools.slice(0, firstWrite), tools.slice(firstWrite, firstDelete), tools.slice(firstDelete)]
