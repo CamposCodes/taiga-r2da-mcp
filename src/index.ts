@@ -204,7 +204,7 @@ async function limited(response: Response, max: number, what: string): Promise<B
     if (done) break;
     size += value.length;
     if (size > max) {
-      await reader.cancel().catch(() => undefined);
+      reader.cancel().catch(() => undefined);
       throw new Error(`${what} is larger than the ${max} bytes this server accepts.`);
     }
     parts.push(Buffer.from(value));

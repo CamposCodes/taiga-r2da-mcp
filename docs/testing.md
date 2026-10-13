@@ -154,7 +154,7 @@ coverage: 1033 of 1038 lines of dist/index.js run in full (99.5%), over 30 serve
 not run in full:
   49: const text = error instanceof Error ? error.message : String(error);
   163: ? ""
-  178: await reader.cancel().catch(() => undefined);
+  178: reader.cancel().catch(() => undefined);
   433: const under = async (folder) => `${real}${sep}`.toLowerCase().startsWith(`${await realpath(folder).catch(() => folder)}${sep}`.toLowerCase());
   1036: console.error("taiga-mcp:", error instanceof Error ? error.message : error);
 ```
