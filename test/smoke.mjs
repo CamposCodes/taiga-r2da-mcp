@@ -119,7 +119,10 @@ const fake = createServer(async (req, res) => {
 fake.keepAliveTimeout = 10 * 60_000
 await new Promise((r) => fake.listen(0, '127.0.0.1', r))
 const base = `http://127.0.0.1:${fake.address().port}`
-const closed = await new Promise((r) => { const spare = createServer(); spare.listen(0, '127.0.0.1', () => { const { port } = spare.address(); spare.close(() => r(port)) }) })
+const dead = createServer()
+dead.on('connection', (socket) => socket.destroy())
+await new Promise((r) => dead.listen(0, '127.0.0.1', r))
+const closed = dead.address().port
 const sent = (from = 0) => seen.slice(from).filter((r) => r.method !== 'GET')
 
 let structured = 0
@@ -825,4 +828,5 @@ await scenario('docs/testing.md lists exactly these scenarios, in this order', a
   assert.deepEqual(listed, [...done, 'docs/testing.md lists exactly these scenarios, in this order'])
 })
 fake.close()
+dead.close()
 console.log(`ok: ${done.length} scenarios, 10 tools read-only, 7 more with TAIGA_WRITE=1, 1 more with TAIGA_DELETE=1`)
