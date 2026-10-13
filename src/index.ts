@@ -628,9 +628,8 @@ function registerTools(server: McpServer, client: TaigaClient) {
     ({ project, closed }) =>
       run(async () => {
         const p = await loadProject(client, project);
-        const sprints: any[] = (await client.get("/milestones", { project: p.id, closed, page_size: 200 })).sort((a: any, b: any) =>
-          String(b.estimated_start ?? "").localeCompare(String(a.estimated_start ?? "")),
-        );
+        const startOf = (m: any) => String(m.estimated_start ?? "");
+        const sprints: any[] = (await client.get("/milestones", { project: p.id, closed, page_size: 200 })).sort((a: any, b: any) => startOf(b).localeCompare(startOf(a)));
         return {
           sprints: sprints.map((m) => {
             const stories: any[] = m.user_stories ?? [];

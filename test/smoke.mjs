@@ -49,7 +49,7 @@ const routes = {
   'GET /projects': () => [project, locked],
   'GET /projects/32': () => project,
   'GET /projects/by_slug': (q) => (q.get('slug') === 'expired' ? answer(401, { _error_message: 'no' }) : projects[q.get('slug')] ?? answer(404, { detail: 'No Project matches the given query.' })),
-  'GET /milestones': (q) => (q.get('project') === '34' ? answer(502, 'Bad Gateway') : q.get('project') === '33' ? [{ name: 'Sprint vazio', closed: true }] : [{ name: 'Sprint 11', estimated_start: '2026-09-25', estimated_finish: '2026-10-08', closed: true, total_points: 5, closed_points: 5, user_stories: [{ is_closed: true }] }, { name: 'Sprint 12', estimated_start: '2026-10-09', estimated_finish: '2026-10-16', closed: false, total_points: 8, closed_points: 3, user_stories: [{ is_closed: true }, { is_closed: false }] }]),
+  'GET /milestones': (q) => (q.get('project') === '34' ? answer(502, 'Bad Gateway') : q.get('project') === '33' ? [{ name: 'Sprint vazio', closed: true }] : [{ name: 'Sprint sem data', closed: true, total_points: 0, closed_points: 0, user_stories: [] }, { name: 'Sprint 11', estimated_start: '2026-09-25', estimated_finish: '2026-10-08', closed: true, total_points: 5, closed_points: 5, user_stories: [{ is_closed: true }] }, { name: 'Sprint 12', estimated_start: '2026-10-09', estimated_finish: '2026-10-16', closed: false, total_points: 8, closed_points: 3, user_stories: [{ is_closed: true }, { is_closed: false }] }]),
   'GET /userstories': (q) => (q.get('project') === '34' ? answer(200, sparse, { 'x-pagination-count': undefined }) : [us]),
   'GET /tasks': (q) => (q.get('project') === '34' ? [{ id: 402, ref: 22, subject: 'Sem história', status: 11 }] : oneMoreTask ? [task, { ...task, id: 202, ref: 18, subject: 'Outra tarefa' }] : [task]),
   'GET /issues': () => [issue],
@@ -296,7 +296,7 @@ await scenario('A project that leaves values out is still answered', async () =>
   assert.deepEqual(loose.items[0], { type: 'us', ref: 20, subject: 'Solta', status: null, closed: false, sprint: null, assignees: ['user 77'], points: null, tags: ['x'], dueDate: null, blocked: true, comments: null, createdAt: null, modifiedAt: null, finishedAt: null })
 })
 await scenario('taiga_sprints_list counts the user stories and the points of each sprint, newest first', async () => {
-  assert.deepEqual(await s.call('taiga_sprints_list', { project: 'my-project', closed: false }), { sprints: [{ name: 'Sprint 12', start: '2026-10-09', finish: '2026-10-16', closed: false, userStoriesOpen: 1, userStoriesClosed: 1, pointsTotal: 8, pointsClosed: 3 }, { name: 'Sprint 11', start: '2026-09-25', finish: '2026-10-08', closed: true, userStoriesOpen: 0, userStoriesClosed: 1, pointsTotal: 5, pointsClosed: 5 }] })
+  assert.deepEqual(await s.call('taiga_sprints_list', { project: 'my-project', closed: false }), { sprints: [{ name: 'Sprint 12', start: '2026-10-09', finish: '2026-10-16', closed: false, userStoriesOpen: 1, userStoriesClosed: 1, pointsTotal: 8, pointsClosed: 3 }, { name: 'Sprint 11', start: '2026-09-25', finish: '2026-10-08', closed: true, userStoriesOpen: 0, userStoriesClosed: 1, pointsTotal: 5, pointsClosed: 5 }, { name: 'Sprint sem data', closed: true, userStoriesOpen: 0, userStoriesClosed: 0, pointsTotal: 0, pointsClosed: 0 }] })
   assert.deepEqual(seen.at(-1).query, { project: '32', closed: 'false', page_size: '200' })
 })
 await scenario('taiga_userstories_list turns names into the filters Taiga expects', async () => {
