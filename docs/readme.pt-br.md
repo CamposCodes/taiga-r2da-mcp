@@ -33,14 +33,30 @@ está em inglês.
 ## Instalação
 
 O servidor é um pacote npm, [`@campos-codes/taiga-r2da-mcp`](https://www.npmjs.com/package/@campos-codes/taiga-r2da-mcp), e é assim que ele deve ser instalado.
-Não é preciso clonar nem compilar nada: o seu cliente MCP inicia o servidor com
+Não é preciso clonar nem compilar nada. Há duas formas de obtê-lo:
+
+**Com npx (recomendado).** Nada a rodar antes: o seu cliente MCP inicia o servidor com o comando abaixo, e o
+`npx` baixa o pacote na primeira vez.
 
 ```bash
 npx -y @campos-codes/taiga-r2da-mcp
 ```
 
-e o `npx` baixa o pacote na primeira vez. O que colocar em cada cliente está em
-[Primeiros passos](#primeiros-passos).
+**Com npm.** Instale o pacote na máquina uma vez, e o seu cliente MCP inicia o servidor pelo nome do comando,
+`taiga-mcp`.
+
+```bash
+npm install -g @campos-codes/taiga-r2da-mcp
+```
+
+| | npx | npm install -g |
+| --- | --- | --- |
+| O que o cliente roda | `npx -y @campos-codes/taiga-r2da-mcp` | `taiga-mcp` |
+| Para instalar | Nada | `npm install -g @campos-codes/taiga-r2da-mcp` |
+| Para ir a uma versão mais nova | Escreva a versão, ou `@latest`, depois do nome | `npm install -g @campos-codes/taiga-r2da-mcp@latest` |
+| Para remover | Remova o servidor do cliente | `npm uninstall -g @campos-codes/taiga-r2da-mcp` |
+
+O que colocar em cada cliente está em [Primeiros passos](#primeiros-passos).
 
 ## Recursos
 
@@ -93,12 +109,30 @@ Storage**, o endereço do seu Taiga, e copie o valor da chave `token`.
 }
 ```
 
+Se você instalou o pacote com `npm install -g`, o comando é o nome dele, sem argumentos:
+
+```json
+{
+  "mcpServers": {
+    "taiga": {
+      "command": "taiga-mcp",
+      "env": {
+        "TAIGA_URL": "https://taiga.example.com",
+        "TAIGA_TOKEN": "<YOUR_TOKEN>"
+      }
+    }
+  }
+}
+```
+
 <details>
 <summary><b>Claude Code</b></summary>
 
 ```bash
 claude mcp add --env TAIGA_URL=https://taiga.example.com --env "TAIGA_TOKEN=<YOUR_TOKEN>" --transport stdio --scope local taiga -- npx -y @campos-codes/taiga-r2da-mcp
 ```
+
+Instalou com `npm install -g`? Termine o comando com `-- taiga-mcp` no lugar de `-- npx -y @campos-codes/taiga-r2da-mcp`.
 
 Escopos, como trocar um token vencido e como ligar a escrita: [docs/clients/claude-code.md](clients/claude-code.md)
 (em inglês).
@@ -212,7 +246,8 @@ Um cliente que inicia um servidor MCP por stdio precisa de três coisas: o coman
 
 O que este projeto testou no Windows 11, com Node 24 e npm 11:
 
-- O Claude Code 2.1.296 inicia o servidor com o comando acima, como está.
+- O Claude Code 2.1.296 inicia o servidor com o comando acima, como está, e também pelo nome `taiga-mcp` depois
+  de `npm install -g`.
 - Um programa que inicia o `npx` sem shell não o encontra ali (`spawn npx ENOENT`), porque no Windows o `npx`
   é um arquivo `.cmd`. Se o seu cliente disser isso, informe `cmd` como comando e `/c`, `npx`, `-y` e
   `@campos-codes/taiga-r2da-mcp` como argumentos: iniciado assim, o servidor respondeu.

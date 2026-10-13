@@ -30,14 +30,30 @@ creates, edits and moves user stories, tasks and issues and attaches files to th
 ## Install
 
 The server is an npm package, [`@campos-codes/taiga-r2da-mcp`](https://www.npmjs.com/package/@campos-codes/taiga-r2da-mcp), and that is how it is meant to be
-installed. There is nothing to clone or to build: your MCP client starts it with
+installed. There is nothing to clone or to build. There are two ways to get it:
+
+**With npx (recommended).** Nothing to run beforehand: your MCP client starts the server with the command below,
+and `npx` downloads the package the first time.
 
 ```bash
 npx -y @campos-codes/taiga-r2da-mcp
 ```
 
-and `npx` downloads the package the first time. What to put in each client is in
-[Getting started](#getting-started).
+**With npm.** Install the package on the machine once, and your MCP client starts it by the name of its command,
+`taiga-mcp`.
+
+```bash
+npm install -g @campos-codes/taiga-r2da-mcp
+```
+
+| | npx | npm install -g |
+| --- | --- | --- |
+| What the client runs | `npx -y @campos-codes/taiga-r2da-mcp` | `taiga-mcp` |
+| To install | Nothing | `npm install -g @campos-codes/taiga-r2da-mcp` |
+| To move to a newer version | Write the version, or `@latest`, after the name | `npm install -g @campos-codes/taiga-r2da-mcp@latest` |
+| To remove | Remove the server from the client | `npm uninstall -g @campos-codes/taiga-r2da-mcp` |
+
+What to put in each client is in [Getting started](#getting-started).
 
 ## Features
 
@@ -90,12 +106,30 @@ address of your Taiga, and copy the value of the key `token`.
 }
 ```
 
+If you installed the package with `npm install -g`, the command is its name and takes no arguments:
+
+```json
+{
+  "mcpServers": {
+    "taiga": {
+      "command": "taiga-mcp",
+      "env": {
+        "TAIGA_URL": "https://taiga.example.com",
+        "TAIGA_TOKEN": "<YOUR_TOKEN>"
+      }
+    }
+  }
+}
+```
+
 <details>
 <summary><b>Claude Code</b></summary>
 
 ```bash
 claude mcp add --env TAIGA_URL=https://taiga.example.com --env "TAIGA_TOKEN=<YOUR_TOKEN>" --transport stdio --scope local taiga -- npx -y @campos-codes/taiga-r2da-mcp
 ```
+
+Installed with `npm install -g`? End the command with `-- taiga-mcp` in place of `-- npx -y @campos-codes/taiga-r2da-mcp`.
 
 Scopes, how to change an expired token and how to turn writing on: [docs/clients/claude-code.md](clients/claude-code.md).
 
@@ -207,7 +241,8 @@ A client that starts an MCP server over stdio needs three things: the command, `
 
 What this project tried on Windows 11, with Node 24 and npm 11:
 
-- Claude Code 2.1.296 starts the server with the command above as it is.
+- Claude Code 2.1.296 starts the server with the command above as it is, and also by the name `taiga-mcp` after
+  `npm install -g`.
 - A program that starts `npx` with no shell does not find it there (`spawn npx ENOENT`), because on Windows
   `npx` is a `.cmd` file. If your client says so, give `cmd` as the command and `/c`, `npx`, `-y` and
   `@campos-codes/taiga-r2da-mcp` as its arguments: started that way the server answered.

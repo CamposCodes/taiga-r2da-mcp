@@ -212,6 +212,7 @@ delivers it. It was published on 2026-10-13, and the registry gives its SHA-1 as
 | The scenarios pointed at the installed `dist/index.js` | 74 scenarios passed |
 | The built file in the package | The same, byte for byte, as the one built from the tag `v0.3.0` of this repository. Its first line is `#!/usr/bin/env node`, and every file has Unix line endings |
 | The scenarios on other lines of Node, each `node.exe` taken from nodejs.org and checked against its SHA-256 | 74 passed on 20.0.0, the lowest version `engines` allows, on 22.23.3 and on 26.11.1. They pass on 18.18.0 too, which is below what the package and the SDK declare and is not supported |
+| `npm install -g` of the package, into a folder apart, and the server started by its name, `taiga-mcp` | The command answered, and Claude Code 2.1.296, with the server registered as `taiga-mcp`, answered `Status: ✔ Connected` |
 | `npx` started with no shell, as some programs start a command | `spawn npx ENOENT`: on Windows `npx` is a `.cmd` file |
 | `cmd /c npx -y @campos-codes/taiga-r2da-mcp`, spoken to over stdio | Answered `initialize` as `taiga-mcp 0.3.0`, and `tools/list` with 10 tools |
 | Claude Code 2.1.296, the server registered with `claude mcp add` and `npx -y @campos-codes/taiga-r2da-mcp` | `claude mcp get` answered `Status: ✔ Connected` |
