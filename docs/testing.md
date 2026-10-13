@@ -68,7 +68,7 @@ Node 20 or newer. `npm run coverage` runs the scenarios itself, so in a hurry it
 | S14 | taiga_projects_list gives the projects of the user | Reading |
 | S15 | taiga_projects_get gives the names the other tools accept, by slug or by id | Reading |
 | S16 | A project that leaves values out is still answered | Reading |
-| S17 | taiga_sprints_list counts the user stories and the points of each sprint | Reading |
+| S17 | taiga_sprints_list counts the user stories and the points of each sprint, newest first | Reading |
 | S18 | taiga_userstories_list turns names into the filters Taiga expects | Reading |
 | S19 | taiga_tasks_list filters by user story, by nobody and by sprint | Reading |
 | S20 | A name that does not exist is refused with the names that do | Reading |

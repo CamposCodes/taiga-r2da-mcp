@@ -20,6 +20,8 @@ and the versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   subject or in a name reaches neither the question put before a deletion nor a line of the trail.
 - An attachment address that is not `http` or `https` is not opened. A download that grows past 25 MB, and an
   answer of the API that grows past 32 MB, are stopped as the bytes arrive, whatever size Taiga declared.
+- `taiga_sprints_list` sorts the sprints by start date, newest first, as its description promised; the order was
+  the one of the API.
 
 ## 0.3.0 - 2026-10-13
 

@@ -220,12 +220,23 @@ Sprints of a project with dates, open and closed user stories and points. Newest
       "userStoriesClosed": 1,
       "pointsTotal": 8,
       "pointsClosed": 3
+    },
+    {
+      "name": "Sprint 11",
+      "start": "2026-09-25",
+      "finish": "2026-10-08",
+      "closed": true,
+      "userStoriesOpen": 0,
+      "userStoriesClosed": 1,
+      "pointsTotal": 5,
+      "pointsClosed": 5
     }
   ]
 }
 ```
 
-The server asks Taiga for up to 200 sprints in one call.
+The server asks Taiga for up to 200 sprints in one call and sorts them by start date, newest first; a sprint with
+no start date comes last.
 
 ### `taiga_userstories_list`
 
