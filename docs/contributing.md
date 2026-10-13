@@ -33,7 +33,7 @@ Only `npm run test:live` is made for a real Taiga: it is run by hand, works in t
 [`docs/testing.md`](testing.md).
 
 CI runs `npm ci`, `npm run check`, `npm run build` and `npm run coverage` on Linux, macOS and Windows, each with
-Node 20 and Node 24. It never runs `npm run test:live`.
+Node 20, 22, 24 and 26. It never runs `npm run test:live`.
 
 `npm run pack:mcpb`, after the build, writes the Claude Desktop extension, `build/taiga-mcp-<version>.mcpb`, from
 `dist/index.js`, the packages the server needs to run and `manifest.json`. The script,
@@ -81,16 +81,23 @@ needs its translation in `scripts/readme-tools.pt-BR.json`, and the script stops
 
 ## Releasing
 
-The package is named `@camposcodes/taiga-r2da-mcp`. It is not published yet, neither to npm nor to the MCP
-Registry, so the steps below were not run for this project. What the registry asks comes from its quickstart,
-<https://modelcontextprotocol.io/registry/quickstart.md>, read on 2026-10-12. A release takes, in this order:
+The package is named `@campos-codes/taiga-r2da-mcp`. Version 0.3.0 is on npm, published on 2026-10-13 with steps 1 and 2
+below. It is not in the MCP Registry, so step 3 was not run for this project. What the registry asks comes from
+its quickstart, <https://modelcontextprotocol.io/registry/quickstart.md>, read on 2026-10-12. A release takes, in
+this order:
 
 1. **One version in four places.** `package.json`, `server.json` (its `version` and the `version` of its
    package), `manifest.json` and the `McpServer` line of `src/index.ts` say the same version. `npm test` fails
    when one of them differs, and one scenario of `test/smoke.mjs` names the version too. Move what is under
    Unreleased in `docs/changelog.md` to the new version, then run `npm ci`, `npm run build` and `npm run coverage`.
-2. **npm.** `npm publish`. The quickstart publishes with `npm publish --access public`; `package.json` sets that
-   access in `publishConfig`. This comes before the registry: "The MCP Registry only hosts metadata, not
+2. **npm.** `npm publish`, logged in to npm as the owner of the scope `@campos-codes`, then `git tag v<version>`
+   on the commit that was published and `git push origin v<version>`. `npm publish` builds the server and runs
+   `npm test` first (`prepublishOnly`), and writes the `README.md` that the page of the package shows
+   (`prepack`, `scripts/npm-readme.mjs`): `docs/readme.md` with every link and picture pointed at that tag on
+   GitHub, which is why the tag must exist, and each Mermaid diagram replaced by a link, because npm shows its
+   source. The file is removed when the package is packed (`postpack`) and is never committed. The quickstart
+   publishes with `npm publish --access public`; `package.json` sets that access in `publishConfig`. The package
+   is published from a machine, with no provenance attestation. This comes before the registry: "The MCP Registry only hosts metadata, not
    artifacts, so we must publish the package to npm before publishing the server to the MCP Registry."
 3. **The MCP Registry.** Publish `server.json` with the `mcp-publisher` tool, which the quickstart installs from
    a pre-built binary or with Homebrew: `mcp-publisher login github`, then `mcp-publisher publish`. Two rules of

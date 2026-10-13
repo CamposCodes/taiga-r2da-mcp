@@ -10,6 +10,7 @@
 
 <p align="center">
   <a href="https://github.com/CamposCodes/taiga-r2da-mcp/actions/workflows/ci.yml"><img src="https://github.com/CamposCodes/taiga-r2da-mcp/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://www.npmjs.com/package/@campos-codes/taiga-r2da-mcp"><img src="https://img.shields.io/npm/v/%40campos-codes%2Ftaiga-r2da-mcp.svg" alt="npm"></a>
   <a href="../LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT"></a>
   <a href="../package.json"><img src="https://img.shields.io/badge/node-%3E%3D20-brightgreen.svg" alt="Node 20+"></a>
 </p>
@@ -40,29 +41,23 @@ creates, edits and moves user stories, tasks and issues and attaches files to th
 
 ## Requirements
 
-- Node.js 20 or newer.
+- Node.js 20 or newer. Prefer 22 or 24: Node 20 reached its end of life on 2026-04-30
+  ([release schedule](https://github.com/nodejs/Release/blob/main/schedule.json)), and its documentation still marks `fetch`, which carries every call to
+  Taiga, as experimental.
 - A Taiga 6 installation you can log in to, reached over `https://`.
 - An MCP client: Claude Code, Claude Desktop, Codex, or any other that starts a server over stdio.
 
 ## Getting started
 
-### 1. Build the server
+The server is on npm as [`@campos-codes/taiga-r2da-mcp`](https://www.npmjs.com/package/@campos-codes/taiga-r2da-mcp). There is nothing to install beforehand: the client starts it with
+`npx`, which downloads the package the first time it runs.
 
-```bash
-git clone https://github.com/CamposCodes/taiga-r2da-mcp.git taiga-mcp
-cd taiga-mcp
-npm ci
-npm run build
-```
-
-The server is `dist/index.js`. Note its absolute path.
-
-### 2. Get a token
+### 1. Get a token
 
 Log in to your Taiga in the browser, open the developer tools (F12), go to **Application**, **Local Storage**, the
 address of your Taiga, and copy the value of the key `token`.
 
-### 3. Add the server to your client
+### 2. Add the server to your client
 
 The configuration below is the one Claude Desktop documents. A client that reads an `mcpServers` object takes it as
 it is:
@@ -71,8 +66,8 @@ it is:
 {
   "mcpServers": {
     "taiga": {
-      "command": "node",
-      "args": ["/absolute/path/to/taiga-mcp/dist/index.js"],
+      "command": "npx",
+      "args": ["-y", "@campos-codes/taiga-r2da-mcp"],
       "env": {
         "TAIGA_URL": "https://taiga.example.com",
         "TAIGA_TOKEN": "<YOUR_TOKEN>"
@@ -86,7 +81,7 @@ it is:
 <summary><b>Claude Code</b></summary>
 
 ```bash
-claude mcp add --env TAIGA_URL=https://taiga.example.com --env "TAIGA_TOKEN=<YOUR_TOKEN>" --transport stdio --scope local taiga -- node /absolute/path/to/taiga-mcp/dist/index.js
+claude mcp add --env TAIGA_URL=https://taiga.example.com --env "TAIGA_TOKEN=<YOUR_TOKEN>" --transport stdio --scope local taiga -- npx -y @campos-codes/taiga-r2da-mcp
 ```
 
 Scopes, how to change an expired token and how to turn writing on: [docs/clients/claude-code.md](clients/claude-code.md).
@@ -109,15 +104,15 @@ Claude Desktop can also take the server as an extension, a `.mcpb` file that you
 <summary><b>Codex</b> (CLI, IDE extension, desktop app)</summary>
 
 ```bash
-codex mcp add taiga --env TAIGA_URL=https://taiga.example.com --env "TAIGA_TOKEN=<YOUR_TOKEN>" -- node /absolute/path/to/taiga-mcp/dist/index.js
+codex mcp add taiga --env TAIGA_URL=https://taiga.example.com --env "TAIGA_TOKEN=<YOUR_TOKEN>" -- npx -y @campos-codes/taiga-r2da-mcp
 ```
 
 Or, in `~/.codex/config.toml`:
 
 ```toml
 [mcp_servers.taiga]
-command = "node"
-args = ["/absolute/path/to/taiga-mcp/dist/index.js"]
+command = "npx"
+args = ["-y", "@campos-codes/taiga-r2da-mcp"]
 env = { TAIGA_URL = "https://taiga.example.com", TAIGA_TOKEN = "<YOUR_TOKEN>" }
 ```
 
@@ -128,28 +123,45 @@ Approval modes and time limits that matter for this server: [docs/clients/codex.
 <details>
 <summary><b>Any other client</b></summary>
 
-A client that starts an MCP server over stdio needs three things: the command, `node`; its argument, the absolute
-path of `dist/index.js`; and the variables of [Configuration](#configuration) in the environment of the server.
+A client that starts an MCP server over stdio needs three things: the command, `npx`; its arguments, `-y` and
+`@campos-codes/taiga-r2da-mcp`; and the variables of [Configuration](#configuration) in the environment of the server.
 
 </details>
 
-### 4. Ask
+<details>
+<summary><b>Windows</b></summary>
+
+What this project tried on Windows 11, with Node 24 and npm 11:
+
+- Claude Code 2.1.296 starts the server with the command above as it is.
+- A program that starts `npx` with no shell does not find it there (`spawn npx ENOENT`), because on Windows
+  `npx` is a `.cmd` file. If your client says so, give `cmd` as the command and `/c`, `npx`, `-y` and
+  `@campos-codes/taiga-r2da-mcp` as its arguments: started that way the server answered.
+- Claude Desktop and Codex were not tried on Windows `[not verified]`. The page of the MCP documentation that
+  [the Claude Desktop guide](clients/claude-desktop.md) follows gives `"command": "npx"` for Windows too.
+
+</details>
+
+### 3. Ask
 
 "Which projects do I have in Taiga?" You never have to name a tool.
 
-### From npm, once it is published
+### Other ways to install
 
-The package is named `@camposcodes/taiga-r2da-mcp`. **It is not published yet**, neither to npm nor to the MCP
-Registry, so the command below does not work today: install from this repository, as above. Once the package is
-published, step 1 will not be needed, and the client will start the server with `npx` in place of `node` and the
-path:
+- **One version, until you choose another.** Write the version after the name, `@campos-codes/taiga-r2da-mcp@0.3.0`, wherever the name
+  of the package goes. Without it, `npx` decides which version runs.
+- **From source.** Build the server and give the client `node` as the command and the absolute path of
+  `dist/index.js` as its argument, in place of `npx`, `-y` and the name of the package:
 
-```bash
-claude mcp add --env TAIGA_URL=https://taiga.example.com --env "TAIGA_TOKEN=<YOUR_TOKEN>" --transport stdio --scope local taiga -- npx -y @camposcodes/taiga-r2da-mcp
-```
+  ```bash
+  git clone https://github.com/CamposCodes/taiga-r2da-mcp.git taiga-mcp
+  cd taiga-mcp
+  npm ci
+  npm run build
+  ```
 
-Only the name of the package is new: the command it installs is still `taiga-mcp`, and the server still calls
-itself `taiga-mcp`.
+Only the name of the package is long: the command it installs is `taiga-mcp`, and the server calls itself
+`taiga-mcp`.
 
 ## Configuration
 
@@ -536,11 +548,13 @@ The threat model, what the server can touch and how to report a vulnerability: [
   `TAIGA_DELETE=1`, delete. Sprints and wiki pages are not changed, attachments are not deleted and the points of
   a user story are not set.
 - At most 120 tool calls a minute, and 120 seconds for each request to Taiga.
+- A read that does not get through is tried a second time; a write is sent once, because the first try may have
+  reached Taiga. When Taiga cannot be reached, or refuses the token, the error tells the model to say so to you,
+  with what to do: see [Troubleshooting](usage.md#troubleshooting).
 - The assignee filter of user stories finds only the main assignee.
 - The token is renewed by hand.
-- The package is named `@camposcodes/taiga-r2da-mcp`, because the name `taiga-mcp` belongs to another project on
-  npm. It is not published yet, neither to npm nor to the MCP Registry: install it from this repository, as in
-  [Getting started](#getting-started). The command of the server is still `taiga-mcp`.
+- The package is named `@campos-codes/taiga-r2da-mcp`, because the name `taiga-mcp` belongs to another project on
+  npm. It is published to npm, and not to the MCP Registry yet. The command of the server is still `taiga-mcp`.
 - Not covered: content of wiki pages, epics, timelines, notifications, statistics and custom fields.
 
 ## Development

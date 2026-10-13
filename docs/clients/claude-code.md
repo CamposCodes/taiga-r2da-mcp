@@ -3,22 +3,17 @@
 How to install `taiga-mcp` and register it in Claude Code.
 
 Every command and file format on this page comes from the Claude Code documentation,
-[Connect Claude Code to tools via MCP](https://code.claude.com/docs/en/mcp), read on 2026-10-11. What is specific
-to this server is the name `taiga`, the four variables and the path.
+[Connect Claude Code to tools via MCP](https://code.claude.com/docs/en/mcp), read on 2026-10-11 and again on 2026-10-12. What is specific
+to this server is the name `taiga`, the four variables and the name of the package.
 
-## 1. Build the server
+## 1. Check Node
 
-Requires Node 20 or newer.
+Requires Node 20 or newer: check with `node --version`. There is nothing else to install: the server is on npm as
+[`@campos-codes/taiga-r2da-mcp`](https://www.npmjs.com/package/@campos-codes/taiga-r2da-mcp), and the client starts it with `npx`, which downloads the package the first time it runs.
 
-```bash
-git clone https://github.com/CamposCodes/taiga-r2da-mcp.git taiga-mcp
-cd taiga-mcp
-npm ci
-npm run build
-```
-
-The server is `dist/index.js`. Note its absolute path. The package is not published to npm yet: what changes
-when it is, is in [From npm, once it is published](../readme.md#from-npm-once-it-is-published).
+To stay on one version until you choose another, write it after the name: `@campos-codes/taiga-r2da-mcp@0.3.0`. To run the server from
+a copy of this repository in place of npm, see
+[Other ways to install](../readme.md#other-ways-to-install).
 
 ## 2. Get a token
 
@@ -35,7 +30,7 @@ Source: the page above. The syntax it gives for a local stdio server is
 `claude mcp add [options] <name> -- <command> [args...]`.
 
 ```bash
-claude mcp add --env TAIGA_URL=https://taiga.example.com --env "TAIGA_TOKEN=<YOUR_TOKEN>" --transport stdio --scope local taiga -- node /absolute/path/to/taiga-mcp/dist/index.js
+claude mcp add --env TAIGA_URL=https://taiga.example.com --env "TAIGA_TOKEN=<YOUR_TOKEN>" --transport stdio --scope local taiga -- npx -y @campos-codes/taiga-r2da-mcp
 ```
 
 Three things the documentation says about this command:
@@ -46,8 +41,8 @@ Three things the documentation says about this command:
   option, such as `--transport stdio`, between them.
 - The short forms are `-e` (env), `-t` (transport) and `-s` (scope).
 
-A note of this project, not of the documentation: on Windows, give the path with forward slashes, for example
-`C:/tools/taiga-mcp/dist/index.js`.
+A note of this project, not of the documentation: on Windows 11, Claude Code 2.1.296 started the server with this
+command as it is, with Node 24 and npm 11. Other versions were not tried.
 
 Another note of this project: a command typed in a terminal is normally saved in the history file of the shell,
 the token included. On a machine other people can read, delete that line from the history afterwards.
@@ -75,8 +70,8 @@ For the project scope, the documentation describes variable expansion in `.mcp.j
   "mcpServers": {
     "taiga": {
       "type": "stdio",
-      "command": "node",
-      "args": ["/absolute/path/to/taiga-mcp/dist/index.js"],
+      "command": "npx",
+      "args": ["-y", "@campos-codes/taiga-r2da-mcp"],
       "env": {
         "TAIGA_URL": "https://taiga.example.com",
         "TAIGA_TOKEN": "${TAIGA_TOKEN}"
@@ -105,7 +100,7 @@ Inside Claude Code, `/mcp` shows the status of each server. Then ask: "Which pro
 
 ```bash
 claude mcp remove taiga
-claude mcp add --env TAIGA_URL=https://taiga.example.com --env "TAIGA_TOKEN=<NEW_TOKEN>" --transport stdio --scope local taiga -- node /absolute/path/to/taiga-mcp/dist/index.js
+claude mcp add --env TAIGA_URL=https://taiga.example.com --env "TAIGA_TOKEN=<NEW_TOKEN>" --transport stdio --scope local taiga -- npx -y @campos-codes/taiga-r2da-mcp
 ```
 
 ## Turn writing on
@@ -113,7 +108,7 @@ claude mcp add --env TAIGA_URL=https://taiga.example.com --env "TAIGA_TOKEN=<NEW
 Register with one more variable:
 
 ```bash
-claude mcp add --env TAIGA_URL=https://taiga.example.com --env "TAIGA_TOKEN=<YOUR_TOKEN>" --env TAIGA_WRITE=1 --transport stdio --scope local taiga -- node /absolute/path/to/taiga-mcp/dist/index.js
+claude mcp add --env TAIGA_URL=https://taiga.example.com --env "TAIGA_TOKEN=<YOUR_TOKEN>" --env TAIGA_WRITE=1 --transport stdio --scope local taiga -- npx -y @campos-codes/taiga-r2da-mcp
 ```
 
 Without `TAIGA_WRITE=1` the seven write tools do not exist for the model. With it, do not put
@@ -128,7 +123,7 @@ Register with `TAIGA_DELETE=1` next to `TAIGA_WRITE=1`. Alone it does not work: 
 stops at start.
 
 ```bash
-claude mcp add --env TAIGA_URL=https://taiga.example.com --env "TAIGA_TOKEN=<YOUR_TOKEN>" --env TAIGA_WRITE=1 --env TAIGA_DELETE=1 --transport stdio --scope local taiga -- node /absolute/path/to/taiga-mcp/dist/index.js
+claude mcp add --env TAIGA_URL=https://taiga.example.com --env "TAIGA_TOKEN=<YOUR_TOKEN>" --env TAIGA_WRITE=1 --env TAIGA_DELETE=1 --transport stdio --scope local taiga -- npx -y @campos-codes/taiga-r2da-mcp
 ```
 
 It adds one tool, `taiga_items_delete`, which deletes a user story, a task or an issue. Deleting takes two calls:

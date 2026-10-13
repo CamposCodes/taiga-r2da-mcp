@@ -5,7 +5,7 @@ and the versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## Unreleased
 
-## 0.3.0 - 2026-10-12
+## 0.3.0 - 2026-10-13
 
 User stories and issues can be edited and moved, items can be deleted behind a second variable, the server checks
 the permissions of Taiga before a change, and it moves to version 2 of the MCP TypeScript SDK. The release also
@@ -82,12 +82,12 @@ What to look at when upgrading from 0.2.0:
 - A licence: MIT, in `LICENSE`. `package.json` says `"license": "MIT"`.
 - Documentation in English: architecture, usage, tool reference, testing, client guides for Claude Code, Claude
   Desktop and Codex, security policy, compliance audit and contribution guide. Diagrams in Mermaid and SVG.
-- CI on Linux, macOS and Windows, with Node 20 and Node 24. It runs `npm ci`, `npm run check`, `npm run build` and
+- CI on Linux, macOS and Windows, with Node 20, 22, 24 and 26. It runs `npm ci`, `npm run check`, `npm run build` and
   `npm run coverage`.
 - Tests: exit when the input closes, wrong argument types, the cut notice, the call limit, a check that
   `docs/tools.md` lists the tools and parameters of `tools/list`, and a check that `package.json`, `server.json`
   and `manifest.json` name the same version and the same variables.
-- `npm test` runs 71 scenarios against a simulated Taiga, and fails when `docs/testing.md` does not list exactly
+- `npm test` runs 74 scenarios against a simulated Taiga, and fails when `docs/testing.md` does not list exactly
   those scenarios. `npm run coverage` measures how much of the built server they run: the figure of the last run
   is in [docs/testing.md](testing.md). `npm run test:live` runs against a real Taiga, in one project: by
   hand, never in CI.
@@ -113,6 +113,12 @@ What to look at when upgrading from 0.2.0:
 - A request that does not get through says why: `Taiga API unreachable at <address>: fetch failed: <cause>`, where
   the cause is what Node reports (a name that does not resolve, a refused connection, a certificate that is not
   accepted). It said only `fetch failed`.
+- A read that does not get through is sent a second time: a connection that stayed idle may have been closed by
+  the other side, and reading twice changes nothing. A write is sent once, because the first try may have reached
+  Taiga, and its error says to read the item before sending the change again.
+- When Taiga cannot be reached, the error tells the model to say so to the user, with what may be wrong (Taiga
+  down, the network or the VPN off) and what to do. The error for a refused token now says that no tool works
+  until the token is replaced, and that the client has to start the server again.
 - The line the server writes to stderr at start says what it may do: `(read-only)`,
   `(writes user stories, tasks, issues and attachments)` or
   `(writes user stories, tasks, issues and attachments, and deletes them)`.
@@ -122,11 +128,22 @@ What to look at when upgrading from 0.2.0:
 - `taiga_me` and `taiga_projects_list` declare a schema that accepts only an empty object.
 - Examples in parameter descriptions use neutral names (`"my-project"`, `"In progress"`, `"New"`).
 - The server instructions no longer say which language the texts are in.
-- The package is named `@camposcodes/taiga-r2da-mcp`. It was `taiga-mcp`, a name that belongs to another project
+- The package is named `@campos-codes/taiga-r2da-mcp`. It was `taiga-mcp`, a name that belongs to another project
   on npm. The command of the server is still `taiga-mcp`, and the server still calls itself `taiga-mcp`.
 - `package.json` has keywords, repository links and the list of published files, and is no longer marked private.
-  The package is not published yet, neither to npm nor to the MCP Registry: installation is still `git clone`,
-  `npm ci` and `npm run build`.
+- The package is published to npm. A client starts the server with `npx -y @campos-codes/taiga-r2da-mcp`, and the
+  guides of the three clients say so; building from source, with `git clone`, `npm ci` and `npm run build`, is
+  now the other way to install. It is not in the MCP Registry.
+- The package on npm holds the built server, the README, the licence and `package.json`: 4 files and 28 kB. The
+  documents stay in the repository, where the README of the package links them.
+- `package.json` names `@modelcontextprotocol/server` 2.3.1 and `zod` 4.6.5 at exact versions, so an install
+  from npm brings the versions the scenarios run with. With a range, an install brought `zod` 4.6.7. Dependabot
+  now proposes updates of the npm packages too.
+- `verbatimModuleSyntax` is on in `tsconfig.json`, and the server is built with TypeScript 7.0.2 and checked against
+  the types of Node.js 20, the lowest version allowed. It was TypeScript 5.9.3 with the types of Node.js 22. The
+  built file did not change.
+- `npm publish` builds the server and runs the scenarios first, and writes the README of the page of the package
+  from `docs/readme.md`, with its links pointed at the tag of the version on GitHub.
 - `TAIGA_WRITE` and `TAIGA_DELETE` are on with `1` or with `true`, and with nothing else: `yes`, `on`, `TRUE` and
   `0` leave them off.
 - The nine SVG files of `docs/diagrams/` name only generic font families and no longer fetch web fonts.

@@ -3,26 +3,21 @@
 How to install `taiga-mcp` and register it in Codex.
 
 The command, the file and the key names on this page come from the Codex documentation on MCP, read on
-2026-10-11 at <https://learn.chatgpt.com/docs/extend/mcp?surface=cli>, which is where
+2026-10-11 and again on 2026-10-12 at <https://learn.chatgpt.com/docs/extend/mcp?surface=cli>, which is where
 <https://developers.openai.com/codex/mcp> redirects. What is specific to this server is the name `taiga`, the
-four variables and the path.
+four variables and the name of the package.
 
 That page says: "The ChatGPT desktop app, Codex CLI, and IDE extension share this configuration." One registration
 serves the three.
 
-## 1. Build the server
+## 1. Check Node
 
-Requires Node 20 or newer.
+Requires Node 20 or newer: check with `node --version`. There is nothing else to install: the server is on npm as
+[`@campos-codes/taiga-r2da-mcp`](https://www.npmjs.com/package/@campos-codes/taiga-r2da-mcp), and the client starts it with `npx`, which downloads the package the first time it runs.
 
-```bash
-git clone https://github.com/CamposCodes/taiga-r2da-mcp.git taiga-mcp
-cd taiga-mcp
-npm ci
-npm run build
-```
-
-The server is `dist/index.js`. Note its absolute path. The package is not published to npm yet: what changes
-when it is, is in [From npm, once it is published](../readme.md#from-npm-once-it-is-published).
+To stay on one version until you choose another, write it after the name: `@campos-codes/taiga-r2da-mcp@0.3.0`. To run the server from
+a copy of this repository in place of npm, see
+[Other ways to install](../readme.md#other-ways-to-install).
 
 ## 2. Get a token
 
@@ -35,16 +30,21 @@ when it is, is in [From npm, once it is published](../readme.md#from-npm-once-it
 ### With the command
 
 Source: the syntax the page gives is
-`codex mcp add <server-name> --env VAR1=VALUE1 --env VAR2=VALUE2 -- <stdio server-command>`.
+`codex mcp add <server-name> --env VAR1=VALUE1 --env VAR2=VALUE2 -- <stdio server-command>`, and its own example
+starts a server with `npx`: `codex mcp add context7 -- npx -y @upstash/context7-mcp`.
 
 ```bash
-codex mcp add taiga --env TAIGA_URL=https://taiga.example.com --env "TAIGA_TOKEN=<YOUR_TOKEN>" -- node /absolute/path/to/taiga-mcp/dist/index.js
+codex mcp add taiga --env TAIGA_URL=https://taiga.example.com --env "TAIGA_TOKEN=<YOUR_TOKEN>" -- npx -y @campos-codes/taiga-r2da-mcp
 ```
 
 A note of this project, not of the documentation: a command typed in a terminal is normally saved in the history
 file of the shell, the token included. The configuration file below keeps it out of the history.
 
-Another note of this project: `TAIGA_URL` must start with `https://`, in the command and in the file. Plain
+Another note of this project: Codex was not tried on Windows `[not verified]`. A program that starts `npx` with no
+shell does not find it there, because on Windows `npx` is a `.cmd` file: if Codex says that it cannot start the
+command, give `cmd` as the command and `/c`, `npx`, `-y` and the name of the package as its arguments.
+
+A third note of this project: `TAIGA_URL` must start with `https://`, in the command and in the file. Plain
 `http://` is accepted only for an address of this machine (`localhost`, `127.0.0.1` or `[::1]`).
 
 ### Or in the configuration file
@@ -58,8 +58,8 @@ layout is plain TOML written for this guide:
 
 ```toml
 [mcp_servers.taiga]
-command = "node"
-args = ["/absolute/path/to/taiga-mcp/dist/index.js"]
+command = "npx"
+args = ["-y", "@campos-codes/taiga-r2da-mcp"]
 env = { TAIGA_URL = "https://taiga.example.com", TAIGA_TOKEN = "<YOUR_TOKEN>" }
 ```
 
@@ -95,8 +95,8 @@ Suggested, when writing is on (key names from the page, layout written for this 
 
 ```toml
 [mcp_servers.taiga]
-command = "node"
-args = ["/absolute/path/to/taiga-mcp/dist/index.js"]
+command = "npx"
+args = ["-y", "@campos-codes/taiga-r2da-mcp"]
 env = { TAIGA_URL = "https://taiga.example.com", TAIGA_TOKEN = "<YOUR_TOKEN>", TAIGA_WRITE = "1" }
 default_tools_approval_mode = "writes"
 ```
@@ -124,8 +124,8 @@ Alone it does not work: without `TAIGA_WRITE=1` the server stops at start.
 
 ```toml
 [mcp_servers.taiga]
-command = "node"
-args = ["/absolute/path/to/taiga-mcp/dist/index.js"]
+command = "npx"
+args = ["-y", "@campos-codes/taiga-r2da-mcp"]
 env = { TAIGA_URL = "https://taiga.example.com", TAIGA_TOKEN = "<YOUR_TOKEN>", TAIGA_WRITE = "1", TAIGA_DELETE = "1" }
 default_tools_approval_mode = "writes"
 ```

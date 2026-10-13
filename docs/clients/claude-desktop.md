@@ -4,25 +4,19 @@ How to install `taiga-mcp` and register it in Claude Desktop.
 
 The configuration file, its location and the steps come from the MCP documentation,
 [Connect to local MCP servers](https://modelcontextprotocol.io/docs/develop/connect-local-servers), read on
-2026-10-11. What is specific to this server is the name `taiga`, the four variables and the path.
+2026-10-11 and again on 2026-10-12. What is specific to this server is the name `taiga`, the four variables and the name of the package.
 
 The steps below register the server in the configuration file. The other way, a form in place of the file, is in
 [Install as an extension](#install-as-an-extension).
 
-## 1. Build the server
+## 1. Check Node
 
-Requires Node 20 or newer. The page above also asks for Node on the machine: check with `node --version`.
+Requires Node 20 or newer. The page above also asks for Node on the machine: check with `node --version`. There is nothing else to install: the server is on npm as
+[`@campos-codes/taiga-r2da-mcp`](https://www.npmjs.com/package/@campos-codes/taiga-r2da-mcp), and the client starts it with `npx`, which downloads the package the first time it runs.
 
-```bash
-git clone https://github.com/CamposCodes/taiga-r2da-mcp.git taiga-mcp
-cd taiga-mcp
-npm ci
-npm run build
-```
-
-The server is `dist/index.js`. Note its absolute path: the page says paths in the configuration must be
-"absolute and not relative". The package is not published to npm yet: what changes when it is, is in
-[From npm, once it is published](../readme.md#from-npm-once-it-is-published).
+To stay on one version until you choose another, write it after the name: `@campos-codes/taiga-r2da-mcp@0.3.0`. To run the server from
+a copy of this repository in place of npm, see
+[Other ways to install](../readme.md#other-ways-to-install).
 
 ## 2. Get a token
 
@@ -48,14 +42,15 @@ The file is created if it does not exist. It is located at:
 Source: step "Configure the Filesystem Server" for the `mcpServers` format, and the troubleshooting section of the
 same page for the `env` key.
 
-macOS and Linux:
+The page gives the same `command` and the same first arguments for macOS and for Windows: `"command": "npx"`,
+then `"-y"` and the name of the package.
 
 ```json
 {
   "mcpServers": {
     "taiga": {
-      "command": "node",
-      "args": ["/absolute/path/to/taiga-mcp/dist/index.js"],
+      "command": "npx",
+      "args": ["-y", "@campos-codes/taiga-r2da-mcp"],
       "env": {
         "TAIGA_URL": "https://taiga.example.com",
         "TAIGA_TOKEN": "<YOUR_TOKEN>"
@@ -65,22 +60,9 @@ macOS and Linux:
 }
 ```
 
-Windows, with the backslashes doubled as in the examples of the page:
-
-```json
-{
-  "mcpServers": {
-    "taiga": {
-      "command": "node",
-      "args": ["C:\\tools\\taiga-mcp\\dist\\index.js"],
-      "env": {
-        "TAIGA_URL": "https://taiga.example.com",
-        "TAIGA_TOKEN": "<YOUR_TOKEN>"
-      }
-    }
-  }
-}
-```
+This configuration was not tried in a real Claude Desktop `[not verified]`. Outside it, on Windows 11, a program
+that starts `npx` with no shell did not find it (`spawn npx ENOENT`), and `cmd` as the command with `/c`,
+`npx`, `-y` and the name of the package as arguments started the server: try that if the log says so.
 
 If the file already has other servers, add only the `"taiga"` entry inside the existing `"mcpServers"`.
 
@@ -147,18 +129,21 @@ it, so read what the model shows before approving. See [docs/tools.md](../tools.
 Source: the troubleshooting section of the page above.
 
 1. Restart Claude Desktop completely.
-2. Check the syntax of `claude_desktop_config.json` and that the path is absolute.
+2. Check the syntax of `claude_desktop_config.json`.
 3. Read the logs. They are in `~/Library/Logs/Claude` on macOS and `%APPDATA%\Claude\logs` on Windows:
    `mcp.log` has the connections and their failures, and `mcp-server-taiga.log` has what this server writes to
    stderr, including the reason it stopped (`Missing environment variable ...` or `Taiga refused the token ...`).
 4. Run the server by hand, with the two variables set, to see the same message in the terminal:
-   `node /absolute/path/to/taiga-mcp/dist/index.js`.
+   `npx -y @campos-codes/taiga-r2da-mcp`.
+5. On Windows, the page has one more case, "ENOENT error and `${APPDATA}` in paths on Windows": "you may need to
+   add the expanded value of `%APPDATA%` to your `env` key in `claude_desktop_config.json`". And it warns: "The
+   `npx` command may continue to fail if you have not installed npm globally."
 
 ## Install as an extension
 
 Claude Desktop can also take a local server as an extension: one `.mcpb` file that holds the server and what it
 needs to run, with a form in place of the configuration file. This repository builds that file. It is not
-committed and not published anywhere: a person builds it and hands it over.
+committed and not published anywhere, npm included: a person builds it and hands it over.
 
 **The extension was not installed in a real Claude Desktop.** The packaging tool validated the manifest, and the
 server unpacked from the file passes the scenarios of [docs/testing.md](../testing.md). What Claude Desktop shows and
