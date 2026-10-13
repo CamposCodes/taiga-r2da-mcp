@@ -30,7 +30,8 @@ child.stdout.on('data', (d) => {
     const m = JSON.parse(line)
     if (m.method === 'elicitation/create') {
       asked.push(m.params.message)
-      const answer = m.params.message.includes(label) ? answers.shift() : undefined
+      const ours = m.params.message.includes(label) || [...mineWiki, ...mineSprints].some((name) => m.params.message.includes(`"${name}"`))
+      const answer = ours ? answers.shift() : undefined
       child.stdin.write(JSON.stringify({ jsonrpc: '2.0', id: m.id, result: answer ?? { action: 'cancel' } }) + '\n')
     } else if (!m.method) waiting.get(m.id)?.(m)
   }
@@ -45,10 +46,15 @@ const rpc = (method, params) => Promise.race([
 ])
 
 const mine = new Map()
+const mineWiki = new Set()
+const mineSprints = new Set()
 const described = new Map()
 async function call(name, args = {}) {
   if ('project' in args) assert.equal(args.project, slug)
-  if (/_(update|delete)$|attachments_add$/.test(name)) assert.ok(mine.has(args.ref), `#${args.ref} was not created by this test`)
+  if (/^taiga_wiki_(update|delete)$/.test(name)) assert.ok(mineWiki.has(args.slug), `the wiki page ${args.slug} was not created by this test`)
+  else if (/^taiga_sprints_(update|delete)$/.test(name)) assert.ok(mineSprints.has(args.sprint), `the sprint ${args.sprint} was not created by this test`)
+  else if (/_(update|delete)$|attachments_add$/.test(name)) assert.ok(mine.has(args.ref), `#${args.ref} was not created by this test`)
+  if (name === 'taiga_userstories_update' && args.sprint && args.sprint !== 'backlog') assert.ok(mineSprints.has(args.sprint), `the sprint ${args.sprint} was not created by this test`)
   const result = (await rpc('tools/call', { name, arguments: args })).result
   if (result.isError) return { error: result.content[0].text }
   if (result.structuredContent === undefined) return result.content
@@ -77,11 +83,11 @@ const other = (list, current) => list.find((entry) => entry.name !== current && 
 const report = { when: new Date().toISOString(), node: process.version, project: slug, label }
 const folder = mkdtempSync(join(tmpdir(), 'taiga-mcp-live-'))
 try {
-  await step('The server starts with the token of .env and lists 18 tools', async () => {
+  await step('The server starts with the token of .env and lists 26 tools', async () => {
     const opened = (await rpc('initialize', { protocolVersion: '2025-06-18', capabilities: { elicitation: {} }, clientInfo: { name: 'live', version: '0' } })).result
     child.stdin.write(JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initialized' }) + '\n')
     report.server = opened.serverInfo
-    assert.equal((await rpc('tools/list', {})).result.tools.length, 18)
+    assert.equal((await rpc('tools/list', {})).result.tools.length, 26)
   })
   let me
   await step('taiga_me, taiga_projects_list and taiga_projects_get answer in the declared shape', async () => {
@@ -106,6 +112,15 @@ try {
     const found = await call('taiga_search', { project: slug, text: 'a' })
     assert.equal(found.error, undefined, found.error)
     report.read = { ...counts, sprints: sprints.sprints.length, searchHits: found.items.length }
+  })
+  await step('taiga_wiki_list and taiga_wiki_get read the wiki of the project without changing it', async () => {
+    const listed = await call('taiga_wiki_list', { project: slug })
+    assert.equal(listed.error, undefined, listed.error)
+    report.read.wikiPages = listed.pages.length
+    if (!listed.pages.length) return 'skipped: the project has no wiki page'
+    const page = await call('taiga_wiki_get', { project: slug, slug: listed.pages[0].slug })
+    assert.equal(page.error, undefined, page.error)
+    assert.ok(page.slug === listed.pages[0].slug && typeof page.content === 'string' && Number.isInteger(page.version))
   })
   await step('taiga_items_get reads items that already exist, with comments and history, without changing them', async () => {
     let read = 0
@@ -211,6 +226,58 @@ try {
     assert.match((await call(tool, { project: slug, ref, status: 'no such status 0000' })).error, /Unknown .* status "no such status 0000"\. Valid: /)
     assert.match((await call(tool, { project: slug, ref })).error, /Nothing to change/)
   })
+  const wikiSlug = `teste-mcp-${Date.now().toString(36)}`
+  await step('taiga_wiki_create, taiga_wiki_update and taiga_wiki_get create a page marked as a test and replace its text with the version read', async () => {
+    if (!project.modules.wiki) return 'skipped: the project has no wiki module'
+    const page = await write('add_wiki_page', 'taiga_wiki_create', { project: slug, slug: wikiSlug, content: `# ${label}\n\n${note}` })
+    if (!page) return REFUSED
+    mineWiki.add(wikiSlug)
+    assert.ok(page.slug === wikiSlug && page.version >= 1 && page.url.includes(`/project/${slug}/wiki/${wikiSlug}`))
+    const text = `# ${label}\n\n${note} (edited)`
+    const edited = await write('modify_wiki_page', 'taiga_wiki_update', { project: slug, slug: wikiSlug, content: text, version: page.version })
+    if (!edited) return REFUSED
+    assert.ok(edited.version > page.version)
+    assert.match((await call('taiga_wiki_update', { project: slug, slug: wikiSlug, content: 'x', version: page.version })).error, /changed since version/)
+    assert.equal((await call('taiga_wiki_get', { project: slug, slug: wikiSlug })).content, text)
+    assert.ok((await call('taiga_wiki_list', { project: slug })).pages.some((entry) => entry.slug === wikiSlug))
+  })
+  const sprintName = `${label} Sprint`
+  await step('taiga_sprints_create and taiga_sprints_update create a sprint marked as a test, move its days, close and reopen it, and take the test story in', async () => {
+    const made = await write('add_milestone', 'taiga_sprints_create', { project: slug, name: sprintName, start: '2030-01-01', finish: '2030-01-14' })
+    if (!made) return REFUSED
+    mineSprints.add(sprintName)
+    assert.deepEqual([made.name, made.start, made.finish, made.closed], [sprintName, '2030-01-01', '2030-01-14', false])
+    const longer = await write('modify_milestone', 'taiga_sprints_update', { project: slug, sprint: sprintName, finish: '2030-01-21' })
+    if (!longer) return REFUSED
+    assert.equal(longer.finish, '2030-01-21')
+    assert.equal((await call('taiga_sprints_update', { project: slug, sprint: sprintName, closed: true })).closed, true)
+    assert.equal((await call('taiga_sprints_update', { project: slug, sprint: sprintName, closed: false })).closed, false)
+    assert.match((await call('taiga_sprints_update', { project: slug, sprint: sprintName, start: '2030-02-01', finish: '2030-01-21' })).error, /cannot come after/)
+    assert.ok((await call('taiga_sprints_list', { project: slug })).sprints.some((entry) => entry.name === sprintName))
+    if (story) assert.equal((await call('taiga_userstories_update', { project: slug, ref: story.ref, sprint: sprintName })).sprint, sprintName)
+  })
+  await step('taiga_sprints_delete and taiga_wiki_delete show first, ask the user, and delete only with the code and the yes', async () => {
+    if (!mineWiki.size && !mineSprints.size) return 'skipped: no wiki page and no sprint was created'
+    for (const [tool, key, name, kind] of [['taiga_sprints_delete', 'sprint', sprintName, 'sprint'], ['taiga_wiki_delete', 'slug', wikiSlug, 'wiki page']]) {
+      if (!(kind === 'sprint' ? mineSprints : mineWiki).has(name)) continue
+      const shown = await write(`delete_${kind === 'sprint' ? 'milestone' : 'wiki_page'}`, tool, { project: slug, [key]: name })
+      if (!shown) continue
+      assert.equal(shown.deleted, false)
+      if (kind === 'sprint' && story) assert.deepEqual(shown.userStoriesInIt, [`#${story.ref} ${story.subject}`])
+      assert.equal((await call(tool, { project: slug, [key]: name, confirm: 'no' })).deleted, false)
+      const refused = await call(tool, { project: slug, [key]: name })
+      answers.push({ action: 'decline' })
+      assert.equal((await call(tool, { project: slug, [key]: name, confirm: refused.confirm })).deleted, false)
+      const last = await call(tool, { project: slug, [key]: name })
+      answers.push({ action: 'accept', content: { delete: true } })
+      assert.equal((await call(tool, { project: slug, [key]: name, confirm: last.confirm })).deleted, true)
+      assert.ok(asked.at(-1).includes(`"${name}"`))
+      ;(kind === 'sprint' ? mineSprints : mineWiki).delete(name)
+    }
+    if (story && !mineSprints.has(sprintName)) assert.equal((await call('taiga_items_get', { project: slug, ref: story.ref })).sprint, null)
+    const refusals = [mineWiki.size, mineSprints.size].filter(Boolean).length
+    return refusals ? `${refusals} ${REFUSED}` : undefined
+  })
   await step('taiga_items_delete shows first, asks the user, and deletes only with the code and the yes: every item of the test is removed', async () => {
     if (!mine.size) return 'skipped: no item was created'
     let refusals = 0
@@ -246,7 +313,7 @@ try {
   })
 } finally {
   report.steps = steps
-  report.left = [...mine].map(([ref, kind]) => ({ ref, kind }))
+  report.left = [...[...mine].map(([ref, kind]) => ({ ref, kind })), ...[...mineSprints].map((name) => ({ name, kind: 'sprint' })), ...[...mineWiki].map((slug) => ({ slug, kind: 'wiki' }))]
   rmSync(folder, { recursive: true, force: true })
   mkdirSync('docs/internal', { recursive: true })
   writeFileSync('docs/internal/live-test.json', JSON.stringify(report, null, 2) + '\n')
@@ -254,4 +321,4 @@ try {
 }
 const refusedSteps = steps.filter((s) => s.outcome.includes('refused')).length
 const skipped = steps.filter((s) => s.outcome.startsWith('skipped')).length
-console.log(`ok: ${steps.length} live steps, ${refusedSteps} with a refusal for lack of permission, ${skipped} skipped; ${mine.size} test items left in the project. Details: docs/internal/live-test.json`)
+console.log(`ok: ${steps.length} live steps, ${refusedSteps} with a refusal for lack of permission, ${skipped} skipped; ${mine.size + mineSprints.size + mineWiki.size} test items left in the project. Details: docs/internal/live-test.json`)
