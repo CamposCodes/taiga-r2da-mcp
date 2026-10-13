@@ -11,7 +11,13 @@ to this server is the name `taiga`, the four variables and the name of the packa
 Requires Node 20 or newer: check with `node --version`. There is nothing else to install: the server is on npm as
 [`@campos-codes/taiga-r2da-mcp`](https://www.npmjs.com/package/@campos-codes/taiga-r2da-mcp), and the client starts it with `npx`, which downloads the package the first time it runs.
 
-To stay on one version until you choose another, write it after the name: `@campos-codes/taiga-r2da-mcp@0.3.0`. To run the server from
+The commands of this page end in `@latest`, the newest version published. To stay on one version until you choose
+another, write it in place of `@latest`: `@campos-codes/taiga-r2da-mcp@0.3.0`.
+
+The other way to get the package is `npm install -g @campos-codes/taiga-r2da-mcp`, which leaves the command `taiga-mcp`
+on the machine: the client then starts `taiga-mcp`, with no arguments, in place of `npx` and its arguments.
+
+To run the server from
 a copy of this repository in place of npm, see
 [Other ways to install](../readme.md#other-ways-to-install).
 
@@ -30,7 +36,7 @@ Source: the page above. The syntax it gives for a local stdio server is
 `claude mcp add [options] <name> -- <command> [args...]`.
 
 ```bash
-claude mcp add --env TAIGA_URL=https://taiga.example.com --env "TAIGA_TOKEN=<YOUR_TOKEN>" --transport stdio --scope local taiga -- npx -y @campos-codes/taiga-r2da-mcp
+claude mcp add --env TAIGA_URL=https://taiga.example.com --env "TAIGA_TOKEN=<YOUR_TOKEN>" --transport stdio --scope local taiga -- npx -y @campos-codes/taiga-r2da-mcp@latest
 ```
 
 Three things the documentation says about this command:
@@ -71,7 +77,7 @@ For the project scope, the documentation describes variable expansion in `.mcp.j
     "taiga": {
       "type": "stdio",
       "command": "npx",
-      "args": ["-y", "@campos-codes/taiga-r2da-mcp"],
+      "args": ["-y", "@campos-codes/taiga-r2da-mcp@latest"],
       "env": {
         "TAIGA_URL": "https://taiga.example.com",
         "TAIGA_TOKEN": "${TAIGA_TOKEN}"
@@ -100,7 +106,7 @@ Inside Claude Code, `/mcp` shows the status of each server. Then ask: "Which pro
 
 ```bash
 claude mcp remove taiga
-claude mcp add --env TAIGA_URL=https://taiga.example.com --env "TAIGA_TOKEN=<NEW_TOKEN>" --transport stdio --scope local taiga -- npx -y @campos-codes/taiga-r2da-mcp
+claude mcp add --env TAIGA_URL=https://taiga.example.com --env "TAIGA_TOKEN=<NEW_TOKEN>" --transport stdio --scope local taiga -- npx -y @campos-codes/taiga-r2da-mcp@latest
 ```
 
 ## Turn writing on
@@ -108,7 +114,7 @@ claude mcp add --env TAIGA_URL=https://taiga.example.com --env "TAIGA_TOKEN=<NEW
 Register with one more variable:
 
 ```bash
-claude mcp add --env TAIGA_URL=https://taiga.example.com --env "TAIGA_TOKEN=<YOUR_TOKEN>" --env TAIGA_WRITE=1 --transport stdio --scope local taiga -- npx -y @campos-codes/taiga-r2da-mcp
+claude mcp add --env TAIGA_URL=https://taiga.example.com --env "TAIGA_TOKEN=<YOUR_TOKEN>" --env TAIGA_WRITE=1 --transport stdio --scope local taiga -- npx -y @campos-codes/taiga-r2da-mcp@latest
 ```
 
 Without `TAIGA_WRITE=1` the seven write tools do not exist for the model. With it, do not put
@@ -123,7 +129,7 @@ Register with `TAIGA_DELETE=1` next to `TAIGA_WRITE=1`. Alone it does not work: 
 stops at start.
 
 ```bash
-claude mcp add --env TAIGA_URL=https://taiga.example.com --env "TAIGA_TOKEN=<YOUR_TOKEN>" --env TAIGA_WRITE=1 --env TAIGA_DELETE=1 --transport stdio --scope local taiga -- npx -y @campos-codes/taiga-r2da-mcp
+claude mcp add --env TAIGA_URL=https://taiga.example.com --env "TAIGA_TOKEN=<YOUR_TOKEN>" --env TAIGA_WRITE=1 --env TAIGA_DELETE=1 --transport stdio --scope local taiga -- npx -y @campos-codes/taiga-r2da-mcp@latest
 ```
 
 It adds one tool, `taiga_items_delete`, which deletes a user story, a task or an issue. Deleting takes two calls:

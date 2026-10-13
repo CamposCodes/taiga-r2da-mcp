@@ -14,7 +14,13 @@ The steps below register the server in the configuration file. The other way, a 
 Requires Node 20 or newer. The page above also asks for Node on the machine: check with `node --version`. There is nothing else to install: the server is on npm as
 [`@campos-codes/taiga-r2da-mcp`](https://www.npmjs.com/package/@campos-codes/taiga-r2da-mcp), and the client starts it with `npx`, which downloads the package the first time it runs.
 
-To stay on one version until you choose another, write it after the name: `@campos-codes/taiga-r2da-mcp@0.3.0`. To run the server from
+The commands of this page end in `@latest`, the newest version published. To stay on one version until you choose
+another, write it in place of `@latest`: `@campos-codes/taiga-r2da-mcp@0.3.0`.
+
+The other way to get the package is `npm install -g @campos-codes/taiga-r2da-mcp`, which leaves the command `taiga-mcp`
+on the machine: the client then starts `taiga-mcp`, with no arguments, in place of `npx` and its arguments.
+
+To run the server from
 a copy of this repository in place of npm, see
 [Other ways to install](../readme.md#other-ways-to-install).
 
@@ -50,7 +56,7 @@ then `"-y"` and the name of the package.
   "mcpServers": {
     "taiga": {
       "command": "npx",
-      "args": ["-y", "@campos-codes/taiga-r2da-mcp"],
+      "args": ["-y", "@campos-codes/taiga-r2da-mcp@latest"],
       "env": {
         "TAIGA_URL": "https://taiga.example.com",
         "TAIGA_TOKEN": "<YOUR_TOKEN>"
@@ -134,7 +140,7 @@ Source: the troubleshooting section of the page above.
    `mcp.log` has the connections and their failures, and `mcp-server-taiga.log` has what this server writes to
    stderr, including the reason it stopped (`Missing environment variable ...` or `Taiga refused the token ...`).
 4. Run the server by hand, with the two variables set, to see the same message in the terminal:
-   `npx -y @campos-codes/taiga-r2da-mcp`.
+   `npx -y @campos-codes/taiga-r2da-mcp@latest`.
 5. On Windows, the page has one more case, "ENOENT error and `${APPDATA}` in paths on Windows": "you may need to
    add the expanded value of `%APPDATA%` to your `env` key in `claude_desktop_config.json`". And it warns: "The
    `npx` command may continue to fail if you have not installed npm globally."

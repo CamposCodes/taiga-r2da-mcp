@@ -15,7 +15,13 @@ serves the three.
 Requires Node 20 or newer: check with `node --version`. There is nothing else to install: the server is on npm as
 [`@campos-codes/taiga-r2da-mcp`](https://www.npmjs.com/package/@campos-codes/taiga-r2da-mcp), and the client starts it with `npx`, which downloads the package the first time it runs.
 
-To stay on one version until you choose another, write it after the name: `@campos-codes/taiga-r2da-mcp@0.3.0`. To run the server from
+The commands of this page end in `@latest`, the newest version published. To stay on one version until you choose
+another, write it in place of `@latest`: `@campos-codes/taiga-r2da-mcp@0.3.0`.
+
+The other way to get the package is `npm install -g @campos-codes/taiga-r2da-mcp`, which leaves the command `taiga-mcp`
+on the machine: the client then starts `taiga-mcp`, with no arguments, in place of `npx` and its arguments.
+
+To run the server from
 a copy of this repository in place of npm, see
 [Other ways to install](../readme.md#other-ways-to-install).
 
@@ -34,7 +40,7 @@ Source: the syntax the page gives is
 starts a server with `npx`: `codex mcp add context7 -- npx -y @upstash/context7-mcp`.
 
 ```bash
-codex mcp add taiga --env TAIGA_URL=https://taiga.example.com --env "TAIGA_TOKEN=<YOUR_TOKEN>" -- npx -y @campos-codes/taiga-r2da-mcp
+codex mcp add taiga --env TAIGA_URL=https://taiga.example.com --env "TAIGA_TOKEN=<YOUR_TOKEN>" -- npx -y @campos-codes/taiga-r2da-mcp@latest
 ```
 
 A note of this project, not of the documentation: a command typed in a terminal is normally saved in the history
@@ -59,7 +65,7 @@ layout is plain TOML written for this guide:
 ```toml
 [mcp_servers.taiga]
 command = "npx"
-args = ["-y", "@campos-codes/taiga-r2da-mcp"]
+args = ["-y", "@campos-codes/taiga-r2da-mcp@latest"]
 env = { TAIGA_URL = "https://taiga.example.com", TAIGA_TOKEN = "<YOUR_TOKEN>" }
 ```
 
@@ -96,7 +102,7 @@ Suggested, when writing is on (key names from the page, layout written for this 
 ```toml
 [mcp_servers.taiga]
 command = "npx"
-args = ["-y", "@campos-codes/taiga-r2da-mcp"]
+args = ["-y", "@campos-codes/taiga-r2da-mcp@latest"]
 env = { TAIGA_URL = "https://taiga.example.com", TAIGA_TOKEN = "<YOUR_TOKEN>", TAIGA_WRITE = "1" }
 default_tools_approval_mode = "writes"
 ```
@@ -125,7 +131,7 @@ Alone it does not work: without `TAIGA_WRITE=1` the server stops at start.
 ```toml
 [mcp_servers.taiga]
 command = "npx"
-args = ["-y", "@campos-codes/taiga-r2da-mcp"]
+args = ["-y", "@campos-codes/taiga-r2da-mcp@latest"]
 env = { TAIGA_URL = "https://taiga.example.com", TAIGA_TOKEN = "<YOUR_TOKEN>", TAIGA_WRITE = "1", TAIGA_DELETE = "1" }
 default_tools_approval_mode = "writes"
 ```

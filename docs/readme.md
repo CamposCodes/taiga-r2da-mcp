@@ -36,7 +36,7 @@ installed. There is nothing to clone or to build. There are two ways to get it:
 and `npx` downloads the package the first time.
 
 ```bash
-npx -y @campos-codes/taiga-r2da-mcp
+npx -y @campos-codes/taiga-r2da-mcp@latest
 ```
 
 **With npm.** Install the package on the machine once, and your MCP client starts it by the name of its command,
@@ -48,9 +48,9 @@ npm install -g @campos-codes/taiga-r2da-mcp
 
 | | npx | npm install -g |
 | --- | --- | --- |
-| What the client runs | `npx -y @campos-codes/taiga-r2da-mcp` | `taiga-mcp` |
+| What the client runs | `npx -y @campos-codes/taiga-r2da-mcp@latest` | `taiga-mcp` |
 | To install | Nothing | `npm install -g @campos-codes/taiga-r2da-mcp` |
-| To move to a newer version | Write the version, or `@latest`, after the name | `npm install -g @campos-codes/taiga-r2da-mcp@latest` |
+| To move to a newer version | Nothing: `@latest` is the newest version published | `npm install -g @campos-codes/taiga-r2da-mcp@latest` |
 | To remove | Remove the server from the client | `npm uninstall -g @campos-codes/taiga-r2da-mcp` |
 
 What to put in each client is in [Getting started](#getting-started).
@@ -96,7 +96,7 @@ address of your Taiga, and copy the value of the key `token`.
   "mcpServers": {
     "taiga": {
       "command": "npx",
-      "args": ["-y", "@campos-codes/taiga-r2da-mcp"],
+      "args": ["-y", "@campos-codes/taiga-r2da-mcp@latest"],
       "env": {
         "TAIGA_URL": "https://taiga.example.com",
         "TAIGA_TOKEN": "<YOUR_TOKEN>"
@@ -126,10 +126,10 @@ If you installed the package with `npm install -g`, the command is its name and 
 <summary><b>Claude Code</b></summary>
 
 ```bash
-claude mcp add --env TAIGA_URL=https://taiga.example.com --env "TAIGA_TOKEN=<YOUR_TOKEN>" --transport stdio --scope local taiga -- npx -y @campos-codes/taiga-r2da-mcp
+claude mcp add --env TAIGA_URL=https://taiga.example.com --env "TAIGA_TOKEN=<YOUR_TOKEN>" --transport stdio --scope local taiga -- npx -y @campos-codes/taiga-r2da-mcp@latest
 ```
 
-Installed with `npm install -g`? End the command with `-- taiga-mcp` in place of `-- npx -y @campos-codes/taiga-r2da-mcp`.
+Installed with `npm install -g`? End the command with `-- taiga-mcp` in place of `-- npx -y @campos-codes/taiga-r2da-mcp@latest`.
 
 Scopes, how to change an expired token and how to turn writing on: [docs/clients/claude-code.md](clients/claude-code.md).
 
@@ -151,7 +151,7 @@ Claude Desktop can also take the server as an extension, a `.mcpb` file that you
 <summary><b>Codex</b> (CLI, IDE extension, desktop app)</summary>
 
 ```bash
-codex mcp add taiga --env TAIGA_URL=https://taiga.example.com --env "TAIGA_TOKEN=<YOUR_TOKEN>" -- npx -y @campos-codes/taiga-r2da-mcp
+codex mcp add taiga --env TAIGA_URL=https://taiga.example.com --env "TAIGA_TOKEN=<YOUR_TOKEN>" -- npx -y @campos-codes/taiga-r2da-mcp@latest
 ```
 
 Or, in `~/.codex/config.toml`:
@@ -159,7 +159,7 @@ Or, in `~/.codex/config.toml`:
 ```toml
 [mcp_servers.taiga]
 command = "npx"
-args = ["-y", "@campos-codes/taiga-r2da-mcp"]
+args = ["-y", "@campos-codes/taiga-r2da-mcp@latest"]
 env = { TAIGA_URL = "https://taiga.example.com", TAIGA_TOKEN = "<YOUR_TOKEN>" }
 ```
 
@@ -182,7 +182,7 @@ command and add:
     "taiga": {
       "type": "stdio",
       "command": "npx",
-      "args": ["-y", "@campos-codes/taiga-r2da-mcp"],
+      "args": ["-y", "@campos-codes/taiga-r2da-mcp@latest"],
       "env": {
         "TAIGA_URL": "https://taiga.example.com",
         "TAIGA_TOKEN": "${input:taiga-token}"
@@ -212,7 +212,7 @@ everywhere", and not in the `.cursor/mcp.json` of a project, which goes into the
   "mcpServers": {
     "taiga": {
       "command": "npx",
-      "args": ["-y", "@campos-codes/taiga-r2da-mcp"],
+      "args": ["-y", "@campos-codes/taiga-r2da-mcp@latest"],
       "env": {
         "TAIGA_URL": "https://taiga.example.com",
         "TAIGA_TOKEN": "${env:TAIGA_TOKEN}"
@@ -232,7 +232,7 @@ The documentation also says: "Cursor asks for approval before using MCP tools by
 <summary><b>Any other client</b></summary>
 
 A client that starts an MCP server over stdio needs three things: the command, `npx`; its arguments, `-y` and
-`@campos-codes/taiga-r2da-mcp`; and the variables of [Configuration](#configuration) in the environment of the server.
+`@campos-codes/taiga-r2da-mcp@latest`; and the variables of [Configuration](#configuration) in the environment of the server.
 
 </details>
 
@@ -245,7 +245,7 @@ What this project tried on Windows 11, with Node 24 and npm 11:
   `npm install -g`.
 - A program that starts `npx` with no shell does not find it there (`spawn npx ENOENT`), because on Windows
   `npx` is a `.cmd` file. If your client says so, give `cmd` as the command and `/c`, `npx`, `-y` and
-  `@campos-codes/taiga-r2da-mcp` as its arguments: started that way the server answered.
+  `@campos-codes/taiga-r2da-mcp@latest` as its arguments: started that way the server answered.
 - Claude Desktop and Codex were not tried on Windows `[not verified]`. The page of the MCP documentation that
   [the Claude Desktop guide](clients/claude-desktop.md) follows gives `"command": "npx"` for Windows too.
 
@@ -257,8 +257,9 @@ What this project tried on Windows 11, with Node 24 and npm 11:
 
 ### Other ways to install
 
-- **One version, until you choose another.** Write the version after the name, `@campos-codes/taiga-r2da-mcp@0.3.0`, wherever the name
-  of the package goes. Without it, `npx` decides which version runs.
+- **One version, until you choose another.** The commands of this page end in `@latest`, the newest version
+  published, as the READMEs of other MCP servers do. To decide yourself when to move, write the version in its
+  place, `@campos-codes/taiga-r2da-mcp@0.3.0`, wherever the name of the package goes.
 - **From source.** Build the server and give the client `node` as the command and the absolute path of
   `dist/index.js` as its argument, in place of `npx`, `-y` and the name of the package:
 
@@ -585,7 +586,7 @@ your Taiga.
 
 ![Architecture of taiga-mcp: client and server on the user's machine, Taiga API and attachment files on the Taiga installation](diagrams/01-architecture.svg)
 
-Your MCP client starts the package, with `npx -y @campos-codes/taiga-r2da-mcp`, and gives it the address of your Taiga and your token. The server checks the
+Your MCP client starts the package, with `npx -y @campos-codes/taiga-r2da-mcp@latest`, and gives it the address of your Taiga and your token. The server checks the
 token, registers its tools and waits. Each tool call becomes one or more requests to the Taiga REST API, and the
 answer goes back to the model as short JSON. More in [docs/architecture.md](architecture.md).
 

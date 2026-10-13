@@ -453,5 +453,5 @@ can be a task with no user story, in the row of a sprint: `taiga_tasks_create` w
 | `403` or `404 ... on the file of the attachment` | The address of the file expired, or files are not served without a login | Ask again. If it repeats, your Taiga serves files in a way this server does not handle: open an issue |
 | `Too many calls: ...` | More than 120 tool calls in a minute | Wait the seconds the message says |
 
-To see the server start outside a client, run `npx -y @campos-codes/taiga-r2da-mcp` with the two variables set: it prints the
+To see the server start outside a client, run `npx -y @campos-codes/taiga-r2da-mcp@latest` with the two variables set: it prints the
 address, the user and whether it writes, or the reason it stopped.

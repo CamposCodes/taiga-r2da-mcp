@@ -9,6 +9,8 @@ and the versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   comments, it is the same file, byte for byte, before and after.
 - The READMEs open with an Install section that names the npm package and its command, and the other documents
   say `npx -y @campos-codes/taiga-r2da-mcp` where they said `node dist/index.js`.
+- The commands of the documents end in `@latest`: `npx -y @campos-codes/taiga-r2da-mcp@latest`. The documents say how to stay on one
+  version, and `docs/security.md` says what `@latest` gives up.
 - The READMEs give two ways to get the package, `npx` and `npm install -g`, with what the client runs in each and
   how to update and to remove it.
 - The READMEs name the standard configuration as such and have a block for VS Code and one for Cursor, each from
