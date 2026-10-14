@@ -1525,7 +1525,7 @@ async function main() {
   }
   const me = await client.get("/users/me");
   serveStdio(() => {
-    const server = new McpServer({ name: "taiga-mcp", version: "0.3.0" }, { instructions: instructions(write, remove) });
+    const server = new McpServer({ name: "taiga-mcp", version: "0.4.0" }, { instructions: instructions(write, remove) });
     registerTools(server, client);
     if (write) {
       registerWriting(server, client, remove);

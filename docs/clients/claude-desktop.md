@@ -15,7 +15,7 @@ Requires Node 20 or newer. The page above also asks for Node on the machine: che
 [`@campos-codes/taiga-r2da-mcp`](https://www.npmjs.com/package/@campos-codes/taiga-r2da-mcp), and the client starts it with `npx`, which downloads the package the first time it runs.
 
 The commands of this page end in `@latest`, the newest version published. To stay on one version until you choose
-another, write it in place of `@latest`: `@campos-codes/taiga-r2da-mcp@0.3.0`.
+another, write it in place of `@latest`: `@campos-codes/taiga-r2da-mcp@0.4.0`.
 
 The other way to get the package is `npm install -g @campos-codes/taiga-r2da-mcp`, which leaves the command `taiga-mcp`
 on the machine: the client then starts `taiga-mcp`, with no arguments, in place of `npx` and its arguments.
@@ -169,7 +169,7 @@ npm run build
 npm run pack:mcpb
 ```
 
-The result is `build/taiga-mcp-0.3.0.mcpb`, of about 2 MB. It holds the built server, the three packages the
+The result is `build/taiga-mcp-0.4.0.mcpb`, of about 2 MB. It holds the built server, the three packages the
 server needs to run and [`manifest.json`](../../manifest.json), the manifest of the extension (manifest version
 0.3). The script fetches the packaging tool, `@anthropic-ai/mcpb` at version 2.1.2, with `npx` when it runs. The
 tool is not a dependency of this project, because its own dependencies carry open security advisories.

@@ -145,8 +145,7 @@ What the scenarios use, in the simulated Taiga:
 
 ## Report of the last run
 
-Run on 2026-10-13, on Windows 11 with Node 24.15.0, version 0.3.0 of the server with the fixes of the audit and
-the wiki and sprint tools.
+Run on 2026-10-13, on Windows 11 with Node 24.15.0, version 0.4.0 of the server.
 
 | Command | Result |
 | --- | --- |
@@ -279,13 +278,14 @@ are created and deleted.
 
 ### Result
 
-Run on 2026-10-12, on Windows 11 with Node 24.15.0, version 0.3.0 of the server, against a Taiga 6 installation,
-in one project. The role of the token may create, edit and delete user stories, tasks and issues there. The run
-was repeated after each change to the server made that day; this is the last one.
+Run on 2026-10-13, on Windows 11 with Node 24.15.0, version 0.4.0 of the server, against a Taiga 6 installation,
+in one project with the wiki module on and no sprint. The role of the token may create, edit and delete user
+stories, tasks, issues, sprints and wiki pages there. The run was repeated after each change to the server made
+that day; this is the last one.
 
 | Result | Count |
 | --- | --- |
-| Steps that passed | 16 of 16 |
+| Steps that passed | 20 of 20 |
 | Steps with a refusal for lack of permission | 0 |
 | Steps skipped | 0 |
 | Test items left in the project | 0 |
@@ -315,8 +315,8 @@ The steps:
 | L19 | taiga_items_delete shows first, asks the user, and deletes only with the code and the yes: every item of the test is removed |
 | L20 | The token is in nothing the server wrote |
 
-In L15 the test client says it can be asked, and stands in for the user: for each item it first answers no, and
-checks that nothing was deleted, then yes.
+In L18 and L19 the test client says it can be asked, and stands in for the user: for each item it first answers
+no, and checks that nothing was deleted, then yes.
 
 One more check was made on the same installation, by hand, in a second project where the role of the token may
 not create a user story. `taiga_userstories_create` was refused by the server with the alternatives that role
@@ -326,7 +326,7 @@ no request sent to Taiga.
 What these runs did not show:
 
 - **A refusal that comes from Taiga itself** (403). The server refused first, from the list of permissions.
-- **A sprint.** The project has none, so a task without a user story, which needs a sprint, was not created.
+- **A task without a user story.** It needs a sprint, and the test creates its sprint only after its task.
 - **A client of a person.** The question before a deletion was answered by the test, not by somebody reading it
   in an MCP client.
 

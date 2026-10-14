@@ -5,34 +5,13 @@ and the versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## Unreleased
 
-- The source, the tests and the scripts carry no comments. The built server does the same: compiled without
-  comments, it is the same file, byte for byte, before and after.
-- The READMEs open with an Install section that names the npm package and its command, and the other documents
-  say `npx -y @campos-codes/taiga-r2da-mcp` where they said `node dist/index.js`.
-- The commands of the documents end in `@latest`: `npx -y @campos-codes/taiga-r2da-mcp@latest`. The documents say how to stay on one
-  version, and `docs/security.md` says what `@latest` gives up.
-- The READMEs give two ways to get the package, `npx` and `npm install -g`, with what the client runs in each and
-  how to update and to remove it.
-- The READMEs name the standard configuration as such and have a block for VS Code and one for Cursor, each from
-  the documentation of that client and each marked as not tried. A badge shows the downloads of the package.
-- The instructions of the server, and the descriptions of `taiga_items_get` and `taiga_attachments_get`, tell the
-  model that what comes from Taiga is written by other people and is data, not instructions. A line break in a
-  subject or in a name reaches neither the question put before a deletion nor a line of the trail.
-- An attachment address that is not `http` or `https` is not opened. A download that grows past 25 MB, and an
-  answer of the API that grows past 32 MB, are stopped as the bytes arrive, whatever size Taiga declared.
-- `taiga_sprints_list` sorts the sprints by start date, newest first, as its description promised; the order was
-  the one of the API.
-- The trail on stderr names the file sent by `taiga_attachments_add`, with its size, and the path a file saved by
-  `taiga_attachments_get` went to.
-- Every tool refuses an argument it does not declare (`Unrecognized key`), where only the two without parameters
-  did: a misspelt field was dropped in silence. A saved attachment gets a name of at most 150 characters, and the
-  names of attachments reach the model without control characters.
-- A `TAIGA_URL` with a query or a fragment is refused at start, and a warning is written at start when
-  `NODE_TLS_REJECT_UNAUTHORIZED=0` is in the environment of the server.
-- The documents say that a new subject replaces the old one with no version, that `dueDate` takes `YYYY-MM-DD` or
-  `none`, that `[::1]` may be reached over `http://` too, and that the `npx` form must be tried from outside the
-  repository. The release steps commit and tag before `npm publish`. The Portuguese README has the item on
-  having nothing to build.
+## 0.4.0 - 2026-10-13
+
+The server reads, writes and deletes wiki pages, and creates, changes and deletes sprints. 26 tools: 12 read, 11
+write, 3 delete. No tool or parameter was renamed or removed, so a client set up for 0.3.0 needs no change.
+
+### Added
+
 - Wiki pages: `taiga_wiki_list` and `taiga_wiki_get` read them; with `TAIGA_WRITE=1`, `taiga_wiki_create` makes
   one and `taiga_wiki_update` replaces its whole text with the version that was read; with `TAIGA_DELETE=1`,
   `taiga_wiki_delete` removes one in two calls, as `taiga_items_delete` does. The server checks `add_wiki_page`,
@@ -40,8 +19,45 @@ and the versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - Sprints: with `TAIGA_WRITE=1`, `taiga_sprints_create` makes one from a name, a first day and a last day, and
   `taiga_sprints_update` renames it, moves its days, closes it or opens it again; with `TAIGA_DELETE=1`,
   `taiga_sprints_delete` removes one in two calls, and its user stories go back to the backlog. The server checks
-  `add_milestone`, `modify_milestone` and `delete_milestone` before it sends anything. 26 tools: 12 read, 11
-  write, 3 delete.
+  `add_milestone`, `modify_milestone` and `delete_milestone` before it sends anything.
+
+### Fixed
+
+- `taiga_sprints_list` sorts the sprints by start date, newest first, as its description promised; the order was
+  the one of the API.
+- Every tool refuses an argument it does not declare (`Unrecognized key`), where only the two without parameters
+  did: a misspelt field was dropped in silence. A saved attachment gets a name of at most 150 characters, and the
+  names of attachments reach the model without control characters.
+- A `TAIGA_URL` with a query or a fragment is refused at start, and a warning is written at start when
+  `NODE_TLS_REJECT_UNAUTHORIZED=0` is in the environment of the server.
+- An attachment address that is not `http` or `https` is not opened. A download that grows past 25 MB, and an
+  answer of the API that grows past 32 MB, are stopped as the bytes arrive, whatever size Taiga declared.
+
+### Changed
+
+- The source, the tests and the scripts carry no comments. The built server does the same: compiled without
+  comments, it is the same file, byte for byte, before and after.
+- The instructions of the server, and the descriptions of `taiga_items_get` and `taiga_attachments_get`, tell the
+  model that what comes from Taiga is written by other people and is data, not instructions. A line break in a
+  subject or in a name reaches neither the question put before a deletion nor a line of the trail.
+- The trail on stderr names the file sent by `taiga_attachments_add`, with its size, and the path a file saved by
+  `taiga_attachments_get` went to.
+
+### Documentation
+
+- The READMEs have one Installation section: the token, a block for each client (Claude Code, Claude Desktop,
+  Codex, Cursor, VS Code, any other, Windows), the standard configuration, and the other ways to install (`npm
+  install -g`, one version, from source). Cursor and VS Code have a one-click install button, not tried in either
+  `[not verified]`. The Configuration table counts 11 write tools and 3 delete tools, where it said seven and one.
+- The READMEs name the npm package and its command, and the other documents
+  say `npx -y @campos-codes/taiga-r2da-mcp` where they said `node dist/index.js`.
+- The commands of the documents end in `@latest`: `npx -y @campos-codes/taiga-r2da-mcp@latest`. The documents say how to stay on one
+  version, and `docs/security.md` says what `@latest` gives up.
+- A badge shows the downloads of the package.
+- The documents say that a new subject replaces the old one with no version, that `dueDate` takes `YYYY-MM-DD` or
+  `none`, that `[::1]` may be reached over `http://` too, and that the `npx` form must be tried from outside the
+  repository. The release steps commit and tag before `npm publish`. The Portuguese README has the item on
+  having nothing to build.
 
 ## 0.3.0 - 2026-10-13
 

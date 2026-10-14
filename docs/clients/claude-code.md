@@ -12,7 +12,7 @@ Requires Node 20 or newer: check with `node --version`. There is nothing else to
 [`@campos-codes/taiga-r2da-mcp`](https://www.npmjs.com/package/@campos-codes/taiga-r2da-mcp), and the client starts it with `npx`, which downloads the package the first time it runs.
 
 The commands of this page end in `@latest`, the newest version published. To stay on one version until you choose
-another, write it in place of `@latest`: `@campos-codes/taiga-r2da-mcp@0.3.0`.
+another, write it in place of `@latest`: `@campos-codes/taiga-r2da-mcp@0.4.0`.
 
 The other way to get the package is `npm install -g @campos-codes/taiga-r2da-mcp`, which leaves the command `taiga-mcp`
 on the machine: the client then starts `taiga-mcp`, with no arguments, in place of `npx` and its arguments.

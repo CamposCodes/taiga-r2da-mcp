@@ -1,8 +1,8 @@
 {
   "name": "@campos-codes/taiga-r2da-mcp",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "mcpName": "io.github.CamposCodes/taiga-r2da-mcp",
-  "description": "MCP server for a Taiga 6 installation: lets AI models read projects, user stories, tasks, issues, sprints and attachments, and optionally create, edit, move and delete user stories, tasks and issues and attach files to them",
+  "description": "MCP server for a Taiga 6 installation: lets AI models read projects, user stories, tasks, issues, sprints, wiki pages and attachments, and optionally create, edit, move and delete user stories, tasks, issues, sprints and wiki pages and attach files to items",
   "keywords": [
     "mcp",
     "mcp-server",

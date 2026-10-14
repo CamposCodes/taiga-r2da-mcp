@@ -2,9 +2,9 @@
   "manifest_version": "0.3",
   "name": "taiga-mcp",
   "display_name": "Taiga",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Read a Taiga 6 installation and, when allowed, create, edit, move and delete its items.",
-  "long_description": "Connects Claude to a Taiga 6 installation. It reads projects, sprints, user stories, tasks, issues and their attachments in the name of the person whose token it has. With writing allowed it also creates, edits and moves user stories, tasks and issues and attaches files to them. With deleting allowed too, it deletes them after showing what would go and asking.",
+  "long_description": "Connects Claude to a Taiga 6 installation. It reads projects, sprints, user stories, tasks, issues, wiki pages and their attachments in the name of the person whose token it has. With writing allowed it also creates, edits and moves user stories, tasks and issues, attaches files to them, creates and changes sprints and writes wiki pages. With deleting allowed too, it deletes them after showing what would go and asking.",
   "author": {
     "name": "CamposCodes",
     "url": "https://github.com/CamposCodes"
@@ -49,13 +49,13 @@
     "allow_writing": {
       "type": "boolean",
       "title": "Allow writing",
-      "description": "Lets Claude create, edit and move user stories, tasks and issues and attach files, in your name",
+      "description": "Lets Claude create, edit and move user stories, tasks, issues, sprints and wiki pages and attach files, in your name",
       "default": false
     },
     "allow_deleting": {
       "type": "boolean",
       "title": "Allow deleting",
-      "description": "Lets Claude delete user stories, tasks and issues. Taiga keeps no trash. It needs Allow writing",
+      "description": "Lets Claude delete user stories, tasks, issues, sprints and wiki pages. Taiga keeps no trash. It needs Allow writing",
       "default": false
     }
   },

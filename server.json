@@ -6,12 +6,12 @@
     "url": "https://github.com/CamposCodes/taiga-r2da-mcp",
     "source": "github"
   },
-  "version": "0.3.0",
+  "version": "0.4.0",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "@campos-codes/taiga-r2da-mcp",
-      "version": "0.3.0",
+      "version": "0.4.0",
       "transport": {
         "type": "stdio"
       },
@@ -31,14 +31,14 @@
           "name": "TAIGA_TOKEN"
         },
         {
-          "description": "1 or true registers the tools that create and edit user stories, tasks and issues",
+          "description": "1 or true registers the tools that create and edit user stories, tasks, issues, sprints and wiki pages",
           "isRequired": false,
           "format": "string",
           "isSecret": false,
           "name": "TAIGA_WRITE"
         },
         {
-          "description": "1 or true registers the tool that deletes; it needs TAIGA_WRITE on",
+          "description": "1 or true registers the tools that delete; it needs TAIGA_WRITE on",
           "isRequired": false,
           "format": "string",
           "isSecret": false,
