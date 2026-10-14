@@ -4,7 +4,7 @@ What to ask for and what the model does with the tools. You never have to name a
 the language your team uses in Taiga.
 
 The server is the npm package [`@campos-codes/taiga-r2da-mcp`](https://www.npmjs.com/package/@campos-codes/taiga-r2da-mcp). How to add it to your client is in
-[Getting started](readme.md#getting-started).
+[Installation](readme.md#installation).
 
 ## The tools at a glance
 

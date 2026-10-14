@@ -24,39 +24,12 @@ projetos, sprints, histórias de usuário, tarefas, problemas e os anexos deles 
 responde perguntas como "o que está aberto na sprint atual?" ou "quais tarefas estão sem responsável?".
 
 Por padrão o servidor **só lê**: toda chamada ao Taiga é um `GET`. Iniciado com `TAIGA_WRITE=1` ele também cria,
-edita e move histórias de usuário, tarefas e problemas e anexa arquivos a eles. Ele só exclui quando
-`TAIGA_DELETE=1` também está definida, e mesmo assim em duas chamadas: a primeira só mostra o que seria excluído.
+edita e move histórias de usuário, tarefas e problemas, anexa arquivos a eles, cria e altera sprints e escreve
+páginas da wiki. Ele só exclui quando `TAIGA_DELETE=1` também está definida, e mesmo assim em duas chamadas: a
+primeira só mostra o que seria excluído.
 
 Este arquivo está todo em português, com a lista de tools e os diagramas. A documentação detalhada, em `docs/`,
 está em inglês.
-
-## Instalação
-
-O servidor é um pacote npm, [`@campos-codes/taiga-r2da-mcp`](https://www.npmjs.com/package/@campos-codes/taiga-r2da-mcp), e é assim que ele deve ser instalado.
-Não é preciso clonar nem compilar nada. Há duas formas de obtê-lo:
-
-**Com npx (recomendado).** Nada a rodar antes: o seu cliente MCP inicia o servidor com o comando abaixo, e o
-`npx` baixa o pacote na primeira vez.
-
-```bash
-npx -y @campos-codes/taiga-r2da-mcp@latest
-```
-
-**Com npm.** Instale o pacote na máquina uma vez, e o seu cliente MCP inicia o servidor pelo nome do comando,
-`taiga-mcp`.
-
-```bash
-npm install -g @campos-codes/taiga-r2da-mcp
-```
-
-| | npx | npm install -g |
-| --- | --- | --- |
-| O que o cliente roda | `npx -y @campos-codes/taiga-r2da-mcp@latest` | `taiga-mcp` |
-| Para instalar | Nada | `npm install -g @campos-codes/taiga-r2da-mcp` |
-| Para ir a uma versão mais nova | Nada: `@latest` é a versão mais nova publicada | `npm install -g @campos-codes/taiga-r2da-mcp@latest` |
-| Para remover | Remova o servidor do cliente | `npm uninstall -g @campos-codes/taiga-r2da-mcp` |
-
-O que colocar em cada cliente está em [Primeiros passos](#primeiros-passos).
 
 ## Recursos
 
@@ -81,50 +54,22 @@ O que colocar em cada cliente está em [Primeiros passos](#primeiros-passos).
 - Uma instalação do Taiga 6 em que você consiga entrar, acessada por `https://`.
 - Um cliente MCP: Claude Code, Claude Desktop, Codex, VS Code, Cursor, ou qualquer outro que inicie um servidor por stdio.
 
-## Primeiros passos
+## Instalação
 
-O servidor vem do npm, como [`@campos-codes/taiga-r2da-mcp`](https://www.npmjs.com/package/@campos-codes/taiga-r2da-mcp). Não é preciso instalar nada antes: o cliente inicia o servidor
-com `npx`, que baixa o pacote na primeira vez em que roda.
+O servidor é o pacote npm [`@campos-codes/taiga-r2da-mcp`](https://www.npmjs.com/package/@campos-codes/taiga-r2da-mcp). Não é preciso clonar nem
+compilar nada: o seu cliente MCP o inicia com `npx`, que baixa o pacote na primeira vez, e você informa o
+endereço do seu Taiga e o seu token. Três passos.
 
 ### 1. Pegue um token
 
 Entre no seu Taiga pelo navegador, abra as ferramentas de desenvolvedor (F12), vá em **Application**, **Local
-Storage**, o endereço do seu Taiga, e copie o valor da chave `token`.
+Storage**, o endereço do seu Taiga, e copie o valor da chave `token`. O token é a sua sessão: guarde-o na
+configuração do seu cliente e em nenhum outro lugar.
 
 ### 2. Adicione o servidor ao seu cliente
 
-**Configuração padrão.** A maioria dos clientes lê um objeto `mcpServers` e aceita isto como está:
-
-```json
-{
-  "mcpServers": {
-    "taiga": {
-      "command": "npx",
-      "args": ["-y", "@campos-codes/taiga-r2da-mcp@latest"],
-      "env": {
-        "TAIGA_URL": "https://taiga.example.com",
-        "TAIGA_TOKEN": "<YOUR_TOKEN>"
-      }
-    }
-  }
-}
-```
-
-Se você instalou o pacote com `npm install -g`, o comando é o nome dele, sem argumentos:
-
-```json
-{
-  "mcpServers": {
-    "taiga": {
-      "command": "taiga-mcp",
-      "env": {
-        "TAIGA_URL": "https://taiga.example.com",
-        "TAIGA_TOKEN": "<YOUR_TOKEN>"
-      }
-    }
-  }
-}
-```
+Escolha o seu cliente abaixo. Todo bloco é o mesmo servidor com as mesmas duas variáveis, `TAIGA_URL` e
+`TAIGA_TOKEN`; o servidor é somente leitura até você acrescentar as chaves de [Configuração](#configuração).
 
 <details>
 <summary><b>Claude Code</b></summary>
@@ -132,8 +77,6 @@ Se você instalou o pacote com `npm install -g`, o comando é o nome dele, sem a
 ```bash
 claude mcp add --env TAIGA_URL=https://taiga.example.com --env "TAIGA_TOKEN=<YOUR_TOKEN>" --transport stdio --scope local taiga -- npx -y @campos-codes/taiga-r2da-mcp@latest
 ```
-
-Instalou com `npm install -g`? Termine o comando com `-- taiga-mcp` no lugar de `-- npx -y @campos-codes/taiga-r2da-mcp@latest`.
 
 Escopos, como trocar um token vencido e como ligar a escrita: [docs/clients/claude-code.md](clients/claude-code.md)
 (em inglês).
@@ -143,8 +86,9 @@ Escopos, como trocar um token vencido e como ligar a escrita: [docs/clients/clau
 <details>
 <summary><b>Claude Desktop</b></summary>
 
-Coloque a configuração acima em `claude_desktop_config.json` e abra o Claude Desktop de novo. Onde fica o arquivo
-e como conferir que o servidor subiu: [docs/clients/claude-desktop.md](clients/claude-desktop.md) (em inglês).
+Coloque a [configuração padrão](#configuração-padrão) em `claude_desktop_config.json` e abra o Claude Desktop de
+novo. Onde fica o arquivo e como conferir que o servidor subiu: [docs/clients/claude-desktop.md](clients/claude-desktop.md)
+(em inglês).
 
 O Claude Desktop também aceita o servidor como extensão, um arquivo `.mcpb` que você gera a partir deste
 repositório com `npm run pack:mcpb`. Ela ainda não foi instalada em um Claude Desktop real: veja
@@ -174,10 +118,31 @@ Modos de aprovação e limites de tempo que importam para este servidor: [docs/c
 </details>
 
 <details>
+<summary><b>Cursor</b></summary>
+
+[![Instalar no Cursor](https://cursor.com/deeplink/mcp-install-dark.svg)](https://cursor.com/en/install-mcp?name=taiga&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIkBjYW1wb3MtY29kZXMvdGFpZ2EtcjJkYS1tY3BAbGF0ZXN0Il0sImVudiI6eyJUQUlHQV9VUkwiOiJodHRwczovL3RhaWdhLmV4YW1wbGUuY29tIiwiVEFJR0FfVE9LRU4iOiI8WU9VUl9UT0tFTj4ifX0%3D)
+
+O botão adiciona o servidor com as duas variáveis como marcadores: abra a configuração que o Cursor mostra e
+coloque o seu endereço e o seu token no lugar delas. Para fazer à mão, coloque a
+[configuração padrão](#configuração-padrão) em `~/.cursor/mcp.json`, o arquivo que a documentação do Cursor
+indica "for tools available everywhere", e não no `.cursor/mcp.json` de um projeto, que vai para o repositório. O
+Cursor preenche `${env:NAME}` com o ambiente em que foi iniciado, então `"TAIGA_TOKEN": "${env:TAIGA_TOKEN}"`
+deixa o token fora do arquivo.
+
+A documentação também diz: "Cursor asks for approval before using MCP tools by default." Fonte:
+[Model Context Protocol in Cursor](https://cursor.com/docs/context/mcp), lida em 2026-10-13. Este projeto não
+testou o servidor, nem o botão, no Cursor `[não verificado]`.
+
+</details>
+
+<details>
 <summary><b>VS Code</b> (GitHub Copilot)</summary>
 
-O VS Code guarda os servidores na chave `servers`, e não em `mcpServers`. Rode o comando
-**MCP: Open User Configuration** e acrescente:
+[![Instalar no VS Code](https://img.shields.io/badge/VS_Code-Install_Server-0098FF?style=flat-square&logo=visualstudiocode&logoColor=white)](https://vscode.dev/redirect/mcp/install?name=taiga&inputs=%5B%7B%22type%22%3A%22promptString%22%2C%22id%22%3A%22taiga-token%22%2C%22description%22%3A%22Taiga%20token%22%2C%22password%22%3Atrue%7D%5D&config=%7B%22type%22%3A%22stdio%22%2C%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22%40campos-codes%2Ftaiga-r2da-mcp%40latest%22%5D%2C%22env%22%3A%7B%22TAIGA_URL%22%3A%22https%3A%2F%2Ftaiga.example.com%22%2C%22TAIGA_TOKEN%22%3A%22%24%7Binput%3Ataiga-token%7D%22%7D%7D)
+
+O botão abre o VS Code com a configuração abaixo, que pede o token quando o servidor inicia pela primeira vez.
+Troque `TAIGA_URL` pelo endereço do seu Taiga. Para fazer à mão, rode o comando **MCP: Open User Configuration**
+e acrescente isto: o VS Code guarda os servidores na chave `servers`, e não em `mcpServers`.
 
 ```json
 {
@@ -201,36 +166,8 @@ O VS Code guarda os servidores na chave `servers`, e não em `mcpServers`. Rode 
 A entrada em `inputs` faz o VS Code pedir o token e deixá-lo fora do arquivo: a documentação diz, sobre um valor
 assim, que ele "is then securely stored for subsequent use". Use a configuração do seu perfil de usuário, e não o
 `.vscode/mcp.json` de um projeto, que vai para o repositório. Fonte:
-[MCP configuration reference](https://code.visualstudio.com/docs/agents/reference/mcp-configuration), lida em 2026-10-13. Este projeto não testou o servidor no VS Code
-`[não verificado]`.
-
-</details>
-
-<details>
-<summary><b>Cursor</b></summary>
-
-Coloque a configuração padrão em `~/.cursor/mcp.json`, o arquivo que a documentação do Cursor indica "for tools
-available everywhere", e não no `.cursor/mcp.json` de um projeto, que vai para o repositório. O Cursor preenche
-`${env:NAME}` com o ambiente em que foi iniciado, o que deixa o token fora do arquivo:
-
-```json
-{
-  "mcpServers": {
-    "taiga": {
-      "command": "npx",
-      "args": ["-y", "@campos-codes/taiga-r2da-mcp@latest"],
-      "env": {
-        "TAIGA_URL": "https://taiga.example.com",
-        "TAIGA_TOKEN": "${env:TAIGA_TOKEN}"
-      }
-    }
-  }
-}
-```
-
-A documentação também diz: "Cursor asks for approval before using MCP tools by default." Fonte:
-[Model Context Protocol in Cursor](https://cursor.com/docs/context/mcp), lida em 2026-10-13. Este projeto não testou o servidor no Cursor
-`[não verificado]`.
+[MCP configuration reference](https://code.visualstudio.com/docs/agents/reference/mcp-configuration), lida em
+2026-10-13. Este projeto não testou o servidor, nem o botão, no VS Code `[não verificado]`.
 
 </details>
 
@@ -238,7 +175,8 @@ A documentação também diz: "Cursor asks for approval before using MCP tools b
 <summary><b>Qualquer outro cliente</b></summary>
 
 Um cliente que inicia um servidor MCP por stdio precisa de três coisas: o comando, `npx`; os argumentos dele,
-`-y` e `@campos-codes/taiga-r2da-mcp@latest`; e as variáveis de [Configuração](#configuração) no ambiente do servidor.
+`-y` e `@campos-codes/taiga-r2da-mcp@latest`; e as variáveis de [Configuração](#configuração) no ambiente do
+servidor. A maioria dos clientes lê a [configuração padrão](#configuração-padrão) como está.
 
 </details>
 
@@ -257,15 +195,40 @@ O que este projeto testou no Windows 11, com Node 24 e npm 11:
 
 </details>
 
+#### Configuração padrão
+
+A maioria dos clientes lê um objeto `mcpServers` e aceita isto como está:
+
+```json
+{
+  "mcpServers": {
+    "taiga": {
+      "command": "npx",
+      "args": ["-y", "@campos-codes/taiga-r2da-mcp@latest"],
+      "env": {
+        "TAIGA_URL": "https://taiga.example.com",
+        "TAIGA_TOKEN": "<YOUR_TOKEN>"
+      }
+    }
+  }
+}
+```
+
 ### 3. Pergunte
 
-"Quais projetos eu tenho no Taiga?" Não é preciso citar o nome de uma tool.
+"Quais projetos eu tenho no Taiga?" Não é preciso citar o nome de uma tool. Mais pedidos em [Exemplos](#exemplos).
 
 ### Outras formas de instalar
 
-- **Uma versão, até você escolher outra.** Os comandos desta página terminam em `@latest`, a versão mais nova
-  publicada, como fazem os READMEs de outros servidores MCP. Para decidir você mesmo quando mudar, escreva a
-  versão no lugar, `@campos-codes/taiga-r2da-mcp@0.3.0`, onde quer que o nome do pacote apareça.
+- **Instalado uma vez, com npm.** `npm install -g @campos-codes/taiga-r2da-mcp` põe o comando `taiga-mcp` na
+  máquina, e o cliente roda esse nome no lugar de `npx -y @campos-codes/taiga-r2da-mcp@latest`: na configuração
+  padrão, `"command": "taiga-mcp"` e sem `args`; no Claude Code, termine o comando com `-- taiga-mcp`. Atualize
+  com `npm install -g @campos-codes/taiga-r2da-mcp@latest` e remova com `npm uninstall -g @campos-codes/taiga-r2da-mcp`.
+  Com `npx` não há nada a atualizar nem a remover: `@latest` é a versão mais nova publicada, e o servidor vai
+  embora quando você o tira do cliente.
+- **Uma versão, até você escolher outra.** Os comandos desta página terminam em `@latest`, como fazem os READMEs
+  de outros servidores MCP. Para decidir você mesmo quando mudar, escreva a versão no lugar,
+  `@campos-codes/taiga-r2da-mcp@0.4.0`, onde quer que o nome do pacote apareça.
 - **A partir do código.** Compile o servidor e informe ao cliente `node` como comando e o caminho absoluto de
   `dist/index.js` como argumento, no lugar de `npx`, `-y` e do nome do pacote:
 
@@ -285,8 +248,8 @@ Só o nome do pacote é comprido: o comando que ele instala é `taiga-mcp`, e o 
 | --- | --- | --- |
 | `TAIGA_URL` | sim | Endereço do Taiga, com ou sem `/api/v1` no fim. Precisa começar com `https://`: só esta máquina (`localhost`, `127.0.0.1`, `[::1]`) pode ser acessada por `http://`. Um endereço com usuário, senha, consulta (`?`) ou fragmento (`#`) é recusado |
 | `TAIGA_TOKEN` | sim | Token de sessão do Taiga 6, copiado do navegador |
-| `TAIGA_WRITE` | não | `1` ou `true` registra as sete tools de escrita. Qualquer outro valor (`yes`, `on`, `TRUE`, `0`), ou a falta dela, deixa o servidor somente leitura |
-| `TAIGA_DELETE` | não | `1` ou `true` registra `taiga_items_delete`, a tool que exclui. Precisa de `TAIGA_WRITE` também ligada: sem ela o servidor não inicia |
+| `TAIGA_WRITE` | não | `1` ou `true` registra as 11 tools de escrita. Qualquer outro valor (`yes`, `on`, `TRUE`, `0`), ou a falta dela, deixa o servidor somente leitura |
+| `TAIGA_DELETE` | não | `1` ou `true` registra as 3 tools de exclusão. Precisa de `TAIGA_WRITE` também ligada: sem ela o servidor não inicia |
 
 O servidor lê essas variáveis do próprio ambiente e de nenhum outro lugar. O arquivo
 [`.env.example`](../.env.example) lista todas elas.
@@ -722,7 +685,7 @@ O modelo de ameaças, o que o servidor alcança e como reportar uma falha: [docs
 | [docs/architecture.md](architecture.md) | Componentes, partida, uma chamada de leitura e uma de escrita, com diagramas |
 | [docs/usage.md](usage.md) | Fluxos de uso, pedidos de exemplo, limites e solução de problemas |
 | [docs/tools.md](tools.md) | Cada tool: parâmetros, exemplo de chamada, exemplo de resposta, erros |
-| [docs/clients/](clients/) | Instalação no Claude Code, no Claude Desktop e no Codex, e como gerar a extensão do Claude Desktop |
+| [docs/clients/](clients/) | Guias do Claude Code, do Claude Desktop e do Codex: escopos, token vencido, modos de aprovação, e como gerar a extensão do Claude Desktop |
 | [docs/security.md](security.md) | Modelo de ameaças e como reportar uma falha |
 | [docs/compliance.md](compliance.md) | Auditoria contra a especificação do MCP e as orientações da Anthropic, com as fontes, e o que foi feito a respeito de cada achado |
 | [docs/testing.md](testing.md) | Como o servidor é testado, a lista de todos os cenários e o relatório da última execução |
@@ -730,7 +693,7 @@ O modelo de ameaças, o que o servidor alcança e como reportar uma falha: [docs
 
 ## Estado e limites
 
-- Versão 0.3.0. Alvo: Taiga 6. Transporte: só stdio.
+- Versão 0.4.0. Alvo: Taiga 6. Transporte: só stdio.
 - Protocolo: revisão `2026-07-28` do MCP e as anteriores, na mesma conexão stdio, pela versão 2 do SDK de
   TypeScript (`@modelcontextprotocol/server`).
 - A escrita cobre histórias de usuário, tarefas e problemas (criar, editar, mover, comentar, anexar arquivo),
